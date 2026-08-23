@@ -6,13 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Modal,
   FlatList,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -49,7 +49,7 @@ export default function SignUpScreen({ navigation }) {
   console.log('🔍 auth object:', auth);
 
   const validatePassword = (pwd) => {
-    return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(pwd);
+    return pwd.length >= 6 && /[A-Za-z]/.test(pwd) && /\d/.test(pwd);
   };
 
   const handleSignUp = async () => {
@@ -58,17 +58,17 @@ export default function SignUpScreen({ navigation }) {
 
     if (!name || !email || !phone || !password || !confirmPassword) {
       console.log('❌ Missing fields');
-      Alert.alert('Error', 'Please fill in all fields.');
+      showAlert('Error', 'Please fill in all fields.');
       return;
     }
     if (password !== confirmPassword) {
       console.log('❌ Passwords do not match');
-      Alert.alert('Error', 'Passwords do not match.');
+      showAlert('Error', 'Passwords do not match.');
       return;
     }
     if (!validatePassword(password)) {
       console.log('❌ Invalid password');
-      Alert.alert('Error', 'Password must be at least 6 characters long and contain both letters and numbers.');
+      showAlert('Error', 'Password must be at least 6 characters long and contain both letters and numbers.');
       return;
     }
     console.log('✅ Validation passed');
@@ -77,12 +77,16 @@ export default function SignUpScreen({ navigation }) {
       console.log('📤 Calling auth.signUp with:', { email, password: '***', name, phone, role });
       const result = await auth.signUp(email, password, name, phone, role);
       console.log('✅ auth.signUp result:', result);
-      Alert.alert('Success', 'Account created! Please check your email to confirm your account.', [
-        { text: 'OK', onPress: () => navigation.navigate('Login') },
+      // Email confirmation is off for this project, so signUp() already returns
+      // an active session — no need to send them to Login to re-enter credentials.
+      // SignUp is always reached via Login's "Sign Up" link, so pop 2 screens to
+      // land back where the user actually started (e.g. Forum), not on Login.
+      showAlert('Welcome!', 'Your account has been created and you\'re now logged in.', [
+        { text: 'OK', onPress: () => navigation.pop(2) },
       ]);
     } catch (error) {
       console.error('❌ SignUp error:', error);
-      Alert.alert('Signup Failed', error.message || 'An unknown error occurred.');
+      showAlert('Signup Failed', error.message || 'An unknown error occurred.');
     } finally {
       setLoading(false);
     }

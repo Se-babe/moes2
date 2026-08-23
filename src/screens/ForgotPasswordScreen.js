@@ -6,10 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,16 +29,16 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   const handleReset = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email.');
+      showAlert('Error', 'Please enter your email.');
       return;
     }
     setLoading(true);
     try {
       await resetPassword(email);
-      Alert.alert('Success', 'Password reset email sent. Please check your inbox.');
+      showAlert('Success', 'Password reset email sent. Please check your inbox.');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message);
     } finally {
       setLoading(false);
     }

@@ -8,10 +8,10 @@ import {
   Image,
   FlatList,
   TextInput,
-  Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
@@ -68,7 +68,7 @@ export default function ConsultationsScreen() {
   };
 
   const getAdminUser = async () => {
-    const { data } = await supabase.from('users').select('id').limit(1);
+    const { data } = await supabase.from('users').select('id').eq('role', 'admin').limit(1);
     return data?.[0];
   };
 
@@ -165,7 +165,7 @@ export default function ConsultationsScreen() {
   // ----- Like / React on post -----
   const handleReact = async (consultationId, reactionType) => {
     if (!user) {
-      Alert.alert('Please login', 'You need to be logged in to react.');
+      showAlert('Please login', 'You need to be logged in to react.');
       return;
     }
     const { data: existing } = await supabase
@@ -203,7 +203,7 @@ export default function ConsultationsScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please grant camera roll permissions.');
+      showAlert('Permission Needed', 'Please grant camera roll permissions.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -218,7 +218,7 @@ export default function ConsultationsScreen() {
 
   const submitComment = async () => {
     if (!commentText.trim() && !commentImage) {
-      Alert.alert('Error', 'Please enter text or select an image.');
+      showAlert('Error', 'Please enter text or select an image.');
       return;
     }
     try {
@@ -232,8 +232,8 @@ export default function ConsultationsScreen() {
             contentType: 'image/jpeg',
           });
         if (error) throw error;
-        const { publicURL } = supabase.storage.from('comment_images').getPublicUrl(fileName);
-        imageUrl = publicURL;
+        const { data: { publicUrl } } = supabase.storage.from('comment_images').getPublicUrl(fileName);
+        imageUrl = publicUrl;
       }
       await supabase.from('comments').insert([{
         user_id: user.id,
@@ -246,16 +246,17 @@ export default function ConsultationsScreen() {
         await createNotification(admin.id, 'New Comment', `Comment on: ${activeConsultation.title}`, 'info', 'Consultations', activeConsultation.id);
       }
       setCommentModalVisible(false);
+      showAlert('Thank You!', 'Your comment has been posted.');
       fetchData();
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message);
     }
   };
 
   // ----- Poll Vote -----
   const handlePollVote = async (pollOptionId, consultationId) => {
     if (!user) {
-      Alert.alert('Please login', 'You need to be logged in to vote.');
+      showAlert('Please login', 'You need to be logged in to vote.');
       return;
     }
     const { data: existing } = await supabase
@@ -271,7 +272,7 @@ export default function ConsultationsScreen() {
       await supabase.from('poll_options').update({ vote_count: (option.vote_count || 0) - 1 }).eq('id', optionId);
       const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
       await supabase.from('consultations').update({ poll_votes_count: (cons.poll_votes_count || 0) - 1 }).eq('id', consultationId);
-      Alert.alert('Vote Removed', 'Your poll vote has been removed.');
+      showAlert('Vote Removed', 'Your poll vote has been removed.');
     } else {
       await supabase.from('poll_votes').insert([{
         user_id: user.id,
@@ -282,7 +283,7 @@ export default function ConsultationsScreen() {
       await supabase.from('poll_options').update({ vote_count: (option.vote_count || 0) + 1 }).eq('id', pollOptionId);
       const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
       await supabase.from('consultations').update({ poll_votes_count: (cons.poll_votes_count || 0) + 1 }).eq('id', consultationId);
-      Alert.alert('Vote Recorded', 'Thank you for voting!');
+      showAlert('Vote Recorded', 'Thank you for voting!');
     }
     fetchData();
   };
@@ -290,7 +291,7 @@ export default function ConsultationsScreen() {
   // ----- Like a comment -----
   const handleCommentLike = async (commentId, consultationId) => {
     if (!user) {
-      Alert.alert('Please login', 'You need to be logged in to like a comment.');
+      showAlert('Please login', 'You need to be logged in to like a comment.');
       return;
     }
     setCommentLikeLoading(prev => ({ ...prev, [commentId]: true }));
@@ -312,7 +313,7 @@ export default function ConsultationsScreen() {
       }
       fetchData();
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message);
     } finally {
       setCommentLikeLoading(prev => ({ ...prev, [commentId]: false }));
     }

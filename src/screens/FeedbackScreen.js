@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Image,
   Modal,
@@ -14,10 +13,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
+import TurnstileWidget from '../components/TurnstileWidget';
 
 const COLORS = {
   primary: '#1E3A8A',
@@ -56,6 +57,7 @@ export default function FeedbackScreen() {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const maxTitleChars = 100;
@@ -64,7 +66,7 @@ export default function FeedbackScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please grant camera roll permissions.');
+      showAlert('Permission Needed', 'Please grant camera roll permissions.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -81,7 +83,11 @@ export default function FeedbackScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      Alert.alert('Error', 'Please fill in both title and description.');
+      showAlert('Error', 'Please fill in both title and description.');
+      return;
+    }
+    if (!turnstileToken) {
+      showAlert('Error', 'Please complete the verification below before submitting.');
       return;
     }
 
@@ -95,22 +101,23 @@ export default function FeedbackScreen() {
           .from('feedback_images')
           .upload(fileName, blob, { contentType: 'image/jpeg' });
         if (error) throw error;
-        const { publicURL } = supabase.storage
+        const { data: { publicUrl } } = supabase.storage
           .from('feedback_images')
           .getPublicUrl(fileName);
-        imageUrl = publicURL;
+        imageUrl = publicUrl;
       }
 
-      const { error } = await supabase.from('feedback').insert([{
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        image_url: imageUrl,
-        status: 'Submitted',
-        user_id: 'anonymous',
-      }]);
-
+      const { data: fnData, error } = await supabase.functions.invoke('submit-feedback', {
+        body: {
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          image_url: imageUrl,
+          turnstileToken,
+        },
+      });
       if (error) throw error;
+      if (fnData?.error) throw new Error(fnData.error);
 
       setShowSuccess(true);
       Animated.timing(fadeAnim, {
@@ -124,12 +131,14 @@ export default function FeedbackScreen() {
         setDescription('');
         setCategory('General');
         setImage(null);
+        setTurnstileToken(null);
         setShowSuccess(false);
         fadeAnim.setValue(0);
         navigation.goBack();
       }, 2000);
     } catch (error) {
-      Alert.alert('Submission Failed', error.message || 'Please try again.');
+      setTurnstileToken(null);
+      showAlert('Submission Failed', error.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -247,10 +256,12 @@ export default function FeedbackScreen() {
             </View>
           )}
 
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
+
           <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, (loading || !turnstileToken) && styles.submitBtnDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || !turnstileToken}
             activeOpacity={0.8}
           >
             {loading ? (

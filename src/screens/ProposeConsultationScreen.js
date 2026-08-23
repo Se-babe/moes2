@@ -6,17 +6,18 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Image,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import TurnstileWidget from '../components/TurnstileWidget';
 
 // ----- Colors -----
 const COLORS = {
@@ -59,6 +60,7 @@ export default function ProposeConsultationScreen() {
   const [phone, setPhone] = useState('');
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState(null);
 
   // ----- Helper: create notification for admin -----
   const createNotification = async (userId, title, message, type, targetScreen, targetId) => {
@@ -74,7 +76,7 @@ export default function ProposeConsultationScreen() {
   };
 
   const getAdminUser = async () => {
-    const { data } = await supabase.from('users').select('id').limit(1);
+    const { data } = await supabase.from('users').select('id').eq('role', 'admin').limit(1);
     return data?.[0];
   };
 
@@ -82,7 +84,7 @@ export default function ProposeConsultationScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please grant camera roll permissions.');
+      showAlert('Permission Needed', 'Please grant camera roll permissions.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -101,15 +103,19 @@ export default function ProposeConsultationScreen() {
   const handleSubmit = async () => {
     // --- Validations ---
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title.');
+      showAlert('Error', 'Please enter a title.');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Error', 'Please enter a description.');
+      showAlert('Error', 'Please enter a description.');
       return;
     }
     if (!email.trim() || !phone.trim()) {
-      Alert.alert('Error', 'Please provide your email and phone.');
+      showAlert('Error', 'Please provide your email and phone.');
+      return;
+    }
+    if (!turnstileToken) {
+      showAlert('Error', 'Please complete the verification below before submitting.');
       return;
     }
 
@@ -124,16 +130,17 @@ export default function ProposeConsultationScreen() {
           .from('consultation_images')
           .upload(fileName, blob, { contentType: 'image/jpeg' });
         if (error) throw new Error(`Image upload failed: ${error.message}`);
-        const { publicURL } = supabase.storage
+        const { data: { publicUrl } } = supabase.storage
           .from('consultation_images')
           .getPublicUrl(fileName);
-        imageUrl = publicURL;
+        imageUrl = publicUrl;
       }
 
-      // 2. Insert into consultations table
-      const { data, error } = await supabase
-        .from('consultations')
-        .insert([{
+      // 2. Insert into consultations table via the protected Edge Function
+      // (verifies Turnstile, then writes with the service role key — see
+      // supabase/functions/propose-consultation)
+      const { data: fnData, error } = await supabase.functions.invoke('propose-consultation', {
+        body: {
           title: title.trim(),
           description: description.trim(),
           category,
@@ -141,15 +148,15 @@ export default function ProposeConsultationScreen() {
           proposer_email: email.trim(),
           proposer_phone: phone.trim(),
           image_url: imageUrl,
-          is_active: false, // pending approval
-        }])
-        .select('id')
-        .single();
+          turnstileToken,
+        },
+      });
 
       if (error) {
-        console.error('❌ Supabase insert error:', error);
-        throw new Error(error.message || 'Database error');
+        console.error('❌ propose-consultation error:', error);
+        throw new Error(error.message || 'Could not submit your proposal');
       }
+      if (fnData?.error) throw new Error(fnData.error);
 
       // 3. Notify admin
       const admin = await getAdminUser();
@@ -160,18 +167,20 @@ export default function ProposeConsultationScreen() {
           `User proposed: "${title}" (Email: ${email}, Phone: ${phone})`,
           'consultation',
           'Consultations',
-          data.id
+          fnData.id
         );
       }
 
       // 4. Success
-      Alert.alert(
+      setTurnstileToken(null);
+      showAlert(
         '✅ Proposal Submitted',
         'Thank you! The admin will review your proposal and activate it soon.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      Alert.alert('Submission Failed', error.message);
+      setTurnstileToken(null);
+      showAlert('Submission Failed', error.message);
     } finally {
       setLoading(false);
     }
@@ -293,11 +302,13 @@ export default function ProposeConsultationScreen() {
             </View>
           )}
 
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
+
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, (loading || !turnstileToken) && styles.submitBtnDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || !turnstileToken}
           >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Submit Proposal</Text>}
           </TouchableOpacity>

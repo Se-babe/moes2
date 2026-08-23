@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import Svg, { Circle, Path, Rect, G, Text as SvgText, Line } from 'react-native-svg';
 
@@ -7,6 +9,7 @@ const { width } = Dimensions.get('window');
 const CHART_SIZE = Math.min(width - 80, 300);
 
 export default function DashboardScreen() {
+  const navigation = useNavigation();
   const [feedbackData, setFeedbackData] = useState([]);
   const [statusData, setStatusData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
@@ -184,7 +187,13 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>📊 Dashboard</Text>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#1E3A8A" />
+        </TouchableOpacity>
+        <Text style={styles.heading}>📊 Dashboard</Text>
+        <View style={{ width: 24 }} />
+      </View>
       <Text style={styles.subheading}>Real-time overview of citizen feedback</Text>
 
       <View style={styles.totalBox}>
@@ -250,6 +259,7 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 40 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, color: '#64748B' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heading: { fontSize: 24, fontWeight: 'bold', color: '#1E3A8A' },
   subheading: { fontSize: 14, color: '#64748B', marginBottom: 20 },
   totalBox: {

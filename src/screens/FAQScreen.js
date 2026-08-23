@@ -6,9 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseClient';
@@ -30,9 +28,6 @@ export default function FAQScreen() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newQuestion, setNewQuestion] = useState('');
-  const [newAnswer, setNewAnswer] = useState('');
 
   useEffect(() => {
     fetchFAQs();
@@ -43,36 +38,6 @@ export default function FAQScreen() {
     const { data } = await supabase.from('faqs').select('*').order('created_at', { ascending: false });
     if (data) setFaqs(data);
     setLoading(false);
-  };
-
-  const addFAQ = async () => {
-    if (!newQuestion.trim() || !newAnswer.trim()) {
-      Alert.alert('Error', 'Please fill in both fields.');
-      return;
-    }
-    const { error } = await supabase.from('faqs').insert([{ question: newQuestion, answer: newAnswer }]);
-    if (error) Alert.alert('Error', error.message);
-    else {
-      Alert.alert('Success', 'FAQ added!');
-      setNewQuestion('');
-      setNewAnswer('');
-      setModalVisible(false);
-      fetchFAQs();
-    }
-  };
-
-  const deleteFAQ = async (id) => {
-    Alert.alert('Delete FAQ', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await supabase.from('faqs').delete().eq('id', id);
-          fetchFAQs();
-        },
-      },
-    ]);
   };
 
   const filteredFAQs = faqs.filter(
@@ -103,14 +68,9 @@ export default function FAQScreen() {
         />
       </View>
 
-      <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
-        <Ionicons name="add-circle" size={24} color={COLORS.primary} />
-        <Text style={styles.addBtnText}>Add FAQ</Text>
-      </TouchableOpacity>
-
       <ScrollView style={styles.list}>
         {filteredFAQs.length === 0 ? (
-          <Text style={styles.emptyText}>No FAQs found. Add one!</Text>
+          <Text style={styles.emptyText}>No FAQs yet — check back soon.</Text>
         ) : (
           filteredFAQs.map((item) => (
             <View key={item.id} style={styles.faqItem}>
@@ -119,12 +79,7 @@ export default function FAQScreen() {
                 onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
               >
                 <Text style={styles.faqQuestion}>{item.question}</Text>
-                <View style={styles.faqActions}>
-                  <TouchableOpacity onPress={() => deleteFAQ(item.id)} style={styles.deleteBtn}>
-                    <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
-                  </TouchableOpacity>
-                  <Ionicons name={expandedId === item.id ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.primary} />
-                </View>
+                <Ionicons name={expandedId === item.id ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.primary} />
               </TouchableOpacity>
               {expandedId === item.id && (
                 <View style={styles.faqAnswer}>
@@ -135,32 +90,6 @@ export default function FAQScreen() {
           ))
         )}
       </ScrollView>
-
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New FAQ</Text>
-            <TextInput style={styles.modalInput} placeholder="Question" value={newQuestion} onChangeText={setNewQuestion} />
-            <TextInput
-              style={[styles.modalInput, styles.modalTextArea]}
-              placeholder="Answer"
-              value={newAnswer}
-              onChangeText={setNewAnswer}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, styles.modalSubmit]} onPress={addFAQ}>
-                <Text style={[styles.modalBtnText, { color: '#fff' }]}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

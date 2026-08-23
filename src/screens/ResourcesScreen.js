@@ -6,11 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Linking,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 
 // ============================================================
@@ -50,9 +50,10 @@ const STATIC_RESOURCES = [
 
 export default function ResourcesScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState(route.params?.category || 'All');
 
   // Get unique categories
   const categories = ['All', ...new Set(resources.map(r => r.category).filter(Boolean))];
@@ -92,10 +93,10 @@ export default function ResourcesScreen() {
   const handleDownload = (item) => {
     if (item.file_url) {
       Linking.openURL(item.file_url).catch(() =>
-        Alert.alert('Error', 'Could not open the file.')
+        showAlert('Error', 'Could not open the file.')
       );
     } else {
-      Alert.alert('Info', 'No file attached to this resource.');
+      showAlert('Info', 'No file attached to this resource.');
     }
   };
 

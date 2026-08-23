@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import Footer from '../components/Footer';
+import { showAlert } from '../utils/alert';
 
 const { width } = Dimensions.get('window');
 
@@ -41,6 +42,7 @@ export default function HomeScreen() {
   // State
   const [slides, setSlides] = useState([]);
   const [consultations, setConsultations] = useState([]);
+  const [news, setNews] = useState([]);
   const [stats, setStats] = useState({ consultations: 0, feedback: 0, responseRate: 0, ideas: 0 });
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,6 +71,15 @@ export default function HomeScreen() {
         .order('closing_date', { ascending: true })
         .limit(3);
       if (consData) setConsultations(consData);
+
+      // News (active, most recent 3)
+      const { data: newsData } = await supabase
+        .from('news')
+        .select('*')
+        .eq('is_active', true)
+        .order('published_date', { ascending: false })
+        .limit(3);
+      if (newsData) setNews(newsData);
 
       // Stats
       const { count: consCount } = await supabase
@@ -134,15 +145,20 @@ export default function HomeScreen() {
     { id: 'q3', icon: 'document-text-outline', title: 'Draft Policies', color: '#A78BFA', screen: 'Consultations' },
     { id: 'q4', icon: 'bulb-outline', title: 'Ideas Hub', color: '#FBBF24', screen: 'Feedback' },
     { id: 'q5', icon: 'megaphone-outline', title: 'Report Issue', color: '#F87171', screen: 'Feedback' },
-    { id: 'q6', icon: 'stats-chart-outline', title: 'Dashboard', color: '#2DD4BF', screen: 'Feedback' },
+    { id: 'q6', icon: 'stats-chart-outline', title: 'Dashboard', color: '#2DD4BF', screen: 'Dashboard' },
+    { id: 'q7', icon: 'film-outline', title: 'Media Gallery', color: '#FB923C', screen: 'MediaGallery' },
+    { id: 'q8', icon: 'time-outline', title: 'Platform Updates', color: '#818CF8', screen: 'Updates' },
+    { id: 'q9', icon: 'school-outline', title: 'JAB Forms', color: '#EC4899', screen: 'Resources', params: { category: 'Admissions (JAB)' } },
+    { id: 'q10', icon: 'calendar-outline', title: 'UNEB Timetables', color: '#0EA5E9', screen: 'Resources', params: { category: 'Examination Timetables (UNEB)' } },
   ];
 
   // Participation cards
   const participationCards = [
-    { icon: '📄', title: 'Draft Policies', desc: 'View, download, and comment on draft laws and policies.' },
-    { icon: '📊', title: 'Surveys & Polls', desc: 'Share your experience and help us improve services.' },
-    { icon: '💬', title: 'Discussion Forums', desc: 'Join topics, ask questions, and share knowledge.' },
-    { icon: '🏛️', title: 'Virtual Town Halls', desc: 'Join live sessions, ask questions, and watch recordings.' },
+    { icon: '📄', title: 'Draft Policies', desc: 'View, download, and comment on draft laws and policies.', screen: 'Consultations' },
+    { icon: '📊', title: 'Surveys & Polls', desc: 'Share your experience and help us improve services.', screen: 'Surveys' },
+    { icon: '💬', title: 'Discussion Forums', desc: 'Join topics, ask questions, and share knowledge.', screen: 'Forum' },
+    { icon: '🎬', title: 'Media Gallery', desc: 'Watch photos and short clips from MoES programs and events.', screen: 'MediaGallery' },
+    { icon: '🏛️', title: 'Virtual Town Halls', desc: 'See scheduled sessions with Ministry leadership and how to join.', screen: 'TownHalls' },
   ];
 
   if (loading) {
@@ -220,7 +236,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             key={item.id}
             style={styles.actionCard}
-            onPress={() => navigation.navigate(item.screen)}
+            onPress={() => navigation.navigate(item.screen, item.params)}
           >
             <View style={[styles.actionIcon, { backgroundColor: item.color }]}>
               <Ionicons name={item.icon} size={24} color="#fff" />
@@ -274,14 +290,42 @@ export default function HomeScreen() {
         </Text>
         <View style={styles.participationGrid}>
           {participationCards.map((item, idx) => (
-            <View key={idx} style={styles.participationCard}>
+            <TouchableOpacity
+              key={idx}
+              style={styles.participationCard}
+              onPress={() =>
+                item.screen
+                  ? navigation.navigate(item.screen)
+                  : showAlert('Coming Soon', `${item.title} isn't available yet — check back soon.`)
+              }
+              activeOpacity={0.7}
+            >
               <Text style={styles.participationIcon}>{item.icon}</Text>
               <Text style={styles.participationTitle}>{item.title}</Text>
               <Text style={styles.participationDesc}>{item.desc}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </View>
+
+      {/* ===== NEWS & IMPACT ===== */}
+      {news.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📰 News & Impact</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('News')}>
+              <Text style={styles.viewAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          {news.map((item) => (
+            <View key={item.id} style={styles.newsCard}>
+              <Text style={styles.newsDate}>{new Date(item.published_date).toDateString()}</Text>
+              <Text style={styles.newsTitle}>{item.title}</Text>
+              {item.summary ? <Text style={styles.newsSummary} numberOfLines={2}>{item.summary}</Text> : null}
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* ===== FOOTER ===== */}
       <Footer />
@@ -465,4 +509,20 @@ const styles = StyleSheet.create({
   participationIcon: { fontSize: 32 },
   participationTitle: { fontWeight: '700', marginTop: 6, textAlign: 'center', color: COLORS.gray800 },
   participationDesc: { fontSize: 12, color: COLORS.gray500, textAlign: 'center', marginTop: 2 },
+
+  // News
+  newsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  newsDate: { fontSize: 12, color: COLORS.gray500, marginBottom: 4 },
+  newsTitle: { fontSize: 15, fontWeight: '700', color: COLORS.gray800, marginBottom: 4 },
+  newsSummary: { fontSize: 13, color: COLORS.gray600 },
 });

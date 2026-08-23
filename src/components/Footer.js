@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabaseClient';
+import { showAlert } from '../utils/alert';
 
 const COLORS = {
   primaryDark: '#0F172A',
@@ -30,8 +31,11 @@ export default function Footer() {
 
   const handleSocialPress = (url) => {
     if (!url) return;
-    Linking.openURL(url).catch(() => alert('Could not open link.'));
+    Linking.openURL(url).catch(() => showAlert('Error', 'Could not open link.'));
   };
+
+  const comingSoon = (label) => showAlert('Coming Soon', `${label} isn't available yet — check back soon.`);
+  const goTo = (screen, params) => navigation.navigate(screen, params);
 
   return (
     <View style={styles.footer}>
@@ -49,31 +53,36 @@ export default function Footer() {
         {/* Quick Links */}
         <View style={styles.footerSection}>
           <Text style={styles.footerHeading}>Quick Links</Text>
-          <Text style={styles.footerLink}>About Us</Text>
-          <Text style={styles.footerLink}>Contact Us</Text>
-          <Text style={styles.footerLink}>FAQs</Text>
-          <Text style={styles.footerLink}>Sitemap</Text>
-          <Text style={styles.footerLink}>Media Center</Text>
+          <TouchableOpacity onPress={() => goTo('About')}><Text style={styles.footerLink}>About Us</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Contact')}><Text style={styles.footerLink}>Contact Us</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('FAQs')}><Text style={styles.footerLink}>FAQs</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Sitemap')}><Text style={styles.footerLink}>Sitemap</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Contact')}><Text style={styles.footerLink}>Find Us (Map)</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('News')}><Text style={styles.footerLink}>Media Center</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('MediaGallery')}><Text style={styles.footerLink}>Media Gallery</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Updates')}><Text style={styles.footerLink}>Platform Updates</Text></TouchableOpacity>
         </View>
 
         {/* Participation */}
         <View style={styles.footerSection}>
           <Text style={styles.footerHeading}>Participation</Text>
-          <Text style={styles.footerLink}>Submit Feedback</Text>
-          <Text style={styles.footerLink}>Take a Survey</Text>
-          <Text style={styles.footerLink}>Ideas Hub</Text>
-          <Text style={styles.footerLink}>Virtual Town Halls</Text>
-          <Text style={styles.footerLink}>Whistle Blow</Text>
+          <TouchableOpacity onPress={() => goTo('Feedback')}><Text style={styles.footerLink}>Submit Feedback</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Surveys')}><Text style={styles.footerLink}>Take a Survey</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Feedback')}><Text style={styles.footerLink}>Ideas Hub</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('TownHalls')}><Text style={styles.footerLink}>Virtual Town Halls</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Feedback')}><Text style={styles.footerLink}>Whistle Blow</Text></TouchableOpacity>
         </View>
 
         {/* Resources */}
         <View style={styles.footerSection}>
           <Text style={styles.footerHeading}>Resources</Text>
-          <Text style={styles.footerLink}>Legal & Policy</Text>
-          <Text style={styles.footerLink}>Research & Publications</Text>
-          <Text style={styles.footerLink}>Circulars & Reports</Text>
-          <Text style={styles.footerLink}>Tax Education</Text>
-          <Text style={styles.footerLink}>Opportunities</Text>
+          <TouchableOpacity onPress={() => goTo('Resources', { category: 'Policies' })}><Text style={styles.footerLink}>Legal & Policy</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Resources')}><Text style={styles.footerLink}>Research & Publications</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Resources', { category: 'Circulars' })}><Text style={styles.footerLink}>Circulars & Reports</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Resources', { category: 'Admissions (JAB)' })}><Text style={styles.footerLink}>JAB Admission Forms</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Resources', { category: 'Examination Timetables (UNEB)' })}><Text style={styles.footerLink}>UNEB Timetables</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Resources')}><Text style={styles.footerLink}>Tax Education</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('Opportunities')}><Text style={styles.footerLink}>Opportunities</Text></TouchableOpacity>
         </View>
 
         {/* Contact + Social */}
@@ -105,7 +114,7 @@ export default function Footer() {
             ))}
           </View>
 
-          <TouchableOpacity style={styles.chatBtn} onPress={() => alert('Chat with us!')}>
+          <TouchableOpacity style={styles.chatBtn} onPress={() => showAlert('Chat with us', 'Tap the chat bubble in the bottom-right corner to talk to Massa.')}>
             <Ionicons name="chatbubbles" size={16} color={COLORS.primaryDark} />
             <Text style={styles.chatBtnText}>Chat with us</Text>
           </TouchableOpacity>
@@ -116,29 +125,22 @@ export default function Footer() {
       <View style={styles.bottomBar}>
         <Text style={styles.copyright}>© 2026 - Ministry of Education and Sports, Uganda</Text>
         <View style={styles.bottomLinks}>
-          <Text style={styles.bottomLink}>Terms of Use</Text>
+          <TouchableOpacity onPress={() => comingSoon('Terms of Use')}><Text style={styles.bottomLink}>Terms of Use</Text></TouchableOpacity>
           <Text style={styles.bottomLink}>|</Text>
-          <Text style={styles.bottomLink}>Disclaimer</Text>
+          <TouchableOpacity onPress={() => comingSoon('Disclaimer')}><Text style={styles.bottomLink}>Disclaimer</Text></TouchableOpacity>
           <Text style={styles.bottomLink}>|</Text>
-          <Text style={styles.bottomLink}>Privacy Policy</Text>
+          <TouchableOpacity onPress={() => comingSoon('Privacy Policy')}><Text style={styles.bottomLink}>Privacy Policy</Text></TouchableOpacity>
           <Text style={styles.bottomLink}>|</Text>
-          <Text style={styles.bottomLink}>Feedback</Text>
+          <TouchableOpacity onPress={() => goTo('Feedback')}><Text style={styles.bottomLink}>Feedback</Text></TouchableOpacity>
 
           {!user ? (
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={[styles.bottomLink, { color: COLORS.accent }]}> | Admin Login</Text>
+              <Text style={[styles.bottomLink, { color: COLORS.accent }]}> | Login</Text>
             </TouchableOpacity>
           ) : (
-            <>
-              {user.email === 'kemugisha@gmail.com' && (
-                <TouchableOpacity onPress={() => navigation.navigate('AdminDashboard')}>
-                  <Text style={[styles.bottomLink, { color: COLORS.accent }]}> | Dashboard</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={signOut}>
-                <Text style={[styles.bottomLink, { color: '#EF4444' }]}> | Logout</Text>
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity onPress={signOut}>
+              <Text style={[styles.bottomLink, { color: '#EF4444' }]}> | Logout</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>

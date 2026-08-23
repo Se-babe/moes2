@@ -1,38 +1,117 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { showAlert } from '../utils/alert';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
   primary: '#1E3A8A',
   gray50: '#F8FAFC',
+  gray200: '#E2E8F0',
   gray500: '#64748B',
+  gray600: '#475569',
   gray800: '#1E293B',
   info: '#3B82F6',
+  success: '#22C55E',
 };
 
 export default function SurveysScreen() {
+  const navigation = useNavigation();
   const [surveys, setSurveys] = useState([]);
+  const [polls, setPolls] = useState([]);
+  const [userVotes, setUserVotes] = useState({}); // consultationId -> poll_option_id
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [votingId, setVotingId] = useState(null);
 
   useEffect(() => {
-    fetchSurveys();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user || null);
+      await fetchData(user);
+    })();
   }, []);
 
-  const fetchSurveys = async () => {
+  const fetchData = async (currentUser) => {
     setLoading(true);
-    const { data } = await supabase
-      .from('surveys')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setSurveys(data);
+    const { data: surveyData } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
+    if (surveyData) setSurveys(surveyData);
+
+    const { data: consData } = await supabase
+      .from('consultations')
+      .select('id, title, polls (id, question, poll_options (id, option_text, vote_count))')
+      .eq('is_active', true);
+
+    const withPolls = (consData || []).filter((c) => c.polls && c.polls.length > 0);
+    setPolls(withPolls);
+
+    if (currentUser && withPolls.length > 0) {
+      const { data: votesData } = await supabase
+        .from('poll_votes')
+        .select('consultation_id, poll_option_id')
+        .eq('user_id', currentUser.id)
+        .in('consultation_id', withPolls.map((c) => c.id));
+      const votes = {};
+      (votesData || []).forEach((v) => { votes[v.consultation_id] = v.poll_option_id; });
+      setUserVotes(votes);
+    }
     setLoading(false);
+  };
+
+  const vote = async (consultationId, pollOptionId) => {
+    if (!user) {
+      showAlert('Login Required', 'Please log in to vote on this poll.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Log In', onPress: () => navigation.navigate('Login') },
+      ]);
+      return;
+    }
+    setVotingId(pollOptionId);
+    try {
+      const existingOptionId = userVotes[consultationId];
+      const isUnvote = existingOptionId === pollOptionId;
+
+      if (existingOptionId) {
+        const { data: existingRow } = await supabase
+          .from('poll_votes')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('consultation_id', consultationId)
+          .maybeSingle();
+        if (existingRow) await supabase.from('poll_votes').delete().eq('id', existingRow.id);
+        const { data: oldOption } = await supabase.from('poll_options').select('vote_count').eq('id', existingOptionId).single();
+        await supabase.from('poll_options').update({ vote_count: Math.max((oldOption?.vote_count || 1) - 1, 0) }).eq('id', existingOptionId);
+      }
+
+      if (isUnvote) {
+        const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
+        await supabase.from('consultations').update({ poll_votes_count: Math.max((cons?.poll_votes_count || 1) - 1, 0) }).eq('id', consultationId);
+        setUserVotes((prev) => { const next = { ...prev }; delete next[consultationId]; return next; });
+        showAlert('Vote Removed', 'Your vote has been removed.');
+      } else {
+        await supabase.from('poll_votes').insert([{ user_id: user.id, poll_option_id: pollOptionId, consultation_id: consultationId }]);
+        const { data: newOption } = await supabase.from('poll_options').select('vote_count').eq('id', pollOptionId).single();
+        await supabase.from('poll_options').update({ vote_count: (newOption?.vote_count || 0) + 1 }).eq('id', pollOptionId);
+        if (!existingOptionId) {
+          const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
+          await supabase.from('consultations').update({ poll_votes_count: (cons?.poll_votes_count || 0) + 1 }).eq('id', consultationId);
+        }
+        setUserVotes((prev) => ({ ...prev, [consultationId]: pollOptionId }));
+        showAlert('Thank You!', 'Your vote has been recorded.');
+      }
+      await fetchData(user);
+    } catch (error) {
+      showAlert('Error', error.message);
+    } finally {
+      setVotingId(null);
+    }
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading surveys...</Text>
+        <Text style={styles.loadingText}>Loading surveys and polls...</Text>
       </View>
     );
   }
@@ -40,14 +119,60 @@ export default function SurveysScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>📊 Surveys & Polls</Text>
-      <Text style={styles.sub}>Participate in surveys and help us improve.</Text>
-      {surveys.map((item) => (
-        <View key={item.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardDesc}>{item.description}</Text>
-          <Text style={styles.cardStatus}>Ends: {new Date(item.end_date).toDateString()}</Text>
-        </View>
-      ))}
+      <Text style={styles.sub}>Vote on the themes that matter most and share your experience with us.</Text>
+
+      <Text style={styles.sectionHeading}>🗳️ Live Polls</Text>
+      {polls.length === 0 ? (
+        <Text style={styles.emptyText}>No live polls right now — check back soon.</Text>
+      ) : (
+        polls.map((c) => {
+          const poll = c.polls[0];
+          const totalVotes = poll.poll_options.reduce((sum, o) => sum + (o.vote_count || 0), 0);
+          const myVote = userVotes[c.id];
+          return (
+            <View key={poll.id} style={styles.pollCard}>
+              <Text style={styles.pollTopic}>{c.title}</Text>
+              <Text style={styles.pollQuestion}>{poll.question}</Text>
+              <View style={styles.optionsWrap}>
+                {poll.poll_options.map((opt) => {
+                const pct = totalVotes > 0 ? Math.round(((opt.vote_count || 0) / totalVotes) * 100) : 0;
+                const selected = myVote === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[styles.optionChip, selected && styles.optionChipSelected]}
+                    onPress={() => vote(c.id, opt.id)}
+                    disabled={votingId === opt.id}
+                  >
+                    <View style={[styles.optionChipFill, { width: `${pct}%` }, selected && styles.optionChipFillSelected]} />
+                    <View style={styles.optionChipContent}>
+                      <Text style={[styles.optionChipText, selected && styles.optionChipTextSelected]} numberOfLines={1}>
+                        {selected ? '✓ ' : ''}{opt.option_text}
+                      </Text>
+                      <Text style={styles.optionChipPct}>{pct}%</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+                })}
+              </View>
+              <Text style={styles.pollMeta}>{totalVotes} vote{totalVotes === 1 ? '' : 's'} · Tap your choice again to remove your vote</Text>
+            </View>
+          );
+        })
+      )}
+
+      <Text style={styles.sectionHeading}>📋 Surveys</Text>
+      {surveys.length === 0 ? (
+        <Text style={styles.emptyText}>No surveys open right now.</Text>
+      ) : (
+        surveys.map((item) => (
+          <View key={item.id} style={styles.card}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardDesc}>{item.description}</Text>
+            {item.end_date && <Text style={styles.cardStatus}>Ends: {new Date(item.end_date).toDateString()}</Text>}
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
@@ -58,7 +183,9 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, color: COLORS.gray500 },
   title: { fontSize: 28, fontWeight: 'bold', color: COLORS.primary },
-  sub: { fontSize: 16, color: COLORS.gray500, marginTop: 10, marginBottom: 20 },
+  sub: { fontSize: 16, color: COLORS.gray500, marginTop: 10, marginBottom: 8 },
+  sectionHeading: { fontSize: 18, fontWeight: '700', color: COLORS.gray800, marginTop: 20, marginBottom: 10 },
+  emptyText: { color: COLORS.gray500, fontSize: 14, paddingVertical: 4 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -73,4 +200,45 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: '700', color: COLORS.gray800 },
   cardDesc: { color: COLORS.gray500, marginTop: 4 },
   cardStatus: { color: COLORS.info, marginTop: 8, fontWeight: '600' },
+  pollCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+  },
+  pollTopic: { fontSize: 12, fontWeight: '700', color: COLORS.info, textTransform: 'uppercase' },
+  pollQuestion: { fontSize: 17, fontWeight: '700', color: COLORS.gray800, marginTop: 4, marginBottom: 12 },
+  optionsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionChip: {
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: COLORS.gray50,
+    minWidth: 130,
+  },
+  optionChipSelected: { borderColor: COLORS.success },
+  optionChipFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(30,58,138,0.12)',
+  },
+  optionChipFillSelected: { backgroundColor: 'rgba(34,197,94,0.15)' },
+  optionChipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  optionChipText: { fontSize: 13, color: COLORS.gray800, fontWeight: '500' },
+  optionChipTextSelected: { color: COLORS.success, fontWeight: '700' },
+  optionChipPct: { fontSize: 12, color: COLORS.gray600, fontWeight: '700' },
+  pollMeta: { fontSize: 12, color: COLORS.gray500, marginTop: 10 },
 });

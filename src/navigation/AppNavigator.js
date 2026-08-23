@@ -15,6 +15,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
@@ -30,10 +31,64 @@ import ResourcesScreen from '../screens/ResourcesScreen';
 import FAQScreen from '../screens/FAQScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
 import LoginScreen from '../screens/LoginScreen';
+import SignUpScreen from '../screens/SignUpScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import OpportunitiesScreen from '../screens/OpportunitiesScreen';
+import ProjectsScreen from '../screens/ProjectsScreen';
+import AboutScreen from '../screens/AboutScreen';
+import InfoSystemsScreen from '../screens/InfoSystemsScreen';
+import NewsScreen from '../screens/NewsScreen';
+import ForumScreen from '../screens/ForumScreen';
+import ForumThreadScreen from '../screens/ForumThreadScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import MediaGalleryScreen from '../screens/MediaGalleryScreen';
+import UpdatesScreen from '../screens/UpdatesScreen';
+import SearchResultsScreen from '../screens/SearchResultsScreen';
+import TownHallsScreen from '../screens/TownHallsScreen';
+import ContactScreen from '../screens/ContactScreen';
+import SitemapScreen from '../screens/SitemapScreen';
 
 const Stack = createStackNavigator();
 const { width, height } = Dimensions.get('window');
+
+// Real URL routing (web) / deep linking (native). AdminDashboard gets its
+// own path ("/admin") so it's a genuine bookmarkable/shareable URL, distinct
+// from the citizen-facing screens — access itself is still gated inside
+// AdminDashboardScreen (role check), not by whether the route exists.
+const linking = {
+  prefixes: [Linking.createURL('/')],
+  config: {
+    screens: {
+      Home: '',
+      Consultations: 'consultations',
+      Surveys: 'surveys',
+      Feedback: 'feedback',
+      FeedbackList: 'feedback/list',
+      ProposeConsultation: 'consultations/propose',
+      Resources: 'resources',
+      FAQs: 'faqs',
+      Login: 'login',
+      SignUp: 'signup',
+      ForgotPassword: 'forgot-password',
+      Opportunities: 'opportunities',
+      Projects: 'projects',
+      About: 'about',
+      InfoSystems: 'systems',
+      News: 'news',
+      Forum: 'forum',
+      ForumThread: 'forum/:topicId',
+      Dashboard: 'dashboard',
+      MediaGallery: 'gallery',
+      Updates: 'updates',
+      SearchResults: 'search',
+      TownHalls: 'town-halls',
+      Contact: 'contact',
+      Sitemap: 'sitemap',
+      AdminDashboard: 'admin',
+    },
+  },
+};
 
 const AppNavigatorContent = () => {
   const { user, loading } = useAuth();
@@ -66,9 +121,23 @@ const AppNavigatorContent = () => {
         <Stack.Screen name="FAQs" component={FAQScreen} />
         <Stack.Screen name="ChatBot" component={ChatBotScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
-        {user && user.email === 'kemugisha@gmail.com' && (
-          <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-        )}
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="Opportunities" component={OpportunitiesScreen} />
+        <Stack.Screen name="Projects" component={ProjectsScreen} />
+        <Stack.Screen name="About" component={AboutScreen} />
+        <Stack.Screen name="InfoSystems" component={InfoSystemsScreen} />
+        <Stack.Screen name="News" component={NewsScreen} />
+        <Stack.Screen name="Forum" component={ForumScreen} />
+        <Stack.Screen name="MediaGallery" component={MediaGalleryScreen} />
+        <Stack.Screen name="Updates" component={UpdatesScreen} />
+        <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
+        <Stack.Screen name="TownHalls" component={TownHallsScreen} />
+        <Stack.Screen name="Contact" component={ContactScreen} />
+        <Stack.Screen name="Sitemap" component={SitemapScreen} />
+        <Stack.Screen name="ForumThread" component={ForumThreadScreen} />
+        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       </Stack.Navigator>
 
       <ChatButton onPress={() => setChatVisible(true)} />
@@ -102,7 +171,7 @@ export default function AppNavigator() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <AuthProvider>
           <AppNavigatorContent />
         </AuthProvider>

@@ -6,10 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,7 +31,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      showAlert('Error', 'Please fill in all fields.');
       return;
     }
     setLoading(true);
@@ -42,7 +42,7 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       // Show the full error message from Supabase
       console.error('Login error:', error);
-      Alert.alert('Login Failed', error.message || 'Invalid email or password.');
+      showAlert('Login Failed', error.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
