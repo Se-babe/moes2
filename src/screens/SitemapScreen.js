@@ -36,7 +36,7 @@ const SECTIONS = [
       { label: 'Propose a Consultation', screen: 'ProposeConsultation' },
       { label: 'Surveys & Polls', screen: 'Surveys' },
       { label: 'Submit an Enquiry or Complaint', screen: 'Feedback' },
-      { label: 'Track My Request', screen: 'FeedbackList' },
+      { label: 'Track My Request', screen: 'TrackRequest' },
       { label: 'Discussion Forums', screen: 'Forum' },
       { label: 'Virtual Town Halls', screen: 'TownHalls' },
     ],

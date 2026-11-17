@@ -438,9 +438,8 @@ export default function ChatBotScreen({ onClose }) {
         .from('surveys')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
-      const { count: feedbackCount } = await supabase
-        .from('feedback')
-        .select('*', { count: 'exact', head: true });
+      const { data: reqStats } = await supabase.rpc('public_request_stats');
+      const feedbackCount = reqStats?.total ?? null;
       return { consCount, surveyCount, feedbackCount };
     } catch (e) {
       return null;

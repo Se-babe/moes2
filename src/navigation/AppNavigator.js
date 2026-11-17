@@ -25,7 +25,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ConsultationsScreen from '../screens/ConsultationsScreen';
 import SurveysScreen from '../screens/SurveysScreen';
 import FeedbackScreen from '../screens/FeedbackScreen';
-import FeedbackListScreen from '../screens/FeedbackListScreen';
+import TrackRequestScreen from '../screens/TrackRequestScreen';
 import ProposeConsultationScreen from '../screens/ProposeConsultationScreen';
 import FAQScreen from '../screens/FAQScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
@@ -59,7 +59,7 @@ const linking = {
       Consultations: 'consultations',
       Surveys: 'surveys',
       Feedback: 'feedback',
-      FeedbackList: 'feedback/list',
+      TrackRequest: 'track',
       ProposeConsultation: 'consultations/propose',
       FAQs: 'faqs',
       Login: 'login',
@@ -105,7 +105,7 @@ const AppNavigatorContent = () => {
         <Stack.Screen name="Consultations" component={ConsultationsScreen} />
         <Stack.Screen name="Surveys" component={SurveysScreen} />
         <Stack.Screen name="Feedback" component={FeedbackScreen} />
-        <Stack.Screen name="FeedbackList" component={FeedbackListScreen} />
+        <Stack.Screen name="TrackRequest" component={TrackRequestScreen} />
         <Stack.Screen name="ProposeConsultation" component={ProposeConsultationScreen} />
         <Stack.Screen name="FAQs" component={FAQScreen} />
         <Stack.Screen name="ChatBot" component={ChatBotScreen} />

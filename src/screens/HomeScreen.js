@@ -86,9 +86,8 @@ export default function HomeScreen() {
         .from('consultations')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
-      const { count: feedbackCount } = await supabase
-        .from('feedback')
-        .select('*', { count: 'exact', head: true });
+      const { data: reqStats } = await supabase.rpc('public_request_stats');
+      const feedbackCount = reqStats?.total ?? 0;
       setStats({
         consultations: consCount || 0,
         feedback: feedbackCount || 0,
@@ -140,13 +139,13 @@ export default function HomeScreen() {
 
   // Quick action cards
   const quickActions = [
-    { id: 'q1', icon: 'water-outline', title: 'Report a Problem', color: '#F87171', screen: 'Feedback' },
-    { id: 'q2', icon: 'help-circle-outline', title: 'Make an Enquiry', color: '#3B82F6', screen: 'Feedback' },
-    { id: 'q3', icon: 'search-outline', title: 'Track My Request', color: '#0EA5E9', screen: 'FeedbackList' },
+    { id: 'q1', icon: 'water-outline', title: 'Report a Problem', color: '#F87171', screen: 'Feedback', params: { type: 'Complaint' } },
+    { id: 'q2', icon: 'help-circle-outline', title: 'Make an Enquiry', color: '#3B82F6', screen: 'Feedback', params: { type: 'Enquiry' } },
+    { id: 'q3', icon: 'search-outline', title: 'Track My Request', color: '#0EA5E9', screen: 'TrackRequest' },
     { id: 'q4', icon: 'megaphone-outline', title: 'Service Updates', color: '#818CF8', screen: 'Updates' },
     { id: 'q5', icon: 'document-text-outline', title: 'Consultations', color: '#A78BFA', screen: 'Consultations' },
     { id: 'q6', icon: 'stats-chart-outline', title: 'Take a Survey', color: '#34D399', screen: 'Surveys' },
-    { id: 'q7', icon: 'bulb-outline', title: 'Suggestions', color: '#FBBF24', screen: 'Feedback' },
+    { id: 'q7', icon: 'bulb-outline', title: 'Suggestions', color: '#FBBF24', screen: 'Feedback', params: { type: 'Suggestion' } },
     { id: 'q8', icon: 'film-outline', title: 'Media Gallery', color: '#FB923C', screen: 'MediaGallery' },
     { id: 'q9', icon: 'help-buoy-outline', title: 'FAQs', color: '#EC4899', screen: 'FAQs' },
   ];
@@ -217,7 +216,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{stats.feedback}</Text>
-          <Text style={styles.statLabel}>Feedback Submissions</Text>
+          <Text style={styles.statLabel}>Requests Received</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{stats.responseRate}%</Text>

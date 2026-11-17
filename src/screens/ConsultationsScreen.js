@@ -43,7 +43,6 @@ const REACTIONS = [
 export default function ConsultationsScreen() {
   const navigation = useNavigation();
   const [consultations, setConsultations] = useState([]);
-  const [feedbackItems, setFeedbackItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -148,12 +147,6 @@ export default function ConsultationsScreen() {
         setConsultations(enriched);
       }
 
-      const { data: feedbackData } = await supabase
-        .from('feedback')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (feedbackData) setFeedbackItems(feedbackData);
 
     } catch (error) {
       console.error(error);
@@ -528,37 +521,6 @@ export default function ConsultationsScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
-            ListFooterComponent={
-              feedbackItems.length > 0 ? (
-                <View style={styles.feedbackSection}>
-                  <View style={styles.feedbackSectionHeader}>
-                    <Text style={styles.sectionTitle}>💬 Recent Feedback</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('FeedbackList')}>
-                      <Text style={styles.viewAll}>View All</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {feedbackItems.map((item) => (
-                    <View key={item.id} style={styles.feedbackCard}>
-                      <View style={styles.feedbackHeader}>
-                        <Text style={styles.feedbackTitle}>{item.title}</Text>
-                        <View style={[styles.feedbackStatus, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                          <Text style={[styles.feedbackStatusText, { color: getStatusColor(item.status) }]}>
-                            {item.status || 'Submitted'}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={styles.feedbackDesc}>{item.description}</Text>
-                      <View style={styles.feedbackMeta}>
-                        <Text style={styles.feedbackCategory}>📂 {item.category || 'General'}</Text>
-                        <Text style={styles.feedbackTime}>
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              ) : null
-            }
           />
         </View>
         {renderSidebar()}

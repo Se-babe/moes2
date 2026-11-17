@@ -4,7 +4,7 @@ import { showAlert } from '../../utils/alert';
 import { supabase } from '../../services/supabaseClient';
 import { ADMIN_COLORS as COLORS } from './adminTheme';
 
-const STATUSES = ['Submitted', 'Under Review', 'In Progress', 'Resolved'];
+const STATUSES = ['Submitted', 'Assigned', 'In Progress', 'Escalated', 'Resolved', 'Closed'];
 
 export default function AdminFeedback() {
   const [feedback, setFeedback] = useState([]);
@@ -40,10 +40,14 @@ export default function AdminFeedback() {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.category}>{item.category || 'General'}</Text>
+        <Text style={styles.category}>{item.request_type} · {item.category || 'General'}</Text>
       </View>
+      <Text style={styles.meta}>Ref {item.reference_no || '—'} · {new Date(item.created_at).toLocaleString()}</Text>
       {item.description ? <Text style={styles.desc}>{item.description}</Text> : null}
-      <Text style={styles.meta}>{new Date(item.created_at).toLocaleString()}</Text>
+      {item.location_text ? <Text style={styles.meta}>📍 {item.location_text}</Text> : null}
+      <Text style={styles.meta}>
+        👤 {item.contact_name || 'Anonymous'}{item.contact_phone ? ` · ${item.contact_phone}` : ''}{item.contact_email ? ` · ${item.contact_email}` : ''}
+      </Text>
       <View style={styles.statusRow}>
         {STATUSES.map((s) => (
           <TouchableOpacity
@@ -68,7 +72,7 @@ export default function AdminFeedback() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Feedback ({filtered.length})</Text>
+      <Text style={styles.heading}>Enquiries & Complaints ({filtered.length})</Text>
       <View style={styles.filterRow}>
         {['All', ...STATUSES].map((s) => (
           <TouchableOpacity key={s} style={[styles.filterChip, filter === s && styles.filterChipActive]} onPress={() => setFilter(s)}>

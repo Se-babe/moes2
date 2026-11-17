@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
 import TurnstileWidget from '../components/TurnstileWidget';
@@ -51,8 +52,24 @@ const CATEGORIES = [
   { label: 'General', icon: 'chatbubble-outline', color: COLORS.gray500 },
 ];
 
+const REQUEST_TYPES = [
+  { value: 'Complaint', icon: 'alert-circle-outline', hint: 'Something is wrong with a service' },
+  { value: 'Enquiry', icon: 'help-circle-outline', hint: 'You have a question' },
+  { value: 'Suggestion', icon: 'bulb-outline', hint: 'An idea to improve services' },
+  { value: 'Compliment', icon: 'heart-outline', hint: 'Something went well' },
+];
+
 export default function FeedbackScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { user } = useAuth();
+  const initialType = REQUEST_TYPES.some((t) => t.value === route.params?.type) ? route.params.type : 'Complaint';
+  const [requestType, setRequestType] = useState(initialType);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [locationText, setLocationText] = useState('');
+  const [referenceNo, setReferenceNo] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('General');
@@ -61,6 +78,20 @@ export default function FeedbackScreen() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Pre-fill contact details for signed-in users (still editable).
+  useEffect(() => {
+    if (!user) return;
+    setContactName((v) => v || user.full_name || '');
+    setContactPhone((v) => v || user.phone || '');
+    setContactEmail((v) => v || user.email || '');
+  }, [user]);
+
+  useEffect(() => {
+    if (route.params?.type && REQUEST_TYPES.some((t) => t.value === route.params.type)) {
+      setRequestType(route.params.type);
+    }
+  }, [route.params?.type]);
 
   const maxTitleChars = 100;
   const maxDescChars = 500;
@@ -85,7 +116,11 @@ export default function FeedbackScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      showAlert('Error', 'Please fill in both title and description.');
+      showAlert('Missing details', 'Please fill in both the title and the description.');
+      return;
+    }
+    if (!contactPhone.trim() && !contactEmail.trim()) {
+      showAlert('Contact needed', 'Please give a phone number or email so we can send your reference number and updates.');
       return;
     }
     if (!turnstileToken) {
@@ -111,33 +146,30 @@ export default function FeedbackScreen() {
 
       const { data: fnData, error } = await supabase.functions.invoke('submit-feedback', {
         body: {
+          request_type: requestType,
           title: title.trim(),
           description: description.trim(),
           category,
           image_url: imageUrl,
+          location_text: locationText.trim() || null,
+          contact_name: contactName.trim() || null,
+          contact_phone: contactPhone.trim() || null,
+          contact_email: contactEmail.trim() || null,
           turnstileToken,
         },
       });
       if (error) throw error;
       if (fnData?.error) throw new Error(fnData.error);
 
+      // Keep the success dialog open until the citizen dismisses it — they
+      // need time to note the reference number.
+      setReferenceNo(fnData?.reference_no || null);
       setShowSuccess(true);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
-
-      setTimeout(() => {
-        setTitle('');
-        setDescription('');
-        setCategory('General');
-        setImage(null);
-        setTurnstileToken(null);
-        setShowSuccess(false);
-        fadeAnim.setValue(0);
-        navigation.goBack();
-      }, 2000);
     } catch (error) {
       setTurnstileToken(null);
       showAlert('Submission Failed', error.message || 'Please try again.');
@@ -145,6 +177,46 @@ export default function FeedbackScreen() {
       setLoading(false);
     }
   };
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setCategory('General');
+    setLocationText('');
+    setImage(null);
+    setTurnstileToken(null);
+    setShowSuccess(false);
+    fadeAnim.setValue(0);
+  };
+
+  const closeSuccess = (goTrack) => {
+    const ref = referenceNo;
+    resetForm();
+    if (goTrack && ref) navigation.navigate('TrackRequest', { ref });
+  };
+
+  const renderTypeSelector = () => (
+    <View style={styles.typeGrid}>
+      {REQUEST_TYPES.map((t) => {
+        const active = requestType === t.value;
+        return (
+          <TouchableOpacity
+            key={t.value}
+            style={[styles.typeCard, active && styles.typeCardActive]}
+            onPress={() => setRequestType(t.value)}
+            activeOpacity={0.8}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={`${t.value}: ${t.hint}`}
+          >
+            <Ionicons name={t.icon} size={22} color={active ? '#fff' : COLORS.primary} />
+            <Text style={[styles.typeTitle, active && { color: '#fff' }]}>{t.value}</Text>
+            <Text style={[styles.typeHint, active && { color: '#E0F2FE' }]}>{t.hint}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
 
   const renderCategoryPills = () => (
     <View style={styles.categoryContainer}>
@@ -201,10 +273,14 @@ export default function FeedbackScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>💬 Your Voice Matters</Text>
+          <Text style={styles.cardTitle}>💧 How can we help?</Text>
           <Text style={styles.cardSub}>
             Report a water or sewer problem, ask a question, or share a suggestion. You'll get a reference number to track it.
+            For emergencies such as a burst pipe, also call toll-free 0800-200-977.
           </Text>
+
+          <Text style={styles.label}>What would you like to do?</Text>
+          {renderTypeSelector()}
 
           <Text style={styles.label}>Category</Text>
           {renderCategoryPills()}
@@ -242,6 +318,52 @@ export default function FeedbackScreen() {
             </Text>
           </View>
 
+          <Text style={styles.label}>Location (area, street or landmark)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Walukuba, near the market"
+            placeholderTextColor={COLORS.gray400}
+            value={locationText}
+            onChangeText={setLocationText}
+            maxLength={200}
+          />
+
+          <Text style={styles.sectionHeading}>Your contact details</Text>
+          <Text style={styles.helper}>We'll send your reference number and progress updates here. Give at least a phone number or an email.</Text>
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Your name"
+            placeholderTextColor={COLORS.gray400}
+            value={contactName}
+            onChangeText={setContactName}
+            maxLength={120}
+            autoComplete="name"
+          />
+          <Text style={styles.label}>Phone number (for SMS updates)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 0772 123456"
+            placeholderTextColor={COLORS.gray400}
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            maxLength={20}
+          />
+          <Text style={styles.label}>Email (optional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="you@example.com"
+            placeholderTextColor={COLORS.gray400}
+            value={contactEmail}
+            onChangeText={setContactEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            maxLength={120}
+          />
+
           <Text style={styles.label}>Attach Image (Optional)</Text>
           <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
             <Ionicons name="image-outline" size={24} color={COLORS.primary} />
@@ -273,16 +395,15 @@ export default function FeedbackScreen() {
             )}
           </TouchableOpacity>
 
-          {/* ✅ NEW: View All Feedback button */}
           <TouchableOpacity
             style={styles.viewAllBtn}
-            onPress={() => navigation.navigate('FeedbackList')}
+            onPress={() => navigation.navigate('TrackRequest')}
           >
-            <Text style={styles.viewAllText}>📋 View All Feedback</Text>
+            <Text style={styles.viewAllText}>🔎 Track an existing request</Text>
           </TouchableOpacity>
 
           <Text style={styles.footerNote}>
-            Your feedback is anonymous and will be reviewed by our team.
+            Your contact details are only visible to NWSC staff handling your request.
           </Text>
         </View>
         <View style={{ height: 40 }} />
@@ -292,15 +413,27 @@ export default function FeedbackScreen() {
         visible={showSuccess}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowSuccess(false)}
+        onRequestClose={() => closeSuccess(false)}
       >
         <View style={styles.successOverlay}>
           <Animated.View style={[styles.successModal, { opacity: fadeAnim }]}>
             <Ionicons name="checkmark-circle" size={60} color={COLORS.success} />
-            <Text style={styles.successTitle}>Thank You!</Text>
+            <Text style={styles.successTitle}>Thank you!</Text>
             <Text style={styles.successSub}>
-              Your feedback has been submitted successfully.
+              Your {requestType.toLowerCase()} has been received. Keep this reference number to track it:
             </Text>
+            {referenceNo ? (
+              <Text style={styles.refText} selectable accessibilityLabel={`Reference number ${referenceNo.split('').join(' ')}`}>
+                {referenceNo}
+              </Text>
+            ) : null}
+            <Text style={styles.successNote}>We've also sent it to you by SMS/email.</Text>
+            <TouchableOpacity style={styles.successPrimary} onPress={() => closeSuccess(true)}>
+              <Text style={styles.successPrimaryText}>Track this request</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.successSecondary} onPress={() => closeSuccess(false)}>
+              <Text style={styles.successSecondaryText}>Done</Text>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>
@@ -406,7 +539,8 @@ const styles = StyleSheet.create({
   successModal: {
     backgroundColor: '#fff',
     borderRadius: 24,
-    padding: 40,
+    padding: 32,
+    maxWidth: 440,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
@@ -417,4 +551,23 @@ const styles = StyleSheet.create({
   },
   successTitle: { fontSize: 26, fontWeight: '800', color: COLORS.gray800, marginTop: 12 },
   successSub: { fontSize: 16, color: COLORS.gray500, textAlign: 'center', marginTop: 8 },
+  refText: {
+    fontSize: 26, fontWeight: '800', color: COLORS.primary, letterSpacing: 2, marginTop: 16,
+    paddingVertical: 10, paddingHorizontal: 18, backgroundColor: '#E0F2FE', borderRadius: 12,
+  },
+  successNote: { fontSize: 13, color: COLORS.gray500, marginTop: 10, textAlign: 'center' },
+  successPrimary: { marginTop: 20, backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 28, borderRadius: 30 },
+  successPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  successSecondary: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
+  successSecondaryText: { color: COLORS.gray600, fontWeight: '600' },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  typeCard: {
+    flexGrow: 1, flexBasis: 140, padding: 12, borderRadius: 14, borderWidth: 1.5,
+    borderColor: COLORS.gray200, backgroundColor: '#fff',
+  },
+  typeCardActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  typeTitle: { fontSize: 15, fontWeight: '700', color: COLORS.gray800, marginTop: 6 },
+  typeHint: { fontSize: 12, color: COLORS.gray500, marginTop: 2 },
+  sectionHeading: { fontSize: 17, fontWeight: '700', color: COLORS.primary, marginTop: 28 },
+  helper: { fontSize: 13, color: COLORS.gray500, marginTop: 4 },
 });

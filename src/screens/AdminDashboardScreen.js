@@ -16,7 +16,7 @@ const TABS = [
   { key: 'overview', label: 'Overview', icon: 'grid-outline' },
   { key: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
   { key: 'consultations', label: 'Consultations', icon: 'document-text-outline' },
-  { key: 'feedback', label: 'Feedback', icon: 'chatbox-outline' },
+  { key: 'feedback', label: 'Requests', icon: 'chatbox-outline' },
   { key: 'content', label: 'Content', icon: 'albums-outline' },
   { key: 'forum', label: 'Forum', icon: 'chatbubbles-outline' },
   { key: 'users', label: 'Users', icon: 'people-outline' },

@@ -63,7 +63,7 @@ export default function Footer() {
         <View style={styles.footerSection}>
           <Text style={styles.footerHeading}>Get Involved</Text>
           <TouchableOpacity onPress={() => goTo('Feedback')}><Text style={styles.footerLink}>Report an Issue / Enquiry</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => goTo('FeedbackList')}><Text style={styles.footerLink}>Track My Request</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => goTo('TrackRequest')}><Text style={styles.footerLink}>Track My Request</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => goTo('Consultations')}><Text style={styles.footerLink}>Public Consultations</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => goTo('Surveys')}><Text style={styles.footerLink}>Surveys & Polls</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => goTo('TownHalls')}><Text style={styles.footerLink}>Town Halls</Text></TouchableOpacity>
