@@ -44,6 +44,7 @@ import TownHallsScreen from '../screens/TownHallsScreen';
 import ContactScreen from '../screens/ContactScreen';
 import SitemapScreen from '../screens/SitemapScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
+import SetPasswordScreen from '../screens/SetPasswordScreen';
 import StaffPortalScreen from '../screens/staff/StaffPortalScreen';
 import StaffRequestScreen from '../screens/staff/StaffRequestScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
@@ -82,6 +83,7 @@ const linking = {
       Sitemap: 'sitemap',
       AdminDashboard: 'admin',
       Privacy: 'privacy',
+      SetPassword: 'set-password',
       StaffPortal: 'staff',
       StaffRequest: 'staff/requests/:id',
       NotFound: '*',
@@ -114,6 +116,7 @@ const TITLES = {
   ForumThread: 'Discussion',
   AdminDashboard: 'Admin console',
   Privacy: 'Privacy & terms',
+  SetPassword: 'Set your password',
   StaffPortal: 'Staff portal',
   StaffRequest: 'Request',
   NotFound: 'Page not found',
@@ -168,6 +171,7 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="ForumThread" component={ForumThreadScreen} options={{ title: TITLES.ForumThread }} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: TITLES.AdminDashboard }} />
         <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: TITLES.Privacy }} />
+        <Stack.Screen name="SetPassword" component={SetPasswordScreen} options={{ title: TITLES.SetPassword }} />
         <Stack.Screen name="StaffPortal" component={StaffPortalScreen} options={{ title: TITLES.StaffPortal }} />
         <Stack.Screen name="StaffRequest" component={StaffRequestScreen} options={{ title: TITLES.StaffRequest }} />
         <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ title: TITLES.NotFound }} />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Modal, ScrollView, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Modal, ScrollView, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../services/supabaseClient';
+import { supabase, passwordSetupUrl } from '../../services/supabaseClient';
 import { Card, Button, Badge, Select, TextField, EmptyState, Loading, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
@@ -26,7 +26,17 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
     is_active: target.is_active !== false,
   });
   const [saving, setSaving] = useState(false);
+  const [sendingLink, setSendingLink] = useState(false);
   const isSelf = target.id === currentUserId;
+
+  // For staff whose invitation expired or who forgot their password.
+  const sendSetupLink = async () => {
+    setSendingLink(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(target.email, { redirectTo: passwordSetupUrl() });
+    setSendingLink(false);
+    if (error) showAlert('Could not send link', error.message);
+    else showAlert('Link sent', `${target.email} will receive an email with a link to set a new password.`);
+  };
   const isStaff = STAFF_ROLES.includes(form.role);
 
   const save = async () => {
@@ -76,6 +86,17 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
         </View>
         <Switch value={form.is_active} onValueChange={(v) => setForm((f) => ({ ...f, is_active: v }))} disabled={isSelf} />
       </View>
+      {target.email ? (
+        <Button
+          title="Send password setup link"
+          icon="key-outline"
+          variant="secondary"
+          size="sm"
+          loading={sendingLink}
+          onPress={sendSetupLink}
+          style={{ marginTop: SPACE.sm }}
+        />
+      ) : null}
       <View style={styles.modalActions}>
         <Button title="Cancel" variant="ghost" onPress={onClose} />
         <Button title="Save changes" icon="checkmark" loading={saving} onPress={save} />
@@ -90,7 +111,7 @@ function InviteForm({ departments, onClose, onSaved }) {
 
   const invite = async () => {
     setSaving(true);
-    const redirect_to = Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
+    const redirect_to = passwordSetupUrl();
     const { data, error } = await supabase.functions.invoke('admin-users', { body: { action: 'invite', ...form, redirect_to } });
     setSaving(false);
     let message = data?.error;

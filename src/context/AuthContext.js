@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { supabase } from '../services/supabaseClient';
+import { supabase, passwordSetupUrl } from '../services/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: passwordSetupUrl() });
     if (error) throw error;
   };
 
