@@ -1,10 +1,9 @@
-// Shared outbound notifications for Edge Functions: SMS (Africa's Talking)
-// and email (Resend). Every attempt is written to public.notification_log.
+// Shared outbound notifications for Edge Functions: SMS (UgSMS) and email
+// (Resend). Every attempt is written to public.notification_log.
 //
-// Secrets (set once with `supabase secrets set ...`):
-//   RESEND_API_KEY, RESEND_FROM            — email
-//   AT_USERNAME, AT_API_KEY, AT_SENDER_ID  — SMS (AT_SENDER_ID optional;
-//                                             AT_USERNAME=sandbox uses the AT sandbox)
+// Secrets (set once with `supabase secrets set ...`, never in code):
+//   RESEND_API_KEY, RESEND_FROM                        — email
+//   UGSMS_API_KEY, UGSMS_SENDER_ID, UGSMS_DEFAULT_COUNTRY — SMS
 // A missing secret never throws: the attempt is logged as 'skipped'.
 
 type Purpose = 'acknowledgement' | 'status_update' | 'announcement' | 'reminder' | 'escalation';
@@ -55,27 +54,34 @@ export async function sendSms(rawTo: string, message: string, purpose: Purpose, 
     await logNotification({ request_id: requestId, channel: 'sms', recipient: String(rawTo), purpose, status: 'failed', detail: 'invalid phone number' });
     return false;
   }
-  const username = Deno.env.get('AT_USERNAME');
-  const apiKey = Deno.env.get('AT_API_KEY');
-  if (!username || !apiKey) {
-    console.log(`[notify] SMS skipped (AT not configured) to ${to}: ${message}`);
-    await logNotification({ request_id: requestId, channel: 'sms', recipient: to, purpose, status: 'skipped', detail: 'AT_USERNAME/AT_API_KEY not set' });
+  const apiKey = Deno.env.get('UGSMS_API_KEY');
+  if (!apiKey) {
+    console.log(`[notify] SMS skipped (UGSMS_API_KEY not set) to ${to}: ${message}`);
+    await logNotification({ request_id: requestId, channel: 'sms', recipient: to, purpose, status: 'skipped', detail: 'UGSMS_API_KEY not set' });
     return false;
   }
-  const endpoint = username === 'sandbox'
-    ? 'https://api.sandbox.africastalking.com/version1/messaging'
-    : 'https://api.africastalking.com/version1/messaging';
-  const body = new URLSearchParams({ username, to, message });
-  const from = Deno.env.get('AT_SENDER_ID');
-  if (from) body.set('from', from);
+  const senderId = Deno.env.get('UGSMS_SENDER_ID') || undefined;
   try {
-    const res = await fetch(endpoint, {
+    // UgSMS v2: https://ugsms.com/api/v2/sms/send, auth via X-API-Key.
+    // `numbers` is confirmed (comma-separated, 07XXXXXXXX or +256XXXXXXXXX).
+    // The v2 message/sender field names are undocumented, so the v1 name
+    // (message_body) and the common alternative are both sent.
+    const res = await fetch('https://ugsms.com/api/v2/sms/send', {
       method: 'POST',
-      headers: { apiKey, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
+      headers: { 'X-API-Key': apiKey, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        numbers: to,
+        message_body: message,
+        message,
+        ...(senderId ? { sender_id: senderId, sender: senderId } : {}),
+      }),
     });
     const text = await res.text();
-    const ok = res.ok && /"status"\s*:\s*"Success"/.test(text);
+    let ok = res.ok;
+    try {
+      const data = JSON.parse(text);
+      if (data?.success === false || data?.error) ok = false;
+    } catch { /* non-JSON body: rely on HTTP status */ }
     await logNotification({ request_id: requestId, channel: 'sms', recipient: to, purpose, status: ok ? 'sent' : 'failed', detail: text });
     return ok;
   } catch (e) {
