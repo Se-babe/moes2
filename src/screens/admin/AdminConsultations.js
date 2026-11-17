@@ -46,7 +46,7 @@ export default function AdminConsultations() {
     sendEmail(
       item.proposer_email,
       'Your consultation proposal was approved',
-      `<p>Good news — your proposed consultation "<strong>${item.title}</strong>" has been approved and is now live for citizens to engage with on the MoES e-Participation platform.</p>`
+      `<p>Good news — your proposed consultation "<strong>${item.title}</strong>" has been approved and is now live for citizens to engage with on the NWSC e-Participation platform.</p>`
     );
   };
 
@@ -72,7 +72,7 @@ export default function AdminConsultations() {
           sendEmail(
             item.proposer_email,
             'Update on your consultation proposal',
-            `<p>Thank you for proposing "<strong>${item.title}</strong>" on the MoES e-Participation platform. After review, we won't be moving forward with this proposal at this time. We appreciate you taking the time to contribute.</p>`
+            `<p>Thank you for proposing "<strong>${item.title}</strong>" on the NWSC e-Participation platform. After review, we won't be moving forward with this proposal at this time. We appreciate you taking the time to contribute.</p>`
           );
         },
       },

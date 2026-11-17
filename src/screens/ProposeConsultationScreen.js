@@ -21,7 +21,7 @@ import TurnstileWidget from '../components/TurnstileWidget';
 
 // ----- Colors -----
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -34,7 +34,7 @@ const COLORS = {
 };
 
 // ----- Categories -----
-const CATEGORIES = ['Education', 'Sports', 'Health', 'Innovation', 'General'];
+const CATEGORIES = ['Water Supply', 'Tariffs & Billing', 'Sewerage', 'Infrastructure Projects', 'Customer Service', 'General'];
 
 // ----- Generate date options (7, 14, 21, 30, 45, 60 days from now) -----
 const generateDateOptions = () => {
@@ -217,7 +217,7 @@ export default function ProposeConsultationScreen() {
           <Text style={styles.label}>Title *</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., Reform in Primary Education"
+            placeholder="e.g., Extend piped water to Mpumudde"
             value={title}
             onChangeText={setTitle}
           />

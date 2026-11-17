@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -12,7 +12,7 @@ const COLORS = {
 };
 
 const CATEGORY_STYLE = {
-  Announcement: { color: '#1E3A8A', bg: '#EEF2FF', icon: 'megaphone-outline' },
+  Announcement: { color: '#0B5FA5', bg: '#EEF2FF', icon: 'megaphone-outline' },
   Feature: { color: '#0F766E', bg: '#ECFDF5', icon: 'sparkles-outline' },
   Policy: { color: '#B45309', bg: '#FFFBEB', icon: 'document-text-outline' },
   Maintenance: { color: '#B91C1C', bg: '#FEF2F2', icon: 'construct-outline' },
@@ -54,7 +54,7 @@ export default function UpdatesScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>🕘 Platform Updates</Text>
-      <Text style={styles.sub}>What's new from the Ministry and this platform.</Text>
+      <Text style={styles.sub}>Official NWSC service updates, planned interruptions, and restorations.</Text>
 
       {updates.length === 0 ? (
         <Text style={styles.emptyText}>No updates posted yet.</Text>

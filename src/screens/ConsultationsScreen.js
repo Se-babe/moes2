@@ -18,7 +18,7 @@ import { supabase } from '../services/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -17,7 +17,6 @@ const SECTIONS = [
     icon: 'home-outline',
     links: [
       { label: 'Home', screen: 'Home' },
-      { label: 'Performance Dashboard', screen: 'Dashboard' },
       { label: 'Search', screen: 'SearchResults', params: { query: '' } },
     ],
   },
@@ -25,34 +24,31 @@ const SECTIONS = [
     heading: 'About',
     icon: 'information-circle-outline',
     links: [
-      { label: 'About MoES', screen: 'About' },
-      { label: 'Projects', screen: 'Projects' },
-      { label: 'Information Systems', screen: 'InfoSystems' },
-      { label: 'Opportunities (Jobs, Scholarships, Tenders)', screen: 'Opportunities' },
+      { label: 'About NWSC', screen: 'About' },
+      { label: 'Contact Us', screen: 'Contact' },
     ],
   },
   {
     heading: 'Participation',
     icon: 'people-outline',
     links: [
-      { label: 'Draft Policies (Consultations)', screen: 'Consultations' },
+      { label: 'Public Consultations', screen: 'Consultations' },
       { label: 'Propose a Consultation', screen: 'ProposeConsultation' },
       { label: 'Surveys & Polls', screen: 'Surveys' },
-      { label: 'Submit Feedback', screen: 'Feedback' },
-      { label: 'View All Feedback', screen: 'FeedbackList' },
+      { label: 'Submit an Enquiry or Complaint', screen: 'Feedback' },
+      { label: 'Track My Request', screen: 'FeedbackList' },
       { label: 'Discussion Forums', screen: 'Forum' },
       { label: 'Virtual Town Halls', screen: 'TownHalls' },
     ],
   },
   {
-    heading: 'Resources',
+    heading: 'Information',
     icon: 'book-outline',
     links: [
-      { label: 'Resources & Downloads', screen: 'Resources' },
-      { label: 'News & Impact', screen: 'News' },
+      { label: 'News & Announcements', screen: 'News' },
       { label: 'FAQs', screen: 'FAQs' },
       { label: 'Media Gallery', screen: 'MediaGallery' },
-      { label: 'Platform Updates', screen: 'Updates' },
+      { label: 'Service Updates', screen: 'Updates' },
     ],
   },
   {
@@ -78,7 +74,7 @@ export default function SitemapScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>🗺️ Sitemap</Text>
-      <Text style={styles.sub}>Every section of the MoES e-Participation platform, in one place.</Text>
+      <Text style={styles.sub}>Every section of the NWSC e-Participation platform, in one place.</Text>
 
       {SECTIONS.map((section) => (
         <View key={section.heading} style={styles.card}>

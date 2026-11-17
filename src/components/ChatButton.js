@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const COLORS = { primary: '#1E3A8A', accent: '#FCD34D' };
+const COLORS = { primary: '#0B5FA5', accent: '#FCD34D' };
 
 export default function ChatButton({ onPress }) {
   return (

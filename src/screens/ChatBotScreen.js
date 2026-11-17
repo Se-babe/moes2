@@ -43,12 +43,12 @@ const UGAJAPA_API_KEY = 'ugj_live_3fb02347-bc69ddd1-84839b37';
 const UGAJAPA_TICKET_URL = 'http://localhost:5000/live/translate/ticket';
 const UGAJAPA_LIVE_WS_URL = 'ws://localhost:5000/live/translate';
 
-// Groq — powers Massa's actual conversational replies. The call itself lives
+// Groq — powers Maji's actual conversational replies. The call itself lives
 // server-side in supabase/functions/chat-completion (see getBotResponse
 // below): the key is a Supabase Edge Function secret, never shipped here.
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   primaryLight: '#3B82F6',
   primaryDark: '#0F172A',
   accent: '#FCD34D',
@@ -220,7 +220,7 @@ export default function ChatBotScreen({ onClose }) {
       setIsRegistered(true);
       await AsyncStorage.setItem('chat_session_id', data.id);
       await AsyncStorage.setItem('chat_user_name', userName.trim());
-      addBotMessage(`Hello ${userName}! I am Massa, your MoES assistant. How can I help you today?`);
+      addBotMessage(`Hello ${userName}! I am Maji, your NWSC assistant. How can I help you today?`);
       setTimeout(() => {
         addBotMessage(`You can ask me about consultations, surveys, feedback, town halls, or choose one of the options below.`);
       }, 800);
@@ -449,15 +449,15 @@ export default function ChatBotScreen({ onClose }) {
 
   // ----- Bot response: real conversation via Groq, grounded with live data -----
   const buildSystemPrompt = (stats, knowledge) => {
-    let prompt = `You are Massa, the assistant for Uganda's Ministry of Education and Sports (MoES) e-Participation platform. You help citizens engage with government consultations, surveys, and feedback about education, sports, and health services.
+    let prompt = `You are Maji, the assistant for the National Water and Sewerage Corporation (NWSC) Jinja e-Participation platform. You help customers report water and sewer problems, make enquiries, track their requests by reference number, and take part in consultations and surveys about water and sewerage services.
 
-Be warm, concise (2-4 sentences unless real detail is needed), and steer people to the right in-app tab when relevant: Feedback, Consultations, Surveys, Resources, FAQs, Town Halls. Stay focused on this platform and Ugandan education/sports/health civic participation — politely redirect if asked something unrelated. Never invent statistics; only use the live numbers given below.`;
+Be warm, concise (2-4 sentences unless real detail is needed), and steer people to the right in-app tab when relevant: Enquiries & Complaints, Track My Request, Service Updates, Consultations, Surveys, FAQs, Town Halls. For emergencies such as a burst pipe, also give the NWSC toll-free line 0800-200-977. Stay focused on NWSC water and sewerage services — politely redirect if asked something unrelated. Never invent statistics; only use the live numbers given below.`;
 
     if (stats) {
       prompt += `\n\nLive platform stats right now:\n- Active consultations: ${stats.consCount ?? 'unknown'}\n- Active surveys: ${stats.surveyCount ?? 'unknown'}\n- Total feedback submissions: ${stats.feedbackCount ?? 'unknown'}`;
     }
     if (knowledge && knowledge.length > 0) {
-      prompt += `\n\nReference Q&A curated by MoES staff (use when relevant):\n${knowledge
+      prompt += `\n\nReference Q&A curated by NWSC staff (use when relevant):\n${knowledge
         .map((k) => `- ${(k.keywords || []).join(', ')}: ${k.response}`)
         .join('\n')}`;
     }
@@ -619,7 +619,7 @@ Be warm, concise (2-4 sentences unless real detail is needed), and steer people 
       />
       {isBotTyping && (
         <View style={styles.typingContainer}>
-          <Text style={styles.typingText}>Massa is typing...</Text>
+          <Text style={styles.typingText}>Maji is typing...</Text>
         </View>
       )}
       <View style={styles.quickOptionsContainer}>

@@ -16,7 +16,7 @@ import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray100: '#F1F5F9',
   gray200: '#E2E8F0',
@@ -28,7 +28,7 @@ const COLORS = {
   accent: '#FCD34D',
 };
 
-const CATEGORIES = ['General', 'Education', 'Sports', 'Health', 'Innovation'];
+const CATEGORIES = ['General', 'Water Supply', 'Billing', 'Water Quality', 'Sewerage', 'Conservation'];
 
 export default function ForumScreen() {
   const navigation = useNavigation();

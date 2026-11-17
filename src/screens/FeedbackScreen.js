@@ -21,7 +21,7 @@ import { supabase } from '../services/supabaseClient';
 import TurnstileWidget from '../components/TurnstileWidget';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   primaryLight: '#3B82F6',
   primaryDark: '#0F172A',
   accent: '#FCD34D',
@@ -42,11 +42,13 @@ const COLORS = {
 };
 
 const CATEGORIES = [
+  { label: 'No Water / Supply', icon: 'water-outline', color: '#0EA5E9' },
+  { label: 'Leak / Burst Pipe', icon: 'warning-outline', color: '#EF4444' },
+  { label: 'Billing & Payments', icon: 'receipt-outline', color: '#F59E0B' },
+  { label: 'Water Quality', icon: 'beaker-outline', color: '#22C55E' },
+  { label: 'Sewer & Sanitation', icon: 'construct-outline', color: '#8B5CF6' },
+  { label: 'New Connection', icon: 'git-branch-outline', color: '#3B82F6' },
   { label: 'General', icon: 'chatbubble-outline', color: COLORS.gray500 },
-  { label: 'Education', icon: 'school-outline', color: '#3B82F6' },
-  { label: 'Sports', icon: 'basketball-outline', color: '#22C55E' },
-  { label: 'Health', icon: 'medkit-outline', color: '#EF4444' },
-  { label: 'Innovation', icon: 'bulb-outline', color: '#8B5CF6' },
 ];
 
 export default function FeedbackScreen() {
@@ -189,7 +191,7 @@ export default function FeedbackScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Submit Feedback</Text>
+        <Text style={styles.headerTitle}>Enquiries & Complaints</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -201,7 +203,7 @@ export default function FeedbackScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>💬 Your Voice Matters</Text>
           <Text style={styles.cardSub}>
-            Share your ideas, complaints, or suggestions to help us improve education, sports, and health services in Uganda.
+            Report a water or sewer problem, ask a question, or share a suggestion. You'll get a reference number to track it.
           </Text>
 
           <Text style={styles.label}>Category</Text>
@@ -226,7 +228,7 @@ export default function FeedbackScreen() {
           <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Describe your feedback in detail..."
+              placeholder="Describe the issue: what happened, where (area, street, landmark), and since when..."
               placeholderTextColor={COLORS.gray400}
               value={description}
               onChangeText={setDescription}
@@ -267,7 +269,7 @@ export default function FeedbackScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.submitBtnText}>🚀 Submit Feedback</Text>
+              <Text style={styles.submitBtnText}>Submit</Text>
             )}
           </TouchableOpacity>
 

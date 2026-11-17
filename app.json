@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MoES e-Participation",
-    "slug": "moes-e-participation",
+    "name": "NWSC e-Participation",
+    "slug": "nwsc-e-participation",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,18 +10,18 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1E3A8A"
+      "backgroundColor": "#0B5FA5"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.moes.eparticipation"
+      "bundleIdentifier": "com.nwsc.eparticipation"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1E3A8A"
+        "backgroundColor": "#0B5FA5"
       },
-      "package": "com.moes.eparticipation",
+      "package": "com.nwsc.eparticipation",
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"

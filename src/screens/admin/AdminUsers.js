@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../services/supabaseClient';
 import { ADMIN_COLORS as COLORS } from './adminTheme';
 
-const ROLES = ['citizen', 'student', 'teacher', 'parent', 'innovator', 'health_worker', 'admin'];
+const ROLES = ['citizen', 'business', 'community_leader', 'officer', 'supervisor', 'admin'];
 
 export default function AdminUsers({ currentUserId }) {
   const [users, setUsers] = useState([]);

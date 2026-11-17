@@ -5,7 +5,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -53,7 +53,7 @@ export default function MediaGalleryScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>🎬 Media Gallery</Text>
-      <Text style={styles.sub}>Photos and short video clips from MoES programs and events.</Text>
+      <Text style={styles.sub}>Photos and short clips from NWSC projects and community events.</Text>
 
       {items.length === 0 ? (
         <Text style={styles.emptyText}>No media uploaded yet — check back soon.</Text>

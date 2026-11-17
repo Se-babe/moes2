@@ -21,7 +21,7 @@ const { width } = Dimensions.get('window');
 
 // ===== COLORS EMBEDDED =====
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   primaryDark: '#0F172A',
   accent: '#FCD34D',
   gray50: '#F8FAFC',
@@ -140,25 +140,24 @@ export default function HomeScreen() {
 
   // Quick action cards
   const quickActions = [
-    { id: 'q1', icon: 'create-outline', title: 'Submit Feedback', color: '#3B82F6', screen: 'Feedback' },
-    { id: 'q2', icon: 'stats-chart-outline', title: 'Take Survey', color: '#34D399', screen: 'Surveys' },
-    { id: 'q3', icon: 'document-text-outline', title: 'Draft Policies', color: '#A78BFA', screen: 'Consultations' },
-    { id: 'q4', icon: 'bulb-outline', title: 'Ideas Hub', color: '#FBBF24', screen: 'Feedback' },
-    { id: 'q5', icon: 'megaphone-outline', title: 'Report Issue', color: '#F87171', screen: 'Feedback' },
-    { id: 'q6', icon: 'stats-chart-outline', title: 'Dashboard', color: '#2DD4BF', screen: 'Dashboard' },
-    { id: 'q7', icon: 'film-outline', title: 'Media Gallery', color: '#FB923C', screen: 'MediaGallery' },
-    { id: 'q8', icon: 'time-outline', title: 'Platform Updates', color: '#818CF8', screen: 'Updates' },
-    { id: 'q9', icon: 'school-outline', title: 'JAB Forms', color: '#EC4899', screen: 'Resources', params: { category: 'Admissions (JAB)' } },
-    { id: 'q10', icon: 'calendar-outline', title: 'UNEB Timetables', color: '#0EA5E9', screen: 'Resources', params: { category: 'Examination Timetables (UNEB)' } },
+    { id: 'q1', icon: 'water-outline', title: 'Report a Problem', color: '#F87171', screen: 'Feedback' },
+    { id: 'q2', icon: 'help-circle-outline', title: 'Make an Enquiry', color: '#3B82F6', screen: 'Feedback' },
+    { id: 'q3', icon: 'search-outline', title: 'Track My Request', color: '#0EA5E9', screen: 'FeedbackList' },
+    { id: 'q4', icon: 'megaphone-outline', title: 'Service Updates', color: '#818CF8', screen: 'Updates' },
+    { id: 'q5', icon: 'document-text-outline', title: 'Consultations', color: '#A78BFA', screen: 'Consultations' },
+    { id: 'q6', icon: 'stats-chart-outline', title: 'Take a Survey', color: '#34D399', screen: 'Surveys' },
+    { id: 'q7', icon: 'bulb-outline', title: 'Suggestions', color: '#FBBF24', screen: 'Feedback' },
+    { id: 'q8', icon: 'film-outline', title: 'Media Gallery', color: '#FB923C', screen: 'MediaGallery' },
+    { id: 'q9', icon: 'help-buoy-outline', title: 'FAQs', color: '#EC4899', screen: 'FAQs' },
   ];
 
   // Participation cards
   const participationCards = [
-    { icon: '📄', title: 'Draft Policies', desc: 'View, download, and comment on draft laws and policies.', screen: 'Consultations' },
+    { icon: '📄', title: 'Public Consultations', desc: 'Give your views on proposed tariffs, projects, and service changes.', screen: 'Consultations' },
     { icon: '📊', title: 'Surveys & Polls', desc: 'Share your experience and help us improve services.', screen: 'Surveys' },
     { icon: '💬', title: 'Discussion Forums', desc: 'Join topics, ask questions, and share knowledge.', screen: 'Forum' },
-    { icon: '🎬', title: 'Media Gallery', desc: 'Watch photos and short clips from MoES programs and events.', screen: 'MediaGallery' },
-    { icon: '🏛️', title: 'Virtual Town Halls', desc: 'See scheduled sessions with Ministry leadership and how to join.', screen: 'TownHalls' },
+    { icon: '🎬', title: 'Media Gallery', desc: 'Photos and short clips from NWSC projects and community events.', screen: 'MediaGallery' },
+    { icon: '🏛️', title: 'Virtual Town Halls', desc: 'See scheduled community meetings with NWSC Jinja and how to join.', screen: 'TownHalls' },
   ];
 
   if (loading) {
@@ -204,9 +203,9 @@ export default function HomeScreen() {
 
       {/* ===== WELCOME ===== */}
       <View style={styles.welcomeContainer}>
-        <Text style={styles.welcomeTitle}>🇺🇬 MoES e‑Participation Dashboard</Text>
+        <Text style={styles.welcomeTitle}>💧 NWSC Jinja e‑Participation</Text>
         <Text style={styles.welcomeSub}>
-          Explore real‑time performance data across Education, Sports, and Health.
+          Report water and sewer issues, track your requests, and stay informed about services in your area.
         </Text>
       </View>
 

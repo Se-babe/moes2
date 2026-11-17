@@ -6,8 +6,8 @@ export const ADMIN_COLORS = {
   surface: '#141B2E',     // card / panel background
   surfaceAlt: '#1B2438',  // input fields, chips, hover states
   border: '#26314A',      // subtle dividers/borders on dark
-  primary: '#3B82F6',     // bright blue — pops on dark, same hue family as the brand's #1E3A8A
-  primaryDark: '#1E3A8A',
+  primary: '#3B82F6',     // bright blue — pops on dark, same hue family as the brand's #0B5FA5
+  primaryDark: '#0B5FA5',
   accent: '#FCD34D',      // brand gold
   text: '#E2E8F0',        // primary text (near-white)
   textMuted: '#94A3B8',   // secondary text

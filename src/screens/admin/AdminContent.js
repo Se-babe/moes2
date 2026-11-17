@@ -4,7 +4,6 @@ import AdminSlides from './AdminSlides';
 import AdminSocialLinks from './AdminSocialLinks';
 import AdminSimpleList from './AdminSimpleList';
 import AdminMediaGallery from './AdminMediaGallery';
-import AdminResources from './AdminResources';
 import AdminSettings from './AdminSettings';
 import { ADMIN_COLORS as COLORS } from './adminTheme';
 
@@ -12,16 +11,12 @@ const SUB_TABS = [
   { key: 'slides', label: 'Slides' },
   { key: 'media_gallery', label: 'Media Gallery' },
   { key: 'updates', label: 'Updates' },
-  { key: 'resources', label: 'Resources' },
   { key: 'surveys', label: 'Surveys' },
   { key: 'town_halls', label: 'Town Halls' },
-  { key: 'projects', label: 'Projects' },
   { key: 'news', label: 'News' },
   { key: 'faqs', label: 'FAQs' },
   { key: 'leadership', label: 'Leadership' },
   { key: 'departments', label: 'Departments' },
-  { key: 'institutions', label: 'Institutions' },
-  { key: 'info_systems', label: 'Info Systems' },
   { key: 'categories', label: 'Categories' },
   { key: 'bot_knowledge', label: 'Bot Knowledge' },
   { key: 'settings', label: 'Site Settings' },
@@ -51,8 +46,6 @@ export default function AdminContent() {
             ]}
           />
         );
-      case 'resources':
-        return <AdminResources />;
       case 'surveys':
         return (
           <AdminSimpleList
@@ -98,7 +91,7 @@ export default function AdminContent() {
             ascending
             fields={[
               { key: 'name', label: 'Name', type: 'text', required: true },
-              { key: 'icon', label: 'Ionicon name (e.g. school-outline)', type: 'text' },
+              { key: 'icon', label: 'Ionicon name (e.g. water-outline)', type: 'text' },
             ]}
           />
         );
@@ -106,11 +99,11 @@ export default function AdminContent() {
         return (
           <AdminSimpleList
             table="bot_knowledge"
-            title="Massa's Knowledge Base"
+            title="Maji's Knowledge Base"
             titleField="response"
             orderBy="id"
             fields={[
-              { key: 'response', label: 'Response Massa should give', type: 'multiline', required: true },
+              { key: 'response', label: 'Response Maji should give', type: 'multiline', required: true },
               { key: 'keywords', label: 'Keywords', type: 'tags', required: true },
             ]}
           />
@@ -119,20 +112,6 @@ export default function AdminContent() {
         return <AdminSettings />;
       case 'social_links':
         return <AdminSocialLinks />;
-      case 'projects':
-        return (
-          <AdminSimpleList
-            table="projects"
-            title="Projects"
-            titleField="title"
-            subtitleField="description"
-            fields={[
-              { key: 'title', label: 'Title', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'status', label: 'Status', type: 'select', options: ['Upcoming', 'Ongoing', 'Completed'] },
-            ]}
-          />
-        );
       case 'news':
         return (
           <AdminSimpleList
@@ -191,42 +170,7 @@ export default function AdminContent() {
             fields={[
               { key: 'name', label: 'Name', type: 'text', required: true },
               { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'icon', label: 'Ionicon name (e.g. school-outline)', type: 'text' },
-              { key: 'display_order', label: 'Display Order', type: 'number' },
-            ]}
-          />
-        );
-      case 'institutions':
-        return (
-          <AdminSimpleList
-            table="institutions"
-            title="Autonomous Institutions"
-            titleField="name"
-            subtitleField="description"
-            orderBy="display_order"
-            ascending
-            fields={[
-              { key: 'name', label: 'Name', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'url', label: 'Website URL', type: 'text' },
-              { key: 'display_order', label: 'Display Order', type: 'number' },
-            ]}
-          />
-        );
-      case 'info_systems':
-        return (
-          <AdminSimpleList
-            table="info_systems"
-            title="Information Systems"
-            titleField="name"
-            subtitleField="description"
-            orderBy="display_order"
-            ascending
-            fields={[
-              { key: 'name', label: 'Name', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'url', label: 'Portal URL', type: 'text' },
-              { key: 'icon', label: 'Ionicon name (e.g. apps-outline)', type: 'text' },
+              { key: 'icon', label: 'Ionicon name (e.g. water-outline)', type: 'text' },
               { key: 'display_order', label: 'Display Order', type: 'number' },
             ]}
           />

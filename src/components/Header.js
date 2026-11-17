@@ -12,13 +12,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import BrandMark from './BrandMark';
 import { useNavigation } from '@react-navigation/native';
 import DropdownMenu from './DropdownMenu';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
-  primaryDark: 'rgba(15,23,42,0.85)',
-  primary: 'rgba(30,58,138,0.9)',
+  primaryDark: 'rgba(7,62,110,0.95)',
+  primary: 'rgba(11,95,165,0.95)',
   accent: '#FCD34D',
   gray400: '#94A3B8',
   gray200: '#E2E8F0',
@@ -36,9 +37,9 @@ export default function Header() {
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contactInfo, setContactInfo] = useState({
-    phone1: '+256(0)-41-4259338',
-    phone2: 'Toll Free: 0800-100-257',
-    phone3: 'TELA: 0800-377-771',
+    phone1: 'Toll Free: 0800-200-977',
+    phone2: 'Customer Care: +256 (0)313-315-000',
+    phone3: '',
   });
   const [socialLinks, setSocialLinks] = useState([]);
 
@@ -71,36 +72,31 @@ export default function Header() {
   };
 
   const aboutItems = [
-    { label: 'About MoES', screen: 'About' },
-    { label: 'Projects', screen: 'Projects' },
-    { label: 'Opportunities', screen: 'Opportunities' },
-    { label: 'Information Systems', screen: 'InfoSystems' },
-    { label: 'Circulars & Reports', screen: 'Resources', params: { category: 'Circulars' } },
-    { label: 'Policies & Regulations', screen: 'Resources', params: { category: 'Policies' } },
-    { label: 'Jobs & Careers', screen: 'Opportunities' },
-    { label: 'Scholarships', screen: 'Opportunities' },
-    { label: 'Tenders & Bids', screen: 'Opportunities' },
+    { label: 'About NWSC', screen: 'About' },
+    { label: 'Service Updates', screen: 'Updates' },
+    { label: 'News & Announcements', screen: 'News' },
+    { label: 'Media Gallery', screen: 'MediaGallery' },
   ];
 
   const participationItems = [
-    { label: 'Consultations', screen: 'Consultations' },
-    { label: 'Surveys', screen: 'Surveys' },
-    { label: 'Feedback', screen: 'Feedback' },
-    { label: 'Ideas Hub', screen: 'Feedback' },
+    { label: 'Enquiries & Complaints', screen: 'Feedback' },
+    { label: 'Track My Request', screen: 'FeedbackList' },
+    { label: 'Public Consultations', screen: 'Consultations' },
+    { label: 'Surveys & Polls', screen: 'Surveys' },
     { label: 'Discussion Forums', screen: 'Forum' },
+    { label: 'Town Halls', screen: 'TownHalls' },
   ];
 
-  const resourceItems = [
-    { label: 'Resources', screen: 'Resources' },
-    { label: 'News & Impact', screen: 'News' },
+  const helpItems = [
     { label: 'FAQs', screen: 'FAQs' },
     { label: 'Contact Us', screen: 'Contact' },
+    { label: 'Sitemap', screen: 'Sitemap' },
   ];
 
   const navSections = [
     { label: 'About', items: aboutItems },
     { label: 'Participation', items: participationItems },
-    { label: 'Resources', items: resourceItems },
+    { label: 'Help', items: helpItems },
   ];
 
   const handleNav = (screen, params) => {
@@ -124,13 +120,8 @@ export default function Header() {
       <View style={styles.headerContainer}>
         <View style={styles.mobileTopRow}>
           <TouchableOpacity style={styles.mobileBrand} onPress={() => navigation.navigate('Home')}>
-            <Image
-              source={require('../../assets/coat_of_arms.png')}
-              style={styles.coatOfArmsSmall}
-              resizeMode="contain"
-              onError={() => console.warn('Coat of Arms fallback used.')}
-            />
-            <Text style={styles.mobileBrandText} numberOfLines={1}>MoES e-Participation</Text>
+            <BrandMark size="small" />
+            <Text style={styles.mobileBrandText} numberOfLines={1}>NWSC e-Participation</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.hamburgerBtn} onPress={() => setMobileMenuOpen(true)}>
             <Ionicons name="menu" size={26} color="#fff" />
@@ -186,7 +177,7 @@ export default function Header() {
                 <Text style={styles.mobileSectionLabel}>Contact</Text>
                 <Text style={styles.mobileContactText}>{contactInfo.phone1}</Text>
                 <Text style={styles.mobileContactText}>{contactInfo.phone2}</Text>
-                <Text style={styles.mobileContactText}>{contactInfo.phone3}</Text>
+                {contactInfo.phone3 ? <Text style={styles.mobileContactText}>{contactInfo.phone3}</Text> : null}
               </View>
 
               {socialLinks.length > 0 && (
@@ -213,12 +204,7 @@ export default function Header() {
     <View style={styles.headerContainer}>
       {/* TOP ROW */}
       <View style={styles.topRow}>
-        <Image
-          source={require('../../assets/coat_of_arms.png')}
-          style={styles.coatOfArms}
-          resizeMode="contain"
-          onError={() => console.warn('Coat of Arms fallback used.')}
-        />
+        <BrandMark />
         <View style={styles.contactInfo}>
           <Text style={styles.contactText}>
             <Ionicons name="call-outline" size={14} color={COLORS.accent} /> {contactInfo.phone1}
@@ -226,9 +212,11 @@ export default function Header() {
           <Text style={styles.contactText}>
             <Ionicons name="call-outline" size={14} color={COLORS.accent} /> {contactInfo.phone2}
           </Text>
-          <Text style={styles.contactText}>
-            <Ionicons name="chatbubble-outline" size={14} color={COLORS.accent} /> {contactInfo.phone3}
-          </Text>
+          {contactInfo.phone3 ? (
+            <Text style={styles.contactText}>
+              <Ionicons name="chatbubble-outline" size={14} color={COLORS.accent} /> {contactInfo.phone3}
+            </Text>
+          ) : null}
         </View>
 
       </View>
@@ -252,8 +240,8 @@ export default function Header() {
             icon="people-outline"
           />
           <DropdownMenu
-            label="Resources"
-            items={resourceItems}
+            label="Help"
+            items={helpItems}
             onSelect={(item) => handleNav(item.screen, item.params)}
             icon="book-outline"
           />

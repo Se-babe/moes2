@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -26,12 +26,9 @@ const COLORS = {
 };
 
 const ROLES = [
-  { label: 'Student', value: 'student' },
-  { label: 'Teacher', value: 'teacher' },
-  { label: 'Parent', value: 'parent' },
-  { label: 'Innovator', value: 'innovator' },
-  { label: 'Health Worker', value: 'health_worker' },
-  { label: 'Citizen (General)', value: 'citizen' },
+  { label: 'Customer / Resident', value: 'citizen' },
+  { label: 'Business / Institution', value: 'business' },
+  { label: 'Community Leader', value: 'community_leader' },
 ];
 
 export default function SignUpScreen({ navigation }) {
@@ -41,7 +38,7 @@ export default function SignUpScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('citizen');
-  const [roleLabel, setRoleLabel] = useState('Citizen (General)');
+  const [roleLabel, setRoleLabel] = useState('Customer / Resident');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);

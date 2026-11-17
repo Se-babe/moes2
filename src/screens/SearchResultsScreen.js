@@ -5,7 +5,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray400: '#94A3B8',
@@ -14,12 +14,10 @@ const COLORS = {
 };
 
 const SECTIONS = [
-  { key: 'consultations', label: 'Draft Policies', icon: 'document-text-outline', table: 'consultations', field: 'title', screen: 'Consultations' },
+  { key: 'consultations', label: 'Consultations', icon: 'document-text-outline', table: 'consultations', field: 'title', screen: 'Consultations' },
   { key: 'news', label: 'News', icon: 'newspaper-outline', table: 'news', field: 'title', screen: 'News' },
   { key: 'forum_topics', label: 'Discussion Forums', icon: 'chatbubbles-outline', table: 'forum_topics', field: 'title', screen: 'Forum', detailScreen: 'ForumThread', detailParam: 'topicId' },
   { key: 'faqs', label: 'FAQs', icon: 'help-circle-outline', table: 'faqs', field: 'question', screen: 'FAQs' },
-  { key: 'opportunities', label: 'Opportunities', icon: 'briefcase-outline', table: 'opportunities', field: 'title', screen: 'Opportunities' },
-  { key: 'projects', label: 'Projects', icon: 'construct-outline', table: 'projects', field: 'title', screen: 'Projects' },
 ];
 
 export default function SearchResultsScreen() {

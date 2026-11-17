@@ -11,7 +11,7 @@ export default function LocationMap({ address }) {
   };
   return (
     <TouchableOpacity style={styles.btn} onPress={openMaps}>
-      <Ionicons name="map-outline" size={18} color="#1E3A8A" />
+      <Ionicons name="map-outline" size={18} color="#0B5FA5" />
       <Text style={styles.text}>View on Google Maps</Text>
     </TouchableOpacity>
   );
@@ -28,5 +28,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
   },
-  text: { color: '#1E3A8A', fontWeight: '600', fontSize: 14 },
+  text: { color: '#0B5FA5', fontWeight: '600', fontSize: 14 },
 });

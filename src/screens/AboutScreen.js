@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -20,7 +20,6 @@ export default function AboutScreen() {
   const navigation = useNavigation();
   const [leadership, setLeadership] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,14 +29,12 @@ export default function AboutScreen() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [{ data: lead }, { data: dept }, { data: inst }] = await Promise.all([
+      const [{ data: lead }, { data: dept }] = await Promise.all([
         supabase.from('leadership').select('*').order('display_order', { ascending: true }),
         supabase.from('departments').select('*').order('display_order', { ascending: true }),
-        supabase.from('institutions').select('*').order('display_order', { ascending: true }),
       ]);
       setLeadership(lead || []);
       setDepartments(dept || []);
-      setInstitutions(inst || []);
     } catch (error) {
       console.error('Error fetching about content:', error);
     } finally {
@@ -66,7 +63,7 @@ export default function AboutScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>🏛️ About MoES</Text>
+        <Text style={styles.headerTitle}>🏛️ About NWSC</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -109,25 +106,8 @@ export default function AboutScreen() {
           </View>
         )}
 
-        {institutions.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Autonomous Institutions</Text>
-            {institutions.map((i) => (
-              <TouchableOpacity key={i.id} style={styles.rowCard} onPress={() => openLink(i.url)}>
-                <View style={styles.rowIcon}>
-                  <Ionicons name="link-outline" size={20} color={COLORS.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{i.name}</Text>
-                  {i.description ? <Text style={styles.rowDesc}>{i.description}</Text> : null}
-                </View>
-                <Ionicons name="open-outline" size={18} color={COLORS.gray500} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
 
-        {leadership.length === 0 && departments.length === 0 && institutions.length === 0 && (
+        {leadership.length === 0 && departments.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="information-circle-outline" size={60} color={COLORS.gray500} />
             <Text style={styles.emptyText}>About content hasn't been added yet.</Text>

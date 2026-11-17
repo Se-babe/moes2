@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseClient';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -103,7 +103,7 @@ export default function TownHallsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>🏛️ Virtual Town Halls</Text>
-      <Text style={styles.sub}>Scheduled sessions with Ministry leadership — join live, ask questions, and stay informed.</Text>
+      <Text style={styles.sub}>Scheduled community meetings with NWSC Jinja — join live, ask questions, and stay informed.</Text>
 
       <Text style={styles.sectionHeading}>Upcoming</Text>
       {upcoming.length === 0 ? (

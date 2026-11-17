@@ -27,21 +27,16 @@ import SurveysScreen from '../screens/SurveysScreen';
 import FeedbackScreen from '../screens/FeedbackScreen';
 import FeedbackListScreen from '../screens/FeedbackListScreen';
 import ProposeConsultationScreen from '../screens/ProposeConsultationScreen';
-import ResourcesScreen from '../screens/ResourcesScreen';
 import FAQScreen from '../screens/FAQScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
-import OpportunitiesScreen from '../screens/OpportunitiesScreen';
-import ProjectsScreen from '../screens/ProjectsScreen';
 import AboutScreen from '../screens/AboutScreen';
-import InfoSystemsScreen from '../screens/InfoSystemsScreen';
 import NewsScreen from '../screens/NewsScreen';
 import ForumScreen from '../screens/ForumScreen';
 import ForumThreadScreen from '../screens/ForumThreadScreen';
-import DashboardScreen from '../screens/DashboardScreen';
 import MediaGalleryScreen from '../screens/MediaGalleryScreen';
 import UpdatesScreen from '../screens/UpdatesScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
@@ -66,19 +61,14 @@ const linking = {
       Feedback: 'feedback',
       FeedbackList: 'feedback/list',
       ProposeConsultation: 'consultations/propose',
-      Resources: 'resources',
       FAQs: 'faqs',
       Login: 'login',
       SignUp: 'signup',
       ForgotPassword: 'forgot-password',
-      Opportunities: 'opportunities',
-      Projects: 'projects',
       About: 'about',
-      InfoSystems: 'systems',
       News: 'news',
       Forum: 'forum',
       ForumThread: 'forum/:topicId',
-      Dashboard: 'dashboard',
       MediaGallery: 'gallery',
       Updates: 'updates',
       SearchResults: 'search',
@@ -97,7 +87,7 @@ const AppNavigatorContent = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color="#0B5FA5" />
       </View>
     );
   }
@@ -117,16 +107,12 @@ const AppNavigatorContent = () => {
         <Stack.Screen name="Feedback" component={FeedbackScreen} />
         <Stack.Screen name="FeedbackList" component={FeedbackListScreen} />
         <Stack.Screen name="ProposeConsultation" component={ProposeConsultationScreen} />
-        <Stack.Screen name="Resources" component={ResourcesScreen} />
         <Stack.Screen name="FAQs" component={FAQScreen} />
         <Stack.Screen name="ChatBot" component={ChatBotScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="Opportunities" component={OpportunitiesScreen} />
-        <Stack.Screen name="Projects" component={ProjectsScreen} />
         <Stack.Screen name="About" component={AboutScreen} />
-        <Stack.Screen name="InfoSystems" component={InfoSystemsScreen} />
         <Stack.Screen name="News" component={NewsScreen} />
         <Stack.Screen name="Forum" component={ForumScreen} />
         <Stack.Screen name="MediaGallery" component={MediaGalleryScreen} />
@@ -136,7 +122,6 @@ const AppNavigatorContent = () => {
         <Stack.Screen name="Contact" component={ContactScreen} />
         <Stack.Screen name="Sitemap" component={SitemapScreen} />
         <Stack.Screen name="ForumThread" component={ForumThreadScreen} />
-        <Stack.Screen name="Dashboard" component={DashboardScreen} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       </Stack.Navigator>
 
@@ -153,9 +138,9 @@ const AppNavigatorContent = () => {
           <View style={[styles.chatContainer, Platform.OS === 'web' && styles.webChatContainer]} onStartShouldSetResponder={() => true}>
             <View style={styles.chatPanel}>
               <View style={styles.chatHeader}>
-                <Text style={styles.chatTitle}>Chat with Massa</Text>
+                <Text style={styles.chatTitle}>Chat with Maji</Text>
                 <TouchableOpacity onPress={() => setChatVisible(false)}>
-                  <Ionicons name="close" size={28} color="#1E3A8A" />
+                  <Ionicons name="close" size={28} color="#0B5FA5" />
                 </TouchableOpacity>
               </View>
               <ChatBotScreen onClose={() => setChatVisible(false)} />
@@ -170,7 +155,7 @@ const AppNavigatorContent = () => {
 export default function AppNavigator() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
+      <StatusBar barStyle="light-content" backgroundColor="#0B5FA5" />
       <NavigationContainer linking={linking}>
         <AuthProvider>
           <AppNavigatorContent />
@@ -234,6 +219,6 @@ const styles = StyleSheet.create({
   chatTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E3A8A',
+    color: '#0B5FA5',
   },
 });

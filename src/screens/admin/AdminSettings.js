@@ -11,7 +11,7 @@ const KNOWN_KEYS = [
   { key: 'phone1', label: 'Primary Phone', placeholder: '+256(0)-41-4259338' },
   { key: 'phone2', label: 'Toll Free Number', placeholder: 'Toll Free: 0800-100-257' },
   { key: 'phone3', label: 'TELA / SMS Line', placeholder: 'TELA: 0800-377-771' },
-  { key: 'email', label: 'Contact Email', placeholder: 'info@education.go.ug' },
+  { key: 'email', label: 'Contact Email', placeholder: 'info@nwsc.co.ug' },
   { key: 'address', label: 'Office Address', placeholder: 'Embassy House, Kampala, Uganda' },
   { key: 'office_hours', label: 'Office Hours', placeholder: 'Monday – Friday, 8:00 AM – 5:00 PM' },
 ];

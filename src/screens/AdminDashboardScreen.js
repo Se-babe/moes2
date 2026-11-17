@@ -7,7 +7,6 @@ import AdminOverview from './admin/AdminOverview';
 import AdminNotifications from './admin/AdminNotifications';
 import AdminConsultations from './admin/AdminConsultations';
 import AdminFeedback from './admin/AdminFeedback';
-import AdminOpportunities from './admin/AdminOpportunities';
 import AdminContent from './admin/AdminContent';
 import AdminForum from './admin/AdminForum';
 import AdminUsers from './admin/AdminUsers';
@@ -18,7 +17,6 @@ const TABS = [
   { key: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
   { key: 'consultations', label: 'Consultations', icon: 'document-text-outline' },
   { key: 'feedback', label: 'Feedback', icon: 'chatbox-outline' },
-  { key: 'opportunities', label: 'Opportunities', icon: 'briefcase-outline' },
   { key: 'content', label: 'Content', icon: 'albums-outline' },
   { key: 'forum', label: 'Forum', icon: 'chatbubbles-outline' },
   { key: 'users', label: 'Users', icon: 'people-outline' },
@@ -100,8 +98,6 @@ export default function AdminDashboardScreen() {
         return <AdminConsultations />;
       case 'feedback':
         return <AdminFeedback />;
-      case 'opportunities':
-        return <AdminOpportunities />;
       case 'content':
         return <AdminContent />;
       case 'forum':

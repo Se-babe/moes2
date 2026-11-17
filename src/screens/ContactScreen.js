@@ -7,7 +7,7 @@ import { supabase } from '../services/supabaseClient';
 import LocationMap from '../components/LocationMap';
 
 const COLORS = {
-  primary: '#1E3A8A',
+  primary: '#0B5FA5',
   gray50: '#F8FAFC',
   gray200: '#E2E8F0',
   gray500: '#64748B',
@@ -16,11 +16,11 @@ const COLORS = {
 };
 
 const DEFAULTS = {
-  phone1: '+256(0)-41-4259338',
-  phone2: 'Toll Free: 0800-100-257',
-  phone3: 'TELA: 0800-377-771',
-  email: 'info@education.go.ug',
-  address: 'Embassy House, Kampala, Uganda',
+  phone1: 'Toll Free: 0800-200-977',
+  phone2: 'Customer Care: +256 (0)313-315-000',
+  phone3: '',
+  email: 'info@nwsc.co.ug',
+  address: 'NWSC Jinja Area Office, Jinja, Uganda',
   office_hours: 'Monday – Friday, 8:00 AM – 5:00 PM',
 };
 
@@ -74,7 +74,7 @@ export default function ContactScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>📞 Contact Us</Text>
-      <Text style={styles.sub}>Reach the Ministry of Education and Sports directly, or send us a message.</Text>
+      <Text style={styles.sub}>Reach NWSC Jinja customer care directly, or send us a message.</Text>
 
       <View style={styles.card}>
         <TouchableOpacity style={styles.row} onPress={() => call(info.phone1)}>
