@@ -17,7 +17,6 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import TurnstileWidget from '../components/TurnstileWidget';
 
 // ----- Colors -----
 const COLORS = {
@@ -60,7 +59,6 @@ export default function ProposeConsultationScreen() {
   const [phone, setPhone] = useState('');
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState(null);
 
   // ----- Helper: create notification for admin -----
   const createNotification = async (userId, title, message, type, targetScreen, targetId) => {
@@ -114,10 +112,6 @@ export default function ProposeConsultationScreen() {
       showAlert('Error', 'Please provide your email and phone.');
       return;
     }
-    if (!turnstileToken) {
-      showAlert('Error', 'Please complete the verification below before submitting.');
-      return;
-    }
 
     setLoading(true);
     try {
@@ -137,8 +131,7 @@ export default function ProposeConsultationScreen() {
       }
 
       // 2. Insert into consultations table via the protected Edge Function
-      // (verifies Turnstile, then writes with the service role key — see
-      // supabase/functions/propose-consultation)
+      // (writes with the service role key — see supabase/functions/propose-consultation)
       const { data: fnData, error } = await supabase.functions.invoke('propose-consultation', {
         body: {
           title: title.trim(),
@@ -148,7 +141,6 @@ export default function ProposeConsultationScreen() {
           proposer_email: email.trim(),
           proposer_phone: phone.trim(),
           image_url: imageUrl,
-          turnstileToken,
         },
       });
 
@@ -172,14 +164,12 @@ export default function ProposeConsultationScreen() {
       }
 
       // 4. Success
-      setTurnstileToken(null);
       showAlert(
         '✅ Proposal Submitted',
         'Thank you! The admin will review your proposal and activate it soon.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      setTurnstileToken(null);
       showAlert('Submission Failed', error.message);
     } finally {
       setLoading(false);
@@ -302,13 +292,11 @@ export default function ProposeConsultationScreen() {
             </View>
           )}
 
-          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
-
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitBtn, (loading || !turnstileToken) && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
             onPress={handleSubmit}
-            disabled={loading || !turnstileToken}
+            disabled={loading}
           >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Submit Proposal</Text>}
           </TouchableOpacity>

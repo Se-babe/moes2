@@ -19,7 +19,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
-import TurnstileWidget from '../components/TurnstileWidget';
 
 const COLORS = {
   primary: '#0B5FA5',
@@ -76,7 +75,6 @@ export default function FeedbackScreen() {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Pre-fill contact details for signed-in users (still editable).
@@ -123,10 +121,6 @@ export default function FeedbackScreen() {
       showAlert('Contact needed', 'Please give a phone number or email so we can send your reference number and updates.');
       return;
     }
-    if (!turnstileToken) {
-      showAlert('Error', 'Please complete the verification below before submitting.');
-      return;
-    }
 
     setLoading(true);
     try {
@@ -155,7 +149,6 @@ export default function FeedbackScreen() {
           contact_name: contactName.trim() || null,
           contact_phone: contactPhone.trim() || null,
           contact_email: contactEmail.trim() || null,
-          turnstileToken,
         },
       });
       if (error) throw error;
@@ -171,7 +164,6 @@ export default function FeedbackScreen() {
         useNativeDriver: true,
       }).start();
     } catch (error) {
-      setTurnstileToken(null);
       showAlert('Submission Failed', error.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -184,7 +176,6 @@ export default function FeedbackScreen() {
     setCategory('General');
     setLocationText('');
     setImage(null);
-    setTurnstileToken(null);
     setShowSuccess(false);
     fadeAnim.setValue(0);
   };
@@ -380,12 +371,10 @@ export default function FeedbackScreen() {
             </View>
           )}
 
-          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
-
           <TouchableOpacity
-            style={[styles.submitBtn, (loading || !turnstileToken) && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
             onPress={handleSubmit}
-            disabled={loading || !turnstileToken}
+            disabled={loading}
             activeOpacity={0.8}
           >
             {loading ? (

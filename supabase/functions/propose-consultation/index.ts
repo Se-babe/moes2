@@ -1,13 +1,12 @@
 // Replaces the old direct "anyone can propose a consultation" RLS policy
-// (removed in migration_abuse_protection.sql). Same reasoning as
-// submit-feedback: verifies Turnstile first, then writes with the service
-// role key — the client can no longer insert into `consultations` directly.
+// (removed in migration_abuse_protection.sql). Validates input and
+// rate-limits per email/phone, then writes with the service role key —
+// the client can no longer insert into `consultations` directly.
 //
 // Deploy: supabase functions deploy propose-consultation
-// Secret (shared with submit-feedback):
-//   supabase secrets set TURNSTILE_SECRET_KEY=your-real-secret-key
 
-import { verifyTurnstile, CORS_HEADERS } from '../_shared/turnstile.ts';
+import { CORS_HEADERS } from '../_shared/cors.ts';
+import { isRateLimited } from '../_shared/ratelimit.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,7 +16,7 @@ Deno.serve(async (req) => {
   try {
     const {
       title, description, category, closing_date,
-      proposer_email, proposer_phone, image_url, turnstileToken,
+      proposer_email, proposer_phone, image_url,
     } = await req.json();
 
     if (!title || !String(title).trim() || !proposer_email || !proposer_phone) {
@@ -27,11 +26,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const remoteip = req.headers.get('cf-connecting-ip') || undefined;
-    const verified = await verifyTurnstile(turnstileToken, remoteip);
-    if (!verified) {
-      return new Response(JSON.stringify({ error: 'Verification failed. Please try again.' }), {
-        status: 403,
+    if (await isRateLimited('consultations', [['proposer_email', String(proposer_email).trim()], ['proposer_phone', String(proposer_phone).trim()]], 3, 60)) {
+      return new Response(JSON.stringify({ error: 'Too many proposals from this contact in the last hour. Please try again later.' }), {
+        status: 429,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
