@@ -11,7 +11,7 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +44,8 @@ import TownHallsScreen from '../screens/TownHallsScreen';
 import ContactScreen from '../screens/ContactScreen';
 import SitemapScreen from '../screens/SitemapScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
+import StaffPortalScreen from '../screens/staff/StaffPortalScreen';
+import StaffRequestScreen from '../screens/staff/StaffRequestScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
 import { COLORS, FONT } from '../theme';
 
@@ -80,6 +82,8 @@ const linking = {
       Sitemap: 'sitemap',
       AdminDashboard: 'admin',
       Privacy: 'privacy',
+      StaffPortal: 'staff',
+      StaffRequest: 'staff/requests/:id',
       NotFound: '*',
     },
   },
@@ -108,13 +112,20 @@ const TITLES = {
   Contact: 'Contact us',
   Sitemap: 'Sitemap',
   ForumThread: 'Discussion',
-  AdminDashboard: 'Staff area',
+  AdminDashboard: 'Admin console',
   Privacy: 'Privacy & terms',
+  StaffPortal: 'Staff portal',
+  StaffRequest: 'Request',
   NotFound: 'Page not found',
 };
 
-const AppNavigatorContent = () => {
+// Staff and admin work areas get a focused layout without the public header
+// and assistant button.
+const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'AdminDashboard'];
+
+const AppNavigatorContent = ({ currentRoute }) => {
   const { user, loading } = useAuth();
+  const inWorkspace = WORKSPACE_ROUTES.includes(currentRoute);
   const [chatVisible, setChatVisible] = useState(false);
 
   if (loading) {
@@ -127,7 +138,7 @@ const AppNavigatorContent = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header />
+      {!inWorkspace && <Header />}
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -157,10 +168,12 @@ const AppNavigatorContent = () => {
         <Stack.Screen name="ForumThread" component={ForumThreadScreen} options={{ title: TITLES.ForumThread }} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: TITLES.AdminDashboard }} />
         <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: TITLES.Privacy }} />
+        <Stack.Screen name="StaffPortal" component={StaffPortalScreen} options={{ title: TITLES.StaffPortal }} />
+        <Stack.Screen name="StaffRequest" component={StaffRequestScreen} options={{ title: TITLES.StaffRequest }} />
         <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ title: TITLES.NotFound }} />
       </Stack.Navigator>
 
-      <ChatButton onPress={() => setChatVisible(true)} />
+      {!inWorkspace && <ChatButton onPress={() => setChatVisible(true)} />}
 
       <Modal
         visible={chatVisible}
@@ -191,15 +204,21 @@ const AppNavigatorContent = () => {
 };
 
 export default function AppNavigator() {
+  const navigationRef = useNavigationContainerRef();
+  const [currentRoute, setCurrentRoute] = useState(null);
+  const syncRoute = () => setCurrentRoute(navigationRef.getCurrentRoute()?.name ?? null);
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <NavigationContainer
+        ref={navigationRef}
+        onReady={syncRoute}
+        onStateChange={syncRoute}
         linking={linking}
         documentTitle={{ formatter: (options) => `${options?.title ?? 'Home'} · NWSC Jinja e-Participation` }}
       >
         <AuthProvider>
-          <AppNavigatorContent />
+          <AppNavigatorContent currentRoute={currentRoute} />
         </AuthProvider>
       </NavigationContainer>
     </SafeAreaProvider>

@@ -39,7 +39,7 @@ export default function ForumThreadScreen() {
     try {
       const { data, error } = await supabase
         .from('forum_posts')
-        .select('*, users(full_name)')
+        .select('*')
         .eq('topic_id', topicId)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -97,7 +97,7 @@ export default function ForumThreadScreen() {
           ) : (
             posts.map((post) => (
               <View key={post.id} style={styles.postCard}>
-                <Text style={styles.postAuthor}>{post.users?.full_name || 'A citizen'}</Text>
+                <Text style={styles.postAuthor}>{post.author_name || 'Community member'}</Text>
                 <Text style={styles.postText}>{post.text}</Text>
                 <Text style={styles.postTime}>{new Date(post.created_at).toLocaleString()}</Text>
               </View>

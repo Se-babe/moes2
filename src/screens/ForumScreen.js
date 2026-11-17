@@ -41,7 +41,7 @@ export default function ForumScreen() {
     try {
       const { data, error } = await supabase
         .from('forum_topics')
-        .select('*, users(full_name)')
+        .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
       setTopics(data || []);
@@ -138,7 +138,7 @@ export default function ForumScreen() {
               <Text style={styles.cardTitle}>{topic.title}</Text>
               {topic.description ? <Text style={styles.cardDesc} numberOfLines={2}>{topic.description}</Text> : null}
               <View style={styles.cardFooter}>
-                <Text style={styles.authorText}>By {topic.users?.full_name || 'A citizen'}</Text>
+                <Text style={styles.authorText}>By {topic.author_name || 'Community member'}</Text>
                 <View style={styles.replyCountRow}>
                   <Ionicons name="chatbubble-outline" size={14} color={COLORS.gray500} />
                   <Text style={styles.replyCountText}>{topic.reply_count || 0} replies</Text>

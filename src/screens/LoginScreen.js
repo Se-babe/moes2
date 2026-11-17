@@ -31,12 +31,14 @@ export default function LoginScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await signIn(email, password);
-      // Success – go back to previous screen
-      navigation.goBack();
+      const { profile } = await signIn(email, password);
+      const role = profile?.role;
+      if (role === 'admin') navigation.navigate('AdminDashboard');
+      else if (role === 'officer' || role === 'supervisor') navigation.navigate('StaffPortal');
+      else if (navigation.canGoBack()) navigation.goBack();
+      else navigation.navigate('Home');
     } catch (error) {
       // Show the full error message from Supabase
-      console.error('Login error:', error);
       showAlert('Login Failed', error.message || 'Invalid email or password.');
     } finally {
       setLoading(false);

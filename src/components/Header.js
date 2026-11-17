@@ -187,11 +187,11 @@ export default function Header() {
             {!compact && (
               user ? (
                 <Button
-                  title={isStaff ? 'Staff area' : 'My requests'}
+                  title={isStaff ? (user.role === 'admin' ? 'Admin console' : 'Staff portal') : 'My requests'}
                   variant="secondary"
                   size="sm"
                   icon={isStaff ? 'briefcase-outline' : 'person-circle-outline'}
-                  onPress={() => go(isStaff ? 'AdminDashboard' : 'TrackRequest')}
+                  onPress={() => go(isStaff ? (user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal') : 'TrackRequest')}
                 />
               ) : (
                 <Button title="Sign in" variant="ghost" size="sm" onPress={() => go('Login')} />
@@ -251,7 +251,7 @@ export default function Header() {
                 {user ? (
                   <>
                     {isStaff && (
-                      <Pressable style={styles.drawerLink} onPress={() => go('AdminDashboard')}>
+                      <Pressable style={styles.drawerLink} onPress={() => go(user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal')}>
                         <Ionicons name="briefcase-outline" size={18} color={COLORS.primary} />
                         <Text style={styles.drawerLinkText}>Staff area</Text>
                       </Pressable>

@@ -119,21 +119,14 @@ export default function ChatBotScreen({ onClose }) {
   ];
 
   // ----- Helper: get admin user -----
-  const getAdminUser = async () => {
-    const { data } = await supabase.from('users').select('id').eq('role', 'admin').limit(1);
-    return data?.[0];
-  };
+  // Admin notifications go through notify_admins() (users are private now).
+  const getAdminUser = async () => ({ id: 'admins' });
 
   // ----- Helper: create notification -----
-  const createNotification = async (userId, title, message, type, targetScreen) => {
-    await supabase.from('notifications').insert([{
-      user_id: userId,
-      title,
-      message,
-      type,
-      target_screen: targetScreen,
-      read: false,
-    }]);
+  const createNotification = async (_userId, title, message, type, targetScreen, targetId = null) => {
+    await supabase.rpc('notify_admins', {
+      p_title: title, p_message: message, p_type: type, p_screen: targetScreen, p_target: targetId,
+    });
   };
 
   // ----- Load saved session -----

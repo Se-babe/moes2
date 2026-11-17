@@ -18,7 +18,7 @@ export default function AdminForum() {
     try {
       const { data, error } = await supabase
         .from('forum_topics')
-        .select('*, users(full_name)')
+        .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
       setTopics(data || []);
@@ -53,7 +53,7 @@ export default function AdminForum() {
         </View>
         <Text style={styles.title}>{item.title}</Text>
         {item.description ? <Text style={styles.desc} numberOfLines={2}>{item.description}</Text> : null}
-        <Text style={styles.meta}>By {item.users?.full_name || 'A citizen'} · {new Date(item.created_at).toLocaleDateString()}</Text>
+        <Text style={styles.meta}>By {item.author_name || 'Community member'} · {new Date(item.created_at).toLocaleDateString()}</Text>
       </View>
       <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteTopic(item.id)}>
         <Ionicons name="trash-outline" size={20} color={COLORS.danger} />

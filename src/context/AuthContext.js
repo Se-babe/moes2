@@ -44,10 +44,12 @@ export const AuthProvider = ({ children }) => {
     return () => listener?.subscription.unsubscribe();
   }, []);
 
+  // Returns the profile row so callers can route staff to their workspace.
   const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    return data;
+    const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).maybeSingle();
+    return { ...data, profile };
   };
 
   const signUp = async (email, password, fullName, phone, role) => {

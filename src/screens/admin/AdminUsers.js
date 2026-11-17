@@ -1,172 +1,262 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { showAlert } from '../../utils/alert';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput, Modal, ScrollView, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../services/supabaseClient';
-import { ADMIN_COLORS as COLORS } from './adminTheme';
+import { Card, Button, Badge, Select, TextField, EmptyState, Loading, useBreakpoint } from '../../components/ui';
+import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
+import { showAlert } from '../../utils/alert';
+import { fetchDepartments, STAFF_ROLES } from '../../services/staff';
 
-const ROLES = ['citizen', 'business', 'community_leader', 'officer', 'supervisor', 'admin'];
+const ROLE_OPTIONS = [
+  { value: 'citizen', label: 'Citizen', hint: 'Public user' },
+  { value: 'business', label: 'Business / institution', hint: 'Public user' },
+  { value: 'community_leader', label: 'Community leader', hint: 'Public user' },
+  { value: 'officer', label: 'Officer', hint: 'Handles requests in their department' },
+  { value: 'supervisor', label: 'Supervisor', hint: 'Oversees a department, receives escalations' },
+  { value: 'admin', label: 'Administrator', hint: 'Full control of the system' },
+];
+const ROLE_TONE = { admin: 'danger', supervisor: 'warning', officer: 'brand' };
+const FILTERS = [['staff', 'Staff'], ['citizens', 'Public users'], ['inactive', 'Deactivated'], ['all', 'Everyone']];
 
-export default function AdminUsers({ currentUserId }) {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [expandedId, setExpandedId] = useState(null);
+function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    role: target.role || 'citizen',
+    department_id: target.department_id || null,
+    job_title: target.job_title || '',
+    is_active: target.is_active !== false,
+  });
+  const [saving, setSaving] = useState(false);
+  const isSelf = target.id === currentUserId;
+  const isStaff = STAFF_ROLES.includes(form.role);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const changeRole = (targetUser, role) => {
-    const applyChange = async () => {
-      const { error } = await supabase.from('users').update({ role }).eq('id', targetUser.id);
-      if (error) showAlert('Error', error.message);
-      else setUsers((prev) => prev.map((u) => (u.id === targetUser.id ? { ...u, role } : u)));
-    };
-
-    if (targetUser.id === currentUserId && role !== 'admin') {
-      showAlert(
-        'Remove your own admin access?',
-        "You're changing your own role away from admin — you'll lose access to this panel immediately.",
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: applyChange },
-        ]
-      );
+  const save = async () => {
+    if (isSelf && (form.role !== 'admin' || !form.is_active)) {
+      showAlert('Not allowed', 'You cannot remove your own administrator access. Ask another administrator.');
       return;
     }
-    applyChange();
+    if (['officer', 'supervisor'].includes(form.role) && !form.department_id) {
+      showAlert('Department required', 'Officers and supervisors must belong to a department so requests can be routed to them.');
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from('users')
+      .update({
+        role: form.role,
+        department_id: isStaff ? form.department_id : null,
+        job_title: isStaff ? form.job_title.trim() || null : null,
+        is_active: form.is_active,
+      })
+      .eq('id', target.id);
+    setSaving(false);
+    if (error) showAlert('Could not save', error.message);
+    else { onSaved(); onClose(); }
   };
-
-  const filtered = users.filter(
-    (u) =>
-      (u.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  const renderItem = ({ item }) => {
-    const isExpanded = expandedId === item.id;
-    return (
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.cardHeader} onPress={() => setExpandedId(isExpanded ? null : item.id)}>
-          <View style={{ flex: 1 }}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{item.full_name || 'Unnamed'}</Text>
-              {item.id === currentUserId && <Text style={styles.youTag}>(you)</Text>}
-            </View>
-            <Text style={styles.email}>{item.email}</Text>
-            <Text style={styles.meta}>{item.phone || 'No phone on file'}</Text>
-          </View>
-          <View style={[styles.roleBadge, item.role === 'admin' && styles.roleBadgeAdmin]}>
-            <Text style={[styles.roleBadgeText, item.role === 'admin' && styles.roleBadgeTextAdmin]}>{item.role || 'citizen'}</Text>
-          </View>
-          <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textMuted} style={{ marginLeft: 8 }} />
-        </TouchableOpacity>
-        {isExpanded && (
-          <View style={styles.roleRow}>
-            <Text style={styles.roleRowLabel}>Set role:</Text>
-            <View style={styles.chipWrap}>
-              {ROLES.map((r) => (
-                <TouchableOpacity
-                  key={r}
-                  style={[styles.chip, item.role === r && styles.chipActive, r === 'admin' && styles.chipAdmin]}
-                  onPress={() => changeRole(item, r)}
-                >
-                  <Text style={[styles.chipText, item.role === r && styles.chipTextActive]}>{r}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Users ({filtered.length})</Text>
-      <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={18} color={COLORS.textDim} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name or email..."
-          placeholderTextColor={COLORS.textDim}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-      {filtered.length === 0 ? (
-        <Text style={styles.emptyText}>No users found.</Text>
-      ) : (
-        <FlatList data={filtered} renderItem={renderItem} keyExtractor={(item) => item.id} scrollEnabled={false} />
+    <View>
+      <Text style={TYPE.h3}>{target.full_name || 'Unnamed user'}</Text>
+      <Text style={[TYPE.small, { marginBottom: SPACE.lg }]}>{target.email}{target.phone ? ` · ${target.phone}` : ''}</Text>
+      <Select label="Role" value={form.role} options={ROLE_OPTIONS} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
+      {isStaff && (
+        <>
+          <Select
+            label={form.role === 'admin' ? 'Department (optional)' : 'Department'}
+            value={form.department_id}
+            options={[{ value: null, label: 'No department' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+            onChange={(v) => setForm((f) => ({ ...f, department_id: v }))}
+          />
+          <TextField label="Job title" value={form.job_title} onChangeText={(v) => setForm((f) => ({ ...f, job_title: v }))} placeholder="e.g. Customer Care Officer" maxLength={80} />
+        </>
       )}
+      <View style={styles.switchRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={TYPE.label}>Account active</Text>
+          <Text style={TYPE.small}>Deactivated staff can't sign in to the staff portal or receive new requests.</Text>
+        </View>
+        <Switch value={form.is_active} onValueChange={(v) => setForm((f) => ({ ...f, is_active: v }))} disabled={isSelf} />
+      </View>
+      <View style={styles.modalActions}>
+        <Button title="Cancel" variant="ghost" onPress={onClose} />
+        <Button title="Save changes" icon="checkmark" loading={saving} onPress={save} />
+      </View>
+    </View>
+  );
+}
+
+function InviteForm({ departments, onClose, onSaved }) {
+  const [form, setForm] = useState({ email: '', full_name: '', role: 'officer', department_id: null, job_title: '' });
+  const [saving, setSaving] = useState(false);
+
+  const invite = async () => {
+    setSaving(true);
+    const redirect_to = Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
+    const { data, error } = await supabase.functions.invoke('admin-users', { body: { action: 'invite', ...form, redirect_to } });
+    setSaving(false);
+    let message = data?.error;
+    if (error) message = (await error.context?.json?.().then((b) => b?.error).catch(() => null)) || error.message;
+    if (message) {
+      showAlert('Could not add staff member', message);
+      return;
+    }
+    showAlert(
+      data.invited ? 'Invitation sent' : 'Staff access granted',
+      data.invited
+        ? `${form.email} will receive an email to set a password and sign in.`
+        : `${form.email} already had an account and now has ${form.role} access.`,
+    );
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <View>
+      <Text style={TYPE.h3}>Add a staff member</Text>
+      <Text style={[TYPE.small, { marginBottom: SPACE.lg }]}>
+        They'll get an email invitation to set their password. If they already have an account, it's upgraded to staff.
+      </Text>
+      <TextField label="Work email" required value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" placeholder="name@nwsc.co.ug" />
+      <TextField label="Full name" value={form.full_name} onChangeText={(v) => setForm((f) => ({ ...f, full_name: v }))} placeholder="e.g. Grace Namutebi" />
+      <Select label="Role" value={form.role} options={ROLE_OPTIONS.filter((r) => STAFF_ROLES.includes(r.value))} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
+      <Select
+        label={form.role === 'admin' ? 'Department (optional)' : 'Department'}
+        value={form.department_id}
+        options={[{ value: null, label: 'Choose a department' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+        onChange={(v) => setForm((f) => ({ ...f, department_id: v }))}
+      />
+      <TextField label="Job title" value={form.job_title} onChangeText={(v) => setForm((f) => ({ ...f, job_title: v }))} placeholder="e.g. Customer Care Officer" />
+      <View style={styles.modalActions}>
+        <Button title="Cancel" variant="ghost" onPress={onClose} />
+        <Button title="Send invitation" icon="send" loading={saving} onPress={invite} />
+      </View>
+    </View>
+  );
+}
+
+export default function AdminUsers({ currentUserId }) {
+  const { isDesktop } = useBreakpoint();
+  const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('staff');
+  const [editing, setEditing] = useState(null);
+  const [inviting, setInviting] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, full_name, phone, role, department_id, job_title, is_active, created_at')
+      .order('created_at', { ascending: false });
+    if (error) showAlert('Could not load users', error.message);
+    setUsers(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    fetchDepartments().then(setDepartments).catch(() => {});
+  }, [load]);
+
+  const deptName = useMemo(() => Object.fromEntries(departments.map((d) => [d.id, d.name])), [departments]);
+
+  const shown = users.filter((u) => {
+    const staff = STAFF_ROLES.includes(u.role);
+    if (filter === 'staff' && (!staff || u.is_active === false)) return false;
+    if (filter === 'citizens' && staff) return false;
+    if (filter === 'inactive' && u.is_active !== false) return false;
+    const q = search.trim().toLowerCase();
+    return !q || [u.full_name, u.email, u.phone].some((v) => (v || '').toLowerCase().includes(q));
+  });
+
+  if (loading) return <Loading label="Loading users…" />;
+
+  return (
+    <View style={{ gap: SPACE.lg }}>
+      <View style={[styles.toolbar, !isDesktop && { flexDirection: 'column', alignItems: 'stretch' }]}>
+        <View style={styles.search}>
+          <Ionicons name="search" size={16} color={COLORS.gray400} />
+          <TextInput style={styles.searchInput} value={search} onChangeText={setSearch} placeholder="Search name, email or phone" placeholderTextColor={COLORS.gray400} />
+        </View>
+        <Button title="Add staff member" icon="person-add-outline" onPress={() => setInviting(true)} />
+      </View>
+      <View style={styles.filters}>
+        {FILTERS.map(([k, label]) => (
+          <Pressable key={k} onPress={() => setFilter(k)} style={[styles.chip, filter === k && styles.chipActive]}>
+            <Text style={[styles.chipText, filter === k && { color: '#fff' }]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Card padded={false}>
+        {shown.length === 0 ? (
+          <EmptyState icon="people-outline" title="No users found" message={filter === 'staff' ? 'Add your first staff member to start routing requests to them.' : 'Try another filter.'} />
+        ) : shown.map((u, i) => (
+          <Pressable
+            key={u.id}
+            onPress={() => setEditing(u)}
+            style={({ hovered }) => [styles.row, i > 0 && styles.rowBorder, hovered && { backgroundColor: COLORS.gray50 }, u.is_active === false && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${u.full_name || u.email}`}
+          >
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{(u.full_name || u.email || '?').split(/[ @]/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={TYPE.label}>
+                {u.full_name || 'Unnamed'}{u.id === currentUserId ? <Text style={TYPE.small}>  (you)</Text> : null}
+              </Text>
+              <Text style={TYPE.small} numberOfLines={1}>{u.email}{u.phone && isDesktop ? ` · ${u.phone}` : ''}</Text>
+            </View>
+            {isDesktop && (
+              <Text style={[TYPE.small, { width: 220 }]} numberOfLines={1}>
+                {STAFF_ROLES.includes(u.role) ? `${deptName[u.department_id] || 'No department'}${u.job_title ? ` · ${u.job_title}` : ''}` : ''}
+              </Text>
+            )}
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <Badge label={(ROLE_OPTIONS.find((r) => r.value === u.role) || { label: u.role || 'citizen' }).label} tone={ROLE_TONE[u.role] || 'neutral'} />
+              {u.is_active === false && <Badge label="Deactivated" tone="neutral" />}
+            </View>
+            <Ionicons name="create-outline" size={18} color={COLORS.gray400} />
+          </Pressable>
+        ))}
+      </Card>
+      <Text style={TYPE.small}>{shown.length} of {users.length} accounts</Text>
+
+      <Modal visible={!!editing || inviting} transparent animationType="fade" onRequestClose={() => { setEditing(null); setInviting(false); }}>
+        <View style={styles.overlay}>
+          <ScrollView contentContainerStyle={styles.overlayInner}>
+            <View style={[styles.modal, SHADOW.lg]}>
+              {editing && (
+                <UserEditor target={editing} departments={departments} currentUserId={currentUserId} onClose={() => setEditing(null)} onSaved={load} />
+              )}
+              {inviting && <InviteForm departments={departments} onClose={() => setInviting(false)} onSaved={load} />}
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loadingContainer: { paddingVertical: 40, alignItems: 'center' },
-  heading: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-  emptyText: { color: COLORS.textMuted, fontSize: 14, paddingVertical: 8 },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 12,
-    gap: 8,
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  search: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.white,
+    borderWidth: 1, borderColor: COLORS.gray200, borderRadius: RADIUS.md, paddingHorizontal: 12, minHeight: 44,
   },
-  searchInput: { flex: 1, fontSize: 14, color: COLORS.text },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  youTag: { fontSize: 11, color: COLORS.primary, fontWeight: '600' },
-  email: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
-  meta: { fontSize: 12, color: COLORS.textDim, marginTop: 2 },
-  roleBadge: { backgroundColor: COLORS.surfaceAlt, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  roleBadgeAdmin: { backgroundColor: COLORS.infoSoft },
-  roleBadgeText: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600' },
-  roleBadgeTextAdmin: { color: COLORS.info },
-  roleRow: { borderTopWidth: 1, borderTopColor: COLORS.border, padding: 12 },
-  roleRowLabel: { fontSize: 12, color: COLORS.textMuted, marginBottom: 8, fontWeight: '600' },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  searchInput: { fontFamily: FONT, flex: 1, fontSize: 14, color: COLORS.gray900, paddingVertical: 10 },
+  filters: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.gray200, backgroundColor: COLORS.white },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipAdmin: { borderWidth: 1, borderColor: COLORS.danger },
-  chipText: { fontSize: 12, color: COLORS.textMuted },
-  chipTextActive: { color: '#fff' },
+  chipText: { fontFamily: FONT, fontSize: 13, fontWeight: '600', color: COLORS.gray600 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: SPACE.lg, paddingVertical: 12 },
+  rowBorder: { borderTopWidth: 1, borderTopColor: COLORS.gray100 },
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: FONT, fontWeight: '800', color: COLORS.primary, fontSize: 13 },
+  overlay: { flex: 1, backgroundColor: 'rgba(4,31,58,0.45)' },
+  overlayInner: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg },
+  modal: { width: '100%', maxWidth: 480, backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.xl },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: SPACE.md },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: SPACE.lg },
 });

@@ -16,7 +16,6 @@ const SUB_TABS = [
   { key: 'news', label: 'News' },
   { key: 'faqs', label: 'FAQs' },
   { key: 'leadership', label: 'Leadership' },
-  { key: 'departments', label: 'Departments' },
   { key: 'categories', label: 'Categories' },
   { key: 'bot_knowledge', label: 'Bot Knowledge' },
   { key: 'settings', label: 'Site Settings' },
@@ -154,23 +153,6 @@ export default function AdminContent() {
               { key: 'title', label: 'Title / Role', type: 'text' },
               { key: 'bio', label: 'Bio', type: 'multiline' },
               { key: 'photo_url', label: 'Photo URL', type: 'text' },
-              { key: 'display_order', label: 'Display Order', type: 'number' },
-            ]}
-          />
-        );
-      case 'departments':
-        return (
-          <AdminSimpleList
-            table="departments"
-            title="Departments"
-            titleField="name"
-            subtitleField="description"
-            orderBy="display_order"
-            ascending
-            fields={[
-              { key: 'name', label: 'Name', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'icon', label: 'Ionicon name (e.g. water-outline)', type: 'text' },
               { key: 'display_order', label: 'Display Order', type: 'number' },
             ]}
           />

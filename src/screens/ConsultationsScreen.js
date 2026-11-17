@@ -45,22 +45,14 @@ export default function ConsultationsScreen() {
   const [commentLikeLoading, setCommentLikeLoading] = useState({});
 
   // ----- Helper: create notification -----
-  const createNotification = async (userId, title, message, type, targetScreen, targetId) => {
-    await supabase.from('notifications').insert([{
-      user_id: userId,
-      title,
-      message,
-      type,
-      target_screen: targetScreen,
-      target_id: targetId,
-      read: false,
-    }]);
+  const createNotification = async (_userId, title, message, type, targetScreen, targetId = null) => {
+    await supabase.rpc('notify_admins', {
+      p_title: title, p_message: message, p_type: type, p_screen: targetScreen, p_target: targetId,
+    });
   };
 
-  const getAdminUser = async () => {
-    const { data } = await supabase.from('users').select('id').eq('role', 'admin').limit(1);
-    return data?.[0];
-  };
+  // Admin notifications go through notify_admins() (users are private now).
+  const getAdminUser = async () => ({ id: 'admins' });
 
   // ----- Fetch data -----
   useEffect(() => {
@@ -152,11 +144,6 @@ export default function ConsultationsScreen() {
       }
     } else {
       await supabase.from('likes').insert([{ user_id: user.id, consultation_id: consultationId, reaction_type: reactionType }]);
-      const admin = await getAdminUser();
-      if (admin) {
-        const consultation = consultations.find(c => c.id === consultationId);
-        await createNotification(admin.id, 'New Like', `User liked: ${consultation?.title || 'post'}`, 'info', 'Consultations', consultationId);
-      }
     }
     fetchData();
   };
@@ -276,10 +263,6 @@ export default function ConsultationsScreen() {
         await supabase.from('comment_likes').delete().eq('id', existing.id);
       } else {
         await supabase.from('comment_likes').insert([{ user_id: user.id, comment_id: commentId }]);
-        const admin = await getAdminUser();
-        if (admin) {
-          await createNotification(admin.id, 'New Comment Like', 'Someone liked a comment', 'info', 'Consultations', consultationId);
-        }
       }
       fetchData();
     } catch (error) {

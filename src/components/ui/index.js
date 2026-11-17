@@ -8,6 +8,8 @@ import {
   StyleSheet,
   useWindowDimensions,
   Platform,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -203,6 +205,52 @@ export function TextField({ label, hint, error, required, multiline, style, inpu
   );
 }
 
+/** Simple dropdown: a field that opens a list of options in a modal. */
+export function Select({ label, value, options, onChange, placeholder = 'Select…', disabled, style }) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
+  return (
+    <View style={[{ marginBottom: SPACE.lg }, style]}>
+      {label ? <Text style={[TYPE.label, { marginBottom: 6 }]}>{label}</Text> : null}
+      <Pressable
+        disabled={disabled}
+        onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`${label || 'Select'}: ${current ? current.label : placeholder}`}
+        style={({ hovered }) => [styles.input, styles.selectField, hovered && !disabled && { borderColor: COLORS.primaryLight }, disabled && { backgroundColor: COLORS.gray50 }]}
+      >
+        <Text style={[TYPE.body, { flex: 1, color: current ? COLORS.gray900 : COLORS.gray400 }]} numberOfLines={1}>
+          {current ? current.label : placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={COLORS.gray500} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <View style={styles.selectOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+          <View style={[styles.selectPanel, SHADOW.lg]}>
+            {label ? <Text style={[TYPE.h3, { padding: SPACE.lg, paddingBottom: SPACE.sm }]}>{label}</Text> : null}
+            <ScrollView style={{ maxHeight: 420 }}>
+              {options.map((o) => (
+                <Pressable
+                  key={String(o.value)}
+                  onPress={() => { setOpen(false); onChange(o.value); }}
+                  style={({ hovered }) => [styles.selectItem, (hovered || o.value === value) && { backgroundColor: COLORS.primarySoft }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[TYPE.body, { color: COLORS.gray900, fontWeight: o.value === value ? '700' : '500' }]}>{o.label}</Text>
+                    {o.hint ? <Text style={TYPE.small}>{o.hint}</Text> : null}
+                  </View>
+                  {o.value === value ? <Ionicons name="checkmark" size={18} color={COLORS.primary} /> : null}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
 export function EmptyState({ icon = 'file-tray-outline', title, message, action }) {
   return (
     <View style={styles.empty}>
@@ -270,6 +318,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.gray900, backgroundColor: COLORS.white,
   },
   inputFocused: { borderColor: COLORS.primaryLight, ...(Platform.OS === 'web' ? { boxShadow: '0 0 0 4px rgba(26,115,201,0.15)' } : null) },
+  selectField: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selectOverlay: { flex: 1, backgroundColor: 'rgba(4,31,58,0.4)', alignItems: 'center', justifyContent: 'center', padding: SPACE.lg },
+  selectPanel: { width: '100%', maxWidth: 420, backgroundColor: COLORS.white, borderRadius: RADIUS.lg, overflow: 'hidden', paddingBottom: SPACE.sm },
+  selectItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: SPACE.lg, paddingVertical: 12 },
   empty: { alignItems: 'center', paddingVertical: SPACE.xxxl, paddingHorizontal: SPACE.xl },
   emptyIcon: {
     width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primarySoft,
