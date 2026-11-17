@@ -3,14 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Act
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray800: '#1E293B',
-};
 
 function VideoModalPlayer({ uri }) {
   const player = useVideoPlayer(uri, (p) => { p.loop = false; });
@@ -51,12 +47,12 @@ export default function MediaGalleryScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>🎬 Media Gallery</Text>
-      <Text style={styles.sub}>Photos and short clips from NWSC projects and community events.</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Media gallery" subtitle="Photos and short clips from NWSC projects and community events." icon="images-outline" overline="About us" />
+      <Container style={styles.content}>
 
       {items.length === 0 ? (
-        <Text style={styles.emptyText}>No media uploaded yet — check back soon.</Text>
+        <EmptyState icon="images-outline" title="Nothing here yet" message="Photos and clips from NWSC projects and community events will appear here." />
       ) : (
         <View style={styles.grid}>
           {items.map((item) => (
@@ -96,6 +92,8 @@ export default function MediaGalleryScreen() {
           </View>
         </View>
       </Modal>
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

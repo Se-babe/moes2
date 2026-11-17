@@ -3,15 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray400: '#94A3B8',
-  gray500: '#64748B',
-  gray800: '#1E293B',
-};
 
 const SECTIONS = [
   { key: 'consultations', label: 'Consultations', icon: 'document-text-outline', table: 'consultations', field: 'title', screen: 'Consultations' },
@@ -70,8 +65,9 @@ export default function SearchResultsScreen() {
   const totalCount = Object.values(results).reduce((sum, arr) => sum + arr.length, 0);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>🔎 Search</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Search" subtitle="Find consultations, news, FAQs and forum discussions." icon="search-outline" />
+      <Container style={styles.content}>
       <View style={styles.searchBox}>
         <Ionicons name="search-outline" size={18} color={COLORS.gray400} />
         <TextInput
@@ -116,6 +112,8 @@ export default function SearchResultsScreen() {
           );
         })
       )}
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

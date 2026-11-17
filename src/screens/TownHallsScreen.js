@@ -3,16 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Activity
 import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray800: '#1E293B',
-  success: '#22C55E',
-  successSoft: '#ECFDF5',
-};
 
 const formatTime = (timeStr) => {
   if (!timeStr) return null;
@@ -101,13 +95,13 @@ export default function TownHallsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>🏛️ Virtual Town Halls</Text>
-      <Text style={styles.sub}>Scheduled community meetings with NWSC Jinja — join live, ask questions, and stay informed.</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Community meetings" subtitle="Scheduled town halls with NWSC Jinja. Join in person or online, ask questions and stay informed." icon="people-outline" overline="Participate" />
+      <Container style={styles.content}>
 
       <Text style={styles.sectionHeading}>Upcoming</Text>
       {upcoming.length === 0 ? (
-        <Text style={styles.emptyText}>No town halls scheduled right now — check back soon.</Text>
+        <EmptyState icon="people-outline" title="No meetings scheduled" message="Upcoming community meetings with NWSC Jinja will be listed here." />
       ) : (
         upcoming.map((item) => renderCard(item, true))
       )}
@@ -118,6 +112,8 @@ export default function TownHallsScreen() {
           {past.map((item) => renderCard(item, false))}
         </>
       )}
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

@@ -12,18 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import Footer from '../components/Footer';
+import { PageHeader, Container, Button, Badge, STATUS_TONE } from '../components/ui';
+import { COLORS, FONT, SHADOW } from '../theme';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  primarySoft: '#E0F2FE',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray400: '#94A3B8',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray800: '#1E293B',
-  danger: '#EF4444',
-};
 
 // Citizen-facing progress steps. 'Escalated' is shown as part of "In Progress".
 const STEPS = ['Submitted', 'Assigned', 'In Progress', 'Resolved'];
@@ -45,12 +37,7 @@ const stepIndex = (status) => {
 const fmt = (d) => (d ? new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '');
 
 function StatusBadge({ status }) {
-  const c = STATUS_COLORS[status] || COLORS.gray500;
-  return (
-    <View style={[styles.badge, { backgroundColor: c + '22' }]}>
-      <Text style={[styles.badgeText, { color: c }]}>{status}</Text>
-    </View>
-  );
+  return <Badge label={status} tone={STATUS_TONE[status] || 'neutral'} />;
 }
 
 export default function TrackRequestScreen() {
@@ -104,17 +91,15 @@ export default function TrackRequestScreen() {
   const current = result ? stepIndex(result.status) : -1;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} accessibilityLabel="Go back">
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Track My Request</Text>
-        <View style={{ width: 32 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      <PageHeader
+        overline="Customer service"
+        title="Track my request"
+        subtitle="Enter the reference number we sent you to see the latest progress on your enquiry or complaint."
+        icon="search-outline"
+      />
+      <Container narrow style={styles.content}>
+        <View style={[styles.card, SHADOW.md]}>
           <Text style={styles.label}>Reference number</Text>
           <Text style={styles.helper}>You received it by SMS/email when you submitted, e.g. NW-2611-7KQ4XP.</Text>
           <View style={styles.searchRow}>
@@ -130,9 +115,7 @@ export default function TrackRequestScreen() {
               returnKeyType="search"
               accessibilityLabel="Reference number"
             />
-            <TouchableOpacity style={styles.searchBtn} onPress={() => lookup()} disabled={loading} accessibilityLabel="Track">
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.searchBtnText}>Track</Text>}
-            </TouchableOpacity>
+            <Button title="Track" icon="search" loading={loading} onPress={() => lookup()} />
           </View>
         </View>
 
@@ -209,27 +192,24 @@ export default function TrackRequestScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.newBtn} onPress={() => navigation.navigate('Feedback')}>
-          <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
-          <Text style={styles.newBtnText}>Submit a new enquiry or complaint</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+        <Button
+          title="Submit a new enquiry or complaint"
+          icon="add-circle-outline"
+          variant="ghost"
+          style={{ alignSelf: 'center' }}
+          onPress={() => navigation.navigate('Feedback')}
+        />
+      </Container>
+      <Footer />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff',
-    borderBottomWidth: 1, borderBottomColor: COLORS.gray200,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.primary },
-  content: { padding: 16, gap: 16, maxWidth: 820, width: '100%', alignSelf: 'center' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  content: { gap: 16, marginTop: -24 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.gray200 },
-  label: { fontSize: 16, fontWeight: '700', color: COLORS.gray800 },
+  label: { fontFamily: FONT, fontSize: 16, fontWeight: '700', color: COLORS.gray800 },
   helper: { fontSize: 13, color: COLORS.gray500, marginTop: 4, marginBottom: 12 },
   searchRow: { flexDirection: 'row', gap: 10 },
   input: {

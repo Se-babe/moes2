@@ -43,6 +43,9 @@ import SearchResultsScreen from '../screens/SearchResultsScreen';
 import TownHallsScreen from '../screens/TownHallsScreen';
 import ContactScreen from '../screens/ContactScreen';
 import SitemapScreen from '../screens/SitemapScreen';
+import PrivacyScreen from '../screens/PrivacyScreen';
+import NotFoundScreen from '../screens/NotFoundScreen';
+import { COLORS, FONT } from '../theme';
 
 const Stack = createStackNavigator();
 const { width, height } = Dimensions.get('window');
@@ -76,8 +79,38 @@ const linking = {
       Contact: 'contact',
       Sitemap: 'sitemap',
       AdminDashboard: 'admin',
+      Privacy: 'privacy',
+      NotFound: '*',
     },
   },
+};
+
+// Browser tab titles (web) — "<Page> · NWSC Jinja e-Participation".
+const TITLES = {
+  Home: 'Home',
+  Consultations: 'Public consultations',
+  Surveys: 'Surveys & polls',
+  Feedback: 'Enquiries & complaints',
+  TrackRequest: 'Track my request',
+  ProposeConsultation: 'Propose a consultation',
+  FAQs: 'FAQs',
+  ChatBot: 'Assistant',
+  Login: 'Sign in',
+  SignUp: 'Create account',
+  ForgotPassword: 'Reset password',
+  About: 'About NWSC Jinja',
+  News: 'News & announcements',
+  Forum: 'Discussion forums',
+  MediaGallery: 'Media gallery',
+  Updates: 'Service updates',
+  SearchResults: 'Search',
+  TownHalls: 'Community meetings',
+  Contact: 'Contact us',
+  Sitemap: 'Sitemap',
+  ForumThread: 'Discussion',
+  AdminDashboard: 'Staff area',
+  Privacy: 'Privacy & terms',
+  NotFound: 'Page not found',
 };
 
 const AppNavigatorContent = () => {
@@ -87,7 +120,7 @@ const AppNavigatorContent = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0B5FA5" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -98,31 +131,33 @@ const AppNavigatorContent = () => {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          cardStyle: { backgroundColor: '#F8FAFC' },
+          cardStyle: { backgroundColor: COLORS.bg },
         }}
       >
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Consultations" component={ConsultationsScreen} />
-        <Stack.Screen name="Surveys" component={SurveysScreen} />
-        <Stack.Screen name="Feedback" component={FeedbackScreen} />
-        <Stack.Screen name="TrackRequest" component={TrackRequestScreen} />
-        <Stack.Screen name="ProposeConsultation" component={ProposeConsultationScreen} />
-        <Stack.Screen name="FAQs" component={FAQScreen} />
-        <Stack.Screen name="ChatBot" component={ChatBotScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="About" component={AboutScreen} />
-        <Stack.Screen name="News" component={NewsScreen} />
-        <Stack.Screen name="Forum" component={ForumScreen} />
-        <Stack.Screen name="MediaGallery" component={MediaGalleryScreen} />
-        <Stack.Screen name="Updates" component={UpdatesScreen} />
-        <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
-        <Stack.Screen name="TownHalls" component={TownHallsScreen} />
-        <Stack.Screen name="Contact" component={ContactScreen} />
-        <Stack.Screen name="Sitemap" component={SitemapScreen} />
-        <Stack.Screen name="ForumThread" component={ForumThreadScreen} />
-        <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: TITLES.Home }} />
+        <Stack.Screen name="Consultations" component={ConsultationsScreen} options={{ title: TITLES.Consultations }} />
+        <Stack.Screen name="Surveys" component={SurveysScreen} options={{ title: TITLES.Surveys }} />
+        <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: TITLES.Feedback }} />
+        <Stack.Screen name="TrackRequest" component={TrackRequestScreen} options={{ title: TITLES.TrackRequest }} />
+        <Stack.Screen name="ProposeConsultation" component={ProposeConsultationScreen} options={{ title: TITLES.ProposeConsultation }} />
+        <Stack.Screen name="FAQs" component={FAQScreen} options={{ title: TITLES.FAQs }} />
+        <Stack.Screen name="ChatBot" component={ChatBotScreen} options={{ title: TITLES.ChatBot }} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ title: TITLES.Login }} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: TITLES.SignUp }} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: TITLES.ForgotPassword }} />
+        <Stack.Screen name="About" component={AboutScreen} options={{ title: TITLES.About }} />
+        <Stack.Screen name="News" component={NewsScreen} options={{ title: TITLES.News }} />
+        <Stack.Screen name="Forum" component={ForumScreen} options={{ title: TITLES.Forum }} />
+        <Stack.Screen name="MediaGallery" component={MediaGalleryScreen} options={{ title: TITLES.MediaGallery }} />
+        <Stack.Screen name="Updates" component={UpdatesScreen} options={{ title: TITLES.Updates }} />
+        <Stack.Screen name="SearchResults" component={SearchResultsScreen} options={{ title: TITLES.SearchResults }} />
+        <Stack.Screen name="TownHalls" component={TownHallsScreen} options={{ title: TITLES.TownHalls }} />
+        <Stack.Screen name="Contact" component={ContactScreen} options={{ title: TITLES.Contact }} />
+        <Stack.Screen name="Sitemap" component={SitemapScreen} options={{ title: TITLES.Sitemap }} />
+        <Stack.Screen name="ForumThread" component={ForumThreadScreen} options={{ title: TITLES.ForumThread }} />
+        <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: TITLES.AdminDashboard }} />
+        <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: TITLES.Privacy }} />
+        <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ title: TITLES.NotFound }} />
       </Stack.Navigator>
 
       <ChatButton onPress={() => setChatVisible(true)} />
@@ -138,9 +173,12 @@ const AppNavigatorContent = () => {
           <View style={[styles.chatContainer, Platform.OS === 'web' && styles.webChatContainer]} onStartShouldSetResponder={() => true}>
             <View style={styles.chatPanel}>
               <View style={styles.chatHeader}>
-                <Text style={styles.chatTitle}>Chat with Maji</Text>
-                <TouchableOpacity onPress={() => setChatVisible(false)}>
-                  <Ionicons name="close" size={28} color="#0B5FA5" />
+                <View>
+                  <Text style={styles.chatTitle}>Maji · NWSC assistant</Text>
+                  <Text style={styles.chatSub}>Answers in seconds. For emergencies call 0800-200-977.</Text>
+                </View>
+                <TouchableOpacity onPress={() => setChatVisible(false)} accessibilityLabel="Close chat">
+                  <Ionicons name="close" size={26} color={COLORS.white} />
                 </TouchableOpacity>
               </View>
               <ChatBotScreen onClose={() => setChatVisible(false)} />
@@ -155,8 +193,11 @@ const AppNavigatorContent = () => {
 export default function AppNavigator() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor="#0B5FA5" />
-      <NavigationContainer linking={linking}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <NavigationContainer
+        linking={linking}
+        documentTitle={{ formatter: (options) => `${options?.title ?? 'Home'} · NWSC Jinja e-Participation` }}
+      >
         <AuthProvider>
           <AppNavigatorContent />
         </AuthProvider>
@@ -174,7 +215,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(4,31,58,0.45)',
     justifyContent: Platform.OS === 'web' ? 'flex-start' : 'flex-end',
     alignItems: Platform.OS === 'web' ? 'flex-end' : 'stretch',
   },
@@ -196,7 +237,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   webChatContainer: {
-    width: width * 0.45,
+    width: '100%',
+    maxWidth: 440,
     height: '100%',
     borderLeftWidth: 1,
     borderLeftColor: '#E2E8F0',
@@ -211,14 +253,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    backgroundColor: COLORS.primary,
   },
   chatTitle: {
-    fontSize: 18,
+    fontFamily: FONT,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#0B5FA5',
+    color: COLORS.white,
+  },
+  chatSub: {
+    fontFamily: FONT,
+    fontSize: 12,
+    color: '#BAE6FD',
+    marginTop: 2,
   },
 });

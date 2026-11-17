@@ -51,7 +51,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signUp = async (email, password, fullName, phone, role) => {
-    console.log('🔴 signUp function called inside context');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -63,7 +62,6 @@ export const AuthProvider = ({ children }) => {
       console.error('❌ signUp error:', error);
       throw error;
     }
-    console.log('✅ auth signUp success:', data);
     if (data.user) {
       const { error: insertError } = await supabase
         .from('users')
@@ -72,7 +70,6 @@ export const AuthProvider = ({ children }) => {
         console.error('❌ insert error:', insertError);
         throw insertError;
       }
-      console.log('✅ user inserted into users table');
     }
     return data;
   };

@@ -3,491 +3,318 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   ScrollView,
   Linking,
   Modal,
-  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import BrandMark from './BrandMark';
 import { useNavigation } from '@react-navigation/native';
-import DropdownMenu from './DropdownMenu';
+import BrandMark from './BrandMark';
 import { supabase } from '../services/supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { ORG } from '../config/org';
+import { COLORS, FONT, RADIUS, SHADOW, LAYOUT } from '../theme';
+import { Button, useBreakpoint } from './ui';
 
-const COLORS = {
-  primaryDark: 'rgba(7,62,110,0.95)',
-  primary: 'rgba(11,95,165,0.95)',
-  accent: '#FCD34D',
-  gray400: '#94A3B8',
-  gray200: '#E2E8F0',
-  gray800: '#1E293B',
-};
+export const NAV = [
+  {
+    label: 'Services',
+    items: [
+      { label: 'Report a problem', desc: 'Leaks, no water, sewer issues', icon: 'water-outline', screen: 'Feedback', params: { type: 'Complaint' } },
+      { label: 'Make an enquiry', desc: 'Billing, connections, questions', icon: 'help-circle-outline', screen: 'Feedback', params: { type: 'Enquiry' } },
+      { label: 'Track my request', desc: 'Check progress with your reference', icon: 'search-outline', screen: 'TrackRequest' },
+      { label: 'Service updates', desc: 'Interruptions and restorations', icon: 'megaphone-outline', screen: 'Updates' },
+    ],
+  },
+  {
+    label: 'Participate',
+    items: [
+      { label: 'Public consultations', desc: 'Have your say on proposals', icon: 'document-text-outline', screen: 'Consultations' },
+      { label: 'Surveys & polls', desc: 'Rate our services', icon: 'stats-chart-outline', screen: 'Surveys' },
+      { label: 'Discussion forums', desc: 'Ask and answer questions', icon: 'chatbubbles-outline', screen: 'Forum' },
+      { label: 'Community meetings', desc: 'Town halls in your area', icon: 'people-outline', screen: 'TownHalls' },
+      { label: 'Share a suggestion', desc: 'Ideas to improve services', icon: 'bulb-outline', screen: 'Feedback', params: { type: 'Suggestion' } },
+    ],
+  },
+  {
+    label: 'About',
+    items: [
+      { label: 'About NWSC Jinja', desc: 'Who we are and our teams', icon: 'business-outline', screen: 'About' },
+      { label: 'News & announcements', desc: 'Latest from NWSC', icon: 'newspaper-outline', screen: 'News' },
+      { label: 'Media gallery', desc: 'Projects and community events', icon: 'images-outline', screen: 'MediaGallery' },
+      { label: 'FAQs', desc: 'Answers to common questions', icon: 'help-buoy-outline', screen: 'FAQs' },
+      { label: 'Contact us', desc: 'Offices, phone and email', icon: 'call-outline', screen: 'Contact' },
+    ],
+  },
+];
 
-const MOBILE_BREAKPOINT = 768;
+function NavDropdown({ section, onNavigate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View
+      style={styles.navItemWrap}
+      // web: open on hover, close when the pointer leaves the trigger+panel
+      onMouseEnter={Platform.OS === 'web' ? () => setOpen(true) : undefined}
+      onMouseLeave={Platform.OS === 'web' ? () => setOpen(false) : undefined}
+    >
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        style={({ hovered }) => [styles.navLink, (hovered || open) && styles.navLinkActive]}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+      >
+        <Text style={styles.navLinkText}>{section.label}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={COLORS.gray600} />
+      </Pressable>
+      {open && (
+        <View style={[styles.dropdown, SHADOW.lg]}>
+          {section.items.map((item) => (
+            <Pressable
+              key={item.label}
+              onPress={() => { setOpen(false); onNavigate(item.screen, item.params); }}
+              style={({ hovered }) => [styles.dropItem, hovered && { backgroundColor: COLORS.primarySoft }]}
+              accessibilityRole="link"
+            >
+              <View style={styles.dropIcon}>
+                <Ionicons name={item.icon} size={18} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.dropTitle}>{item.label}</Text>
+                <Text style={styles.dropDesc}>{item.desc}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function Header() {
   const navigation = useNavigation();
-  const { width } = useWindowDimensions();
-  const isMobile = width < MOBILE_BREAKPOINT;
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [contactInfo, setContactInfo] = useState({
-    phone1: 'Toll Free: 0800-200-977',
-    phone2: 'Customer Care: +256 (0)313-315-000',
-    phone3: '',
-  });
+  const { user, signOut } = useAuth();
+  const { width } = useBreakpoint();
+  const compact = width < LAYOUT.breakpoints.lg;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [socialLinks, setSocialLinks] = useState([]);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      const { data } = await supabase.from('settings').select('key, value');
-      if (data) {
-        const newInfo = {};
-        data.forEach((item) => { newInfo[item.key] = item.value; });
-        setContactInfo((prev) => ({ ...prev, ...newInfo }));
-      }
-    };
-    fetchSettings();
+    supabase
+      .from('social_links')
+      .select('*')
+      .eq('enabled', true)
+      .order('display_order', { ascending: true })
+      .then(({ data }) => setSocialLinks(data || []));
   }, []);
 
-  useEffect(() => {
-    const fetchSocialLinks = async () => {
-      const { data } = await supabase
-        .from('social_links')
-        .select('*')
-        .eq('enabled', true)
-        .order('display_order', { ascending: true });
-      if (data) setSocialLinks(data);
-    };
-    fetchSocialLinks();
-  }, []);
-
-  const handleSocialPress = (url) => {
-    Linking.openURL(url).catch(() => alert('Open in browser'));
-  };
-
-  const aboutItems = [
-    { label: 'About NWSC', screen: 'About' },
-    { label: 'Service Updates', screen: 'Updates' },
-    { label: 'News & Announcements', screen: 'News' },
-    { label: 'Media Gallery', screen: 'MediaGallery' },
-  ];
-
-  const participationItems = [
-    { label: 'Enquiries & Complaints', screen: 'Feedback' },
-    { label: 'Track My Request', screen: 'TrackRequest' },
-    { label: 'Public Consultations', screen: 'Consultations' },
-    { label: 'Surveys & Polls', screen: 'Surveys' },
-    { label: 'Discussion Forums', screen: 'Forum' },
-    { label: 'Town Halls', screen: 'TownHalls' },
-  ];
-
-  const helpItems = [
-    { label: 'FAQs', screen: 'FAQs' },
-    { label: 'Contact Us', screen: 'Contact' },
-    { label: 'Sitemap', screen: 'Sitemap' },
-  ];
-
-  const navSections = [
-    { label: 'About', items: aboutItems },
-    { label: 'Participation', items: participationItems },
-    { label: 'Help', items: helpItems },
-  ];
-
-  const handleNav = (screen, params) => {
+  const go = (screen, params) => {
+    setMenuOpen(false);
     if (screen) navigation.navigate(screen, params);
   };
 
-  const handleMobileNav = (screen, params) => {
-    setMobileMenuOpen(false);
-    if (screen) navigation.navigate(screen, params);
+  const search = () => {
+    const q = query.trim();
+    if (!q) return;
+    setMenuOpen(false);
+    navigation.navigate('SearchResults', { query: q });
   };
 
-  const submitMobileSearch = () => {
-    if (mobileSearchQuery.trim().length > 0) {
-      setMobileMenuOpen(false);
-      navigation.navigate('SearchResults', { query: mobileSearchQuery.trim() });
-    }
-  };
+  const isStaff = user && ['officer', 'supervisor', 'admin'].includes(user.role);
+  const tollFree = ORG.phones[0];
 
-  if (isMobile) {
-    return (
-      <View style={styles.headerContainer}>
-        <View style={styles.mobileTopRow}>
-          <TouchableOpacity style={styles.mobileBrand} onPress={() => navigation.navigate('Home')}>
-            <BrandMark size="small" />
-            <Text style={styles.mobileBrandText} numberOfLines={1}>NWSC e-Participation</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.hamburgerBtn} onPress={() => setMobileMenuOpen(true)}>
-            <Ionicons name="menu" size={26} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <Modal visible={mobileMenuOpen} animationType="slide" onRequestClose={() => setMobileMenuOpen(false)}>
-          <View style={styles.mobileMenuContainer}>
-            <View style={styles.mobileMenuHeader}>
-              <Text style={styles.mobileMenuTitle}>Menu</Text>
-              <TouchableOpacity onPress={() => setMobileMenuOpen(false)}>
-                <Ionicons name="close" size={28} color={COLORS.gray800} />
-              </TouchableOpacity>
+  return (
+    <View style={styles.wrap}>
+      {/* Utility bar */}
+      <View style={styles.utility}>
+        <View style={styles.inner}>
+          <Pressable style={styles.utilItem} onPress={() => Linking.openURL(`tel:${tollFree.value.replace(/\D/g, '')}`)}>
+            <Ionicons name="call" size={13} color={COLORS.accent} />
+            <Text style={styles.utilText}>
+              {compact ? `${tollFree.label}: ${tollFree.value}` : `Emergency or burst pipe? Call ${tollFree.label.toLowerCase()} ${tollFree.value}`}
+            </Text>
+          </Pressable>
+          {!compact && (
+            <View style={styles.utilRight}>
+              <Pressable style={styles.utilItem} onPress={() => Linking.openURL(`mailto:${ORG.email}`)}>
+                <Ionicons name="mail-outline" size={13} color="#93C5FD" />
+                <Text style={styles.utilText}>{ORG.email}</Text>
+              </Pressable>
+              {socialLinks.map((s) => (
+                <Pressable key={s.id} onPress={() => s.url && Linking.openURL(s.url)} accessibilityLabel={s.name} style={styles.utilIcon}>
+                  <Ionicons name={s.icon_name} size={15} color="#CBD5E1" />
+                </Pressable>
+              ))}
             </View>
+          )}
+        </View>
+      </View>
 
-            <ScrollView contentContainerStyle={styles.mobileMenuContent}>
-              <View style={styles.mobileSearchBox}>
-                <Ionicons name="search-outline" size={18} color={COLORS.gray400} />
+      {/* Main bar */}
+      <View style={styles.main}>
+        <View style={[styles.inner, { paddingVertical: 12 }]}>
+          <Pressable onPress={() => go('Home')} accessibilityRole="link" accessibilityLabel="Home">
+            <BrandMark size={compact ? 'small' : 'large'} />
+          </Pressable>
+
+          {!compact && (
+            <View style={styles.nav}>
+              {NAV.map((section) => (
+                <NavDropdown key={section.label} section={section} onNavigate={go} />
+              ))}
+            </View>
+          )}
+
+          <View style={styles.actions}>
+            {!compact && (
+              <View style={styles.search}>
+                <Ionicons name="search" size={16} color={COLORS.gray400} />
                 <TextInput
-                  style={styles.mobileSearchInput}
-                  placeholder="Search..."
+                  style={styles.searchInput}
+                  placeholder="Search"
                   placeholderTextColor={COLORS.gray400}
-                  value={mobileSearchQuery}
-                  onChangeText={setMobileSearchQuery}
-                  onSubmitEditing={submitMobileSearch}
+                  value={query}
+                  onChangeText={setQuery}
+                  onSubmitEditing={search}
+                  returnKeyType="search"
+                  accessibilityLabel="Search the site"
+                />
+              </View>
+            )}
+            {!compact && (
+              user ? (
+                <Button
+                  title={isStaff ? 'Staff area' : 'My requests'}
+                  variant="secondary"
+                  size="sm"
+                  icon={isStaff ? 'briefcase-outline' : 'person-circle-outline'}
+                  onPress={() => go(isStaff ? 'AdminDashboard' : 'TrackRequest')}
+                />
+              ) : (
+                <Button title="Sign in" variant="ghost" size="sm" onPress={() => go('Login')} />
+              )
+            )}
+            {width >= 420 && (
+              <Button title="Report a problem" icon="water" size="sm" onPress={() => go('Feedback', { type: 'Complaint' })} />
+            )}
+            {compact && (
+              <Pressable style={styles.burger} onPress={() => setMenuOpen(true)} accessibilityLabel="Open menu" accessibilityRole="button">
+                <Ionicons name="menu" size={24} color={COLORS.primaryDark} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Mobile / tablet drawer */}
+      <Modal visible={menuOpen} animationType="fade" transparent onRequestClose={() => setMenuOpen(false)}>
+        <View style={styles.drawerOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)} accessibilityLabel="Close menu" />
+          <View style={[styles.drawer, SHADOW.lg]}>
+            <View style={styles.drawerHead}>
+              <BrandMark size="small" />
+              <Pressable onPress={() => setMenuOpen(false)} accessibilityLabel="Close menu" style={styles.burger}>
+                <Ionicons name="close" size={24} color={COLORS.gray700} />
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+              <View style={[styles.search, { marginBottom: 16 }]}>
+                <Ionicons name="search" size={16} color={COLORS.gray400} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search"
+                  placeholderTextColor={COLORS.gray400}
+                  value={query}
+                  onChangeText={setQuery}
+                  onSubmitEditing={search}
                   returnKeyType="search"
                 />
-                <TouchableOpacity onPress={submitMobileSearch}>
-                  <Text style={styles.mobileSearchBtnText}>Go</Text>
-                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity style={styles.mobileNavLink} onPress={() => handleMobileNav('Home')}>
-                <Text style={styles.mobileNavLinkText}>Home</Text>
-              </TouchableOpacity>
-
-              {navSections.map((section) => (
-                <View key={section.label} style={styles.mobileSection}>
-                  <Text style={styles.mobileSectionLabel}>{section.label}</Text>
+              <Button title="Report a problem" icon="water" full onPress={() => go('Feedback', { type: 'Complaint' })} />
+              <Button title="Track my request" icon="search" variant="secondary" full style={{ marginTop: 10 }} onPress={() => go('TrackRequest')} />
+              {NAV.map((section) => (
+                <View key={section.label} style={{ marginTop: 24 }}>
+                  <Text style={styles.drawerSection}>{section.label}</Text>
                   {section.items.map((item) => (
-                    <TouchableOpacity
-                      key={item.label}
-                      style={styles.mobileNavLink}
-                      onPress={() => handleMobileNav(item.screen, item.params)}
-                    >
-                      <Text style={styles.mobileNavLinkText}>{item.label}</Text>
-                    </TouchableOpacity>
+                    <Pressable key={item.label} style={styles.drawerLink} onPress={() => go(item.screen, item.params)}>
+                      <Ionicons name={item.icon} size={18} color={COLORS.primary} />
+                      <Text style={styles.drawerLinkText}>{item.label}</Text>
+                    </Pressable>
                   ))}
                 </View>
               ))}
-
-              <View style={styles.mobileSection}>
-                <Text style={styles.mobileSectionLabel}>Contact</Text>
-                <Text style={styles.mobileContactText}>{contactInfo.phone1}</Text>
-                <Text style={styles.mobileContactText}>{contactInfo.phone2}</Text>
-                {contactInfo.phone3 ? <Text style={styles.mobileContactText}>{contactInfo.phone3}</Text> : null}
+              <View style={{ marginTop: 24 }}>
+                <Text style={styles.drawerSection}>Account</Text>
+                {user ? (
+                  <>
+                    {isStaff && (
+                      <Pressable style={styles.drawerLink} onPress={() => go('AdminDashboard')}>
+                        <Ionicons name="briefcase-outline" size={18} color={COLORS.primary} />
+                        <Text style={styles.drawerLinkText}>Staff area</Text>
+                      </Pressable>
+                    )}
+                    <Pressable style={styles.drawerLink} onPress={() => { setMenuOpen(false); signOut(); }}>
+                      <Ionicons name="log-out-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.drawerLinkText}>Sign out</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable style={styles.drawerLink} onPress={() => go('Login')}>
+                    <Ionicons name="log-in-outline" size={18} color={COLORS.primary} />
+                    <Text style={styles.drawerLinkText}>Sign in</Text>
+                  </Pressable>
+                )}
               </View>
-
-              {socialLinks.length > 0 && (
-                <View style={styles.mobileSocialRow}>
-                  {socialLinks.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.mobileIconBtn}
-                      onPress={() => handleSocialPress(item.url)}
-                    >
-                      <Ionicons name={item.icon_name} size={22} color={item.color || COLORS.gray800} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
             </ScrollView>
           </View>
-        </Modal>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.headerContainer}>
-      {/* TOP ROW */}
-      <View style={styles.topRow}>
-        <BrandMark />
-        <View style={styles.contactInfo}>
-          <Text style={styles.contactText}>
-            <Ionicons name="call-outline" size={14} color={COLORS.accent} /> {contactInfo.phone1}
-          </Text>
-          <Text style={styles.contactText}>
-            <Ionicons name="call-outline" size={14} color={COLORS.accent} /> {contactInfo.phone2}
-          </Text>
-          {contactInfo.phone3 ? (
-            <Text style={styles.contactText}>
-              <Ionicons name="chatbubble-outline" size={14} color={COLORS.accent} /> {contactInfo.phone3}
-            </Text>
-          ) : null}
         </View>
-
-      </View>
-
-      {/* SECOND ROW */}
-      <View style={styles.navRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.navScroll}>
-          <TouchableOpacity style={styles.navLink} onPress={() => navigation.navigate('Home')}>
-            <Text style={styles.navLinkText}>Home</Text>
-          </TouchableOpacity>
-          <DropdownMenu
-            label="About"
-            items={aboutItems}
-            onSelect={(item) => handleNav(item.screen, item.params)}
-            icon="information-circle-outline"
-          />
-          <DropdownMenu
-            label="Participation"
-            items={participationItems}
-            onSelect={(item) => handleNav(item.screen, item.params)}
-            icon="people-outline"
-          />
-          <DropdownMenu
-            label="Help"
-            items={helpItems}
-            onSelect={(item) => handleNav(item.screen, item.params)}
-            icon="book-outline"
-          />
-        </ScrollView>
-
-        <View style={styles.rightIcons}>
-          {/* Social Links */}
-          {socialLinks.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.iconBtn}
-              onPress={() => handleSocialPress(item.url)}
-            >
-              <Ionicons name={item.icon_name} size={22} color={item.color || '#fff'} />
-            </TouchableOpacity>
-          ))}
-
-          {/* Search */}
-          <View style={styles.searchContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                if (searchQuery.trim().length > 0) {
-                  navigation.navigate('SearchResults', { query: searchQuery.trim() });
-                }
-              }}
-            >
-              <Ionicons name="search-outline" size={20} color={COLORS.gray400} />
-            </TouchableOpacity>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search..."
-              placeholderTextColor={COLORS.gray400}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={() => {
-                if (searchQuery.trim().length > 0) {
-                  navigation.navigate('SearchResults', { query: searchQuery.trim() });
-                }
-              }}
-              returnKeyType="search"
-            />
-          </View>
-        </View>
-      </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: COLORS.primaryDark,
-    backdropFilter: 'blur(10px)',
-    paddingTop: 30,
-    paddingBottom: 4,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+  wrap: { zIndex: 100, backgroundColor: COLORS.white, ...(Platform.OS === 'web' ? { position: 'relative' } : null) },
+  inner: {
+    width: '100%', maxWidth: LAYOUT.maxWidth, alignSelf: 'center', paddingHorizontal: LAYOUT.gutter,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16,
   },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-    marginBottom: 4,
+  utility: { backgroundColor: COLORS.primaryDarker, paddingVertical: 7 },
+  utilRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  utilItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  utilText: { fontFamily: FONT, color: '#E2E8F0', fontSize: 12.5, fontWeight: '500' },
+  utilIcon: { padding: 2 },
+  main: { borderBottomWidth: 1, borderBottomColor: COLORS.gray200, backgroundColor: COLORS.white, zIndex: 100 },
+  nav: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, marginLeft: 24 },
+  navItemWrap: { position: 'relative', zIndex: 200 },
+  navLink: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.sm },
+  navLinkActive: { backgroundColor: COLORS.gray100 },
+  navLinkText: { fontFamily: FONT, fontSize: 15, fontWeight: '600', color: COLORS.gray800 },
+  dropdown: {
+    position: 'absolute', top: '100%', left: 0, width: 320, backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.gray200, padding: 8, zIndex: 300,
   },
-  coatOfArms: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+  dropItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: RADIUS.md },
+  dropIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  dropTitle: { fontFamily: FONT, fontSize: 14, fontWeight: '700', color: COLORS.gray900 },
+  dropDesc: { fontFamily: FONT, fontSize: 12.5, color: COLORS.gray500, marginTop: 1 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  search: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.gray100,
+    borderRadius: RADIUS.pill, paddingHorizontal: 14, height: 40, minWidth: 180,
   },
-  contactInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
+  searchInput: { fontFamily: FONT, flex: 1, fontSize: 14, color: COLORS.gray900, height: 40 },
+  burger: { padding: 8, borderRadius: RADIUS.sm },
+  drawerOverlay: { flex: 1, backgroundColor: 'rgba(4,31,58,0.5)', flexDirection: 'row', justifyContent: 'flex-end' },
+  drawer: { width: '86%', maxWidth: 380, height: '100%', backgroundColor: COLORS.white },
+  drawerHead: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.gray200,
   },
-  contactText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-    marginLeft: 12,
-  },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    backgroundColor: COLORS.primary,
-    backdropFilter: 'blur(10px)',
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  navScroll: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  navLink: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 4,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  navLinkText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  rightIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  iconBtn: {
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 40,
-    minHeight: 40,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginLeft: 6,
-    minWidth: 120,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 14,
-    paddingVertical: 4,
-    marginLeft: 6,
-  },
-
-  // ---------- Mobile layout ----------
-  mobileTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-  },
-  mobileBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
-  },
-  coatOfArmsSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  mobileBrandText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    flexShrink: 1,
-  },
-  hamburgerBtn: {
-    padding: 4,
-  },
-  mobileMenuContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 50,
-  },
-  mobileMenuHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray200,
-  },
-  mobileMenuTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.gray800,
-  },
-  mobileMenuContent: {
-    padding: 20,
-  },
-  mobileSearchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 20,
-    gap: 8,
-  },
-  mobileSearchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.gray800,
-  },
-  mobileSearchBtnText: {
-    color: 'rgba(30,58,138,1)',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  mobileNavLink: {
-    paddingVertical: 12,
-  },
-  mobileNavLinkText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray800,
-  },
-  mobileSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray200,
-  },
-  mobileSectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.gray400,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  mobileContactText: {
-    fontSize: 14,
-    color: COLORS.gray800,
-    paddingVertical: 4,
-  },
-  mobileSocialRow: {
-    flexDirection: 'row',
-    marginTop: 16,
-    gap: 12,
-  },
-  mobileIconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  drawerSection: { fontFamily: FONT, fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: COLORS.gray400, marginBottom: 6 },
+  drawerLink: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
+  drawerLinkText: { fontFamily: FONT, fontSize: 15.5, fontWeight: '600', color: COLORS.gray800 },
 });

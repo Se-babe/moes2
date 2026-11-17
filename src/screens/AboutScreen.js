@@ -4,17 +4,10 @@ import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  accent: '#FCD34D',
-};
 
 export default function AboutScreen() {
   const navigation = useNavigation();
@@ -59,13 +52,7 @@ export default function AboutScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>🏛️ About NWSC</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <PageHeader title="About NWSC Jinja" subtitle="The National Water and Sewerage Corporation provides safe water and sewerage services to Jinja and surrounding areas." icon="business-outline" overline="About us" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {leadership.length > 0 && (
@@ -109,8 +96,7 @@ export default function AboutScreen() {
 
         {leadership.length === 0 && departments.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Ionicons name="information-circle-outline" size={60} color={COLORS.gray500} />
-            <Text style={styles.emptyText}>About content hasn't been added yet.</Text>
+            <EmptyState icon="business-outline" title="Coming soon" message="Information about NWSC Jinja's teams will appear here." />
           </View>
         )}
       </ScrollView>

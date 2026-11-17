@@ -12,15 +12,10 @@ import {
 import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray700: '#334155',
-  gray800: '#1E293B',
-};
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -49,16 +44,11 @@ export default function ForgotPasswordScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Reset Password</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <PageHeader title="Reset your password" subtitle="Enter your email and we'll send you a link to set a new password." icon="key-outline" overline="Your account" />
       <View style={styles.form}>
         <Text style={styles.label}>Email</Text>
         <TextInput
+            placeholderTextColor={COLORS.gray400}
           style={styles.input}
           placeholder="Enter your email"
           value={email}
@@ -78,10 +68,10 @@ export default function ForgotPasswordScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.gray200 },
   title: { fontSize: 20, fontWeight: '700', color: COLORS.primary },
-  form: { padding: 20 },
+  form: { padding: 28, paddingBottom: 32, width: '100%', maxWidth: 480, alignSelf: 'center', marginTop: -24, marginBottom: 40, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.gray200 },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.gray700, marginBottom: 6 },
   input: { borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 10, padding: 12, fontSize: 16, marginBottom: 16 },
   resetBtn: { backgroundColor: COLORS.primary, padding: 16, borderRadius: 30, alignItems: 'center' },

@@ -15,15 +15,10 @@ import {
 import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray700: '#334155',
-  gray800: '#1E293B',
-};
 
 const ROLES = [
   { label: 'Customer / Resident', value: 'citizen' },
@@ -43,37 +38,28 @@ export default function SignUpScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const auth = useAuth();
-  console.log('🔍 auth object:', auth);
 
   const validatePassword = (pwd) => {
     return pwd.length >= 6 && /[A-Za-z]/.test(pwd) && /\d/.test(pwd);
   };
 
   const handleSignUp = async () => {
-    console.log('🔵 handleSignUp called');
-    console.log('📝 Form values:', { name, email, phone, password: '***', confirmPassword: '***', role });
 
     if (!name || !email || !phone || !password || !confirmPassword) {
-      console.log('❌ Missing fields');
       showAlert('Error', 'Please fill in all fields.');
       return;
     }
     if (password !== confirmPassword) {
-      console.log('❌ Passwords do not match');
       showAlert('Error', 'Passwords do not match.');
       return;
     }
     if (!validatePassword(password)) {
-      console.log('❌ Invalid password');
       showAlert('Error', 'Password must be at least 6 characters long and contain both letters and numbers.');
       return;
     }
-    console.log('✅ Validation passed');
     setLoading(true);
     try {
-      console.log('📤 Calling auth.signUp with:', { email, password: '***', name, phone, role });
       const result = await auth.signUp(email, password, name, phone, role);
-      console.log('✅ auth.signUp result:', result);
       // Email confirmation is off for this project, so signUp() already returns
       // an active session — no need to send them to Login to re-enter credentials.
       // SignUp is always reached via Login's "Sign Up" link, so pop 2 screens to
@@ -101,22 +87,18 @@ export default function SignUpScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={80}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Sign Up</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <PageHeader title="Create an account" subtitle="An account keeps all your requests together and pre-fills your details." icon="person-add-outline" overline="Your account" />
       <ScrollView 
         contentContainerStyle={styles.form}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.label}>Full Name</Text>
-        <TextInput style={styles.input} placeholder="Enter your full name" value={name} onChangeText={setName} />
+        <TextInput
+            placeholderTextColor={COLORS.gray400} style={styles.input} placeholder="Enter your full name" value={name} onChangeText={setName} />
 
         <Text style={styles.label}>Email</Text>
         <TextInput
+            placeholderTextColor={COLORS.gray400}
           style={styles.input}
           placeholder="Enter your email"
           value={email}
@@ -127,6 +109,7 @@ export default function SignUpScreen({ navigation }) {
 
         <Text style={styles.label}>Phone</Text>
         <TextInput
+            placeholderTextColor={COLORS.gray400}
           style={styles.input}
           placeholder="Enter your phone number"
           value={phone}
@@ -146,6 +129,7 @@ export default function SignUpScreen({ navigation }) {
         <Text style={styles.label}>Password</Text>
         <View style={styles.passwordContainer}>
           <TextInput
+            placeholderTextColor={COLORS.gray400}
             style={[styles.input, { flex: 1, borderWidth: 0 }]}
             placeholder="At least 6 chars, letters & numbers"
             value={password}
@@ -159,6 +143,7 @@ export default function SignUpScreen({ navigation }) {
 
         <Text style={styles.label}>Confirm Password</Text>
         <TextInput
+            placeholderTextColor={COLORS.gray400}
           style={styles.input}
           placeholder="Confirm your password"
           value={confirmPassword}
@@ -223,7 +208,7 @@ export default function SignUpScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,7 +220,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.gray200,
   },
   title: { fontSize: 20, fontWeight: '700', color: COLORS.primary },
-  form: { padding: 20, paddingBottom: 40 },
+  form: { padding: 28, paddingBottom: 32, width: '100%', maxWidth: 480, alignSelf: 'center', marginTop: -24, marginBottom: 40, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.gray200 },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.gray700, marginBottom: 6 },
   input: {
     borderWidth: 1,

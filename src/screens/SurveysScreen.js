@@ -3,17 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { showAlert } from '../utils/alert';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray800: '#1E293B',
-  info: '#3B82F6',
-  success: '#22C55E',
-};
 
 export default function SurveysScreen() {
   const navigation = useNavigation();
@@ -117,13 +110,13 @@ export default function SurveysScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>📊 Surveys & Polls</Text>
-      <Text style={styles.sub}>Vote on the themes that matter most and share your experience with us.</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Surveys & polls" subtitle="Rate our services and vote on the issues that matter most to you." icon="stats-chart-outline" overline="Participate" />
+      <Container style={styles.content}>
 
       <Text style={styles.sectionHeading}>🗳️ Live Polls</Text>
       {polls.length === 0 ? (
-        <Text style={styles.emptyText}>No live polls right now — check back soon.</Text>
+        <EmptyState icon="stats-chart-outline" title="No live polls right now" message="Check back soon to vote on the issues that matter to you." />
       ) : (
         polls.map((c) => {
           const poll = c.polls[0];
@@ -163,7 +156,7 @@ export default function SurveysScreen() {
 
       <Text style={styles.sectionHeading}>📋 Surveys</Text>
       {surveys.length === 0 ? (
-        <Text style={styles.emptyText}>No surveys open right now.</Text>
+        <EmptyState icon="clipboard-outline" title="No surveys open right now" message="When we ask for your feedback on our services, the survey will appear here." />
       ) : (
         surveys.map((item) => (
           <View key={item.id} style={styles.card}>
@@ -173,6 +166,8 @@ export default function SurveysScreen() {
           </View>
         ))
       )}
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

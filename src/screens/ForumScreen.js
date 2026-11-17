@@ -14,19 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray100: '#F1F5F9',
-  gray200: '#E2E8F0',
-  gray400: '#94A3B8',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  accent: '#FCD34D',
-};
 
 const CATEGORIES = ['General', 'Water Supply', 'Billing', 'Water Quality', 'Sewerage', 'Conservation'];
 
@@ -119,15 +110,7 @@ export default function ForumScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>💬 Discussion Forums</Text>
-        <TouchableOpacity onPress={fetchTopics}>
-          <Ionicons name="refresh-outline" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      <PageHeader title="Discussion forums" subtitle="Ask questions, share solutions and talk about water services with your community and NWSC staff." icon="chatbubbles-outline" overline="Participate" />
 
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.newTopicBtn} onPress={openNewTopic}>
@@ -137,8 +120,7 @@ export default function ForumScreen() {
 
         {topics.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="chatbubbles-outline" size={60} color={COLORS.gray400} />
-            <Text style={styles.emptyText}>No discussions yet — be the first to start one!</Text>
+            <EmptyState icon="chatbubbles-outline" title="No discussions yet" message="Be the first to start one — ask a question or share an idea." />
           </View>
         ) : (
           topics.map((topic) => (

@@ -1,526 +1,418 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Image,
-  TouchableOpacity,
-  Dimensions,
-  FlatList,
-  ActivityIndicator,
+  Pressable,
+  TextInput,
   Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import Footer from '../components/Footer';
-import { showAlert } from '../utils/alert';
+import { Container, Button, Card, Badge, SectionTitle, Grid, useBreakpoint } from '../components/ui';
+import { COLORS, TYPE, SPACE, RADIUS, SHADOW, FONT, gradient } from '../theme';
+import { ORG } from '../config/org';
 
-const { width } = Dimensions.get('window');
+const SERVICES = [
+  { icon: 'water', title: 'Report a problem', desc: 'Leaks, bursts, no water, low pressure or sewer overflows.', screen: 'Feedback', params: { type: 'Complaint' }, tone: '#DC2626' },
+  { icon: 'help-circle', title: 'Make an enquiry', desc: 'Ask about bills, accounts, connections or anything else.', screen: 'Feedback', params: { type: 'Enquiry' }, tone: '#2563EB' },
+  { icon: 'search', title: 'Track my request', desc: 'Follow progress with the reference number we sent you.', screen: 'TrackRequest', tone: '#0891B2' },
+  { icon: 'megaphone', title: 'Service updates', desc: 'Planned interruptions, repairs and restorations near you.', screen: 'Updates', tone: '#7C3AED' },
+  { icon: 'receipt', title: 'Billing & payments', desc: 'Query a bill, report a meter issue or a payment problem.', screen: 'Feedback', params: { type: 'Enquiry', category: 'Billing & Payments' }, tone: '#D97706' },
+  { icon: 'git-branch', title: 'New connection', desc: 'Apply for a new water or sewer connection.', screen: 'Feedback', params: { type: 'Enquiry', category: 'New Connection' }, tone: '#16A34A' },
+];
 
-// ===== COLORS EMBEDDED =====
-const COLORS = {
-  primary: '#0B5FA5',
-  primaryDark: '#0F172A',
-  accent: '#FCD34D',
-  gray50: '#F8FAFC',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  info: '#3B82F6',
-};
+const STEPS = [
+  { icon: 'create-outline', title: 'Tell us', desc: 'Describe the issue, where it is, and how to reach you. Add a photo if you can.' },
+  { icon: 'chatbox-ellipses-outline', title: 'Get a reference', desc: 'You instantly receive a reference number by SMS and email.' },
+  { icon: 'people-outline', title: 'We act', desc: 'Your request goes straight to the responsible team, with escalation if it’s delayed.' },
+  { icon: 'checkmark-done-outline', title: 'Stay informed', desc: 'Track progress online and get notified when it’s resolved.' },
+];
+
+const PARTICIPATE = [
+  { icon: 'document-text-outline', title: 'Public consultations', desc: 'Give your views on proposed projects and service changes.', screen: 'Consultations' },
+  { icon: 'stats-chart-outline', title: 'Surveys & polls', desc: 'Rate our services and tell us what to improve.', screen: 'Surveys' },
+  { icon: 'chatbubbles-outline', title: 'Discussion forums', desc: 'Ask questions and share solutions with your community.', screen: 'Forum' },
+  { icon: 'people-outline', title: 'Community meetings', desc: 'Join town halls with NWSC Jinja in your area.', screen: 'TownHalls' },
+];
+
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
+function ServiceCard({ item, onPress }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="link" style={{ height: '100%' }}>
+      {({ hovered }) => (
+        <View style={[styles.serviceCard, hovered ? SHADOW.lg : SHADOW.sm, hovered && { borderColor: COLORS.primaryLight, transform: [{ translateY: -2 }] }]}>
+          <View style={[styles.serviceIcon, { backgroundColor: item.tone + '14' }]}>
+            <Ionicons name={item.icon} size={24} color={item.tone} />
+          </View>
+          <Text style={[TYPE.h3, { marginTop: SPACE.lg }]}>{item.title}</Text>
+          <Text style={[TYPE.body, { color: COLORS.gray500, marginTop: 6, flex: 1 }]}>{item.desc}</Text>
+          <View style={styles.cardLink}>
+            <Text style={styles.cardLinkText}>Get started</Text>
+            <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+          </View>
+        </View>
+      )}
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation();
-  const flatListRef = useRef(null);
-
-  // State
+  const { isDesktop, isMobile } = useBreakpoint();
   const [slides, setSlides] = useState([]);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [latestUpdate, setLatestUpdate] = useState(null);
   const [consultations, setConsultations] = useState([]);
   const [news, setNews] = useState([]);
-  const [stats, setStats] = useState({ consultations: 0, feedback: 0, responseRate: 0, ideas: 0 });
-  const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [stats, setStats] = useState(null);
+  const [ref, setRef] = useState('');
 
-  // Fetch data
-  useEffect(() => {
-    fetchAllData();
+  const load = useCallback(async () => {
+    const [slidesRes, updateRes, consRes, newsRes, statsRes, consCount] = await Promise.all([
+      supabase.from('slides').select('*').eq('active', true).order('display_order', { ascending: true }),
+      supabase.from('updates').select('*').order('created_at', { ascending: false }).limit(1),
+      supabase.from('consultations').select('*').eq('is_active', true).order('closing_date', { ascending: true }).limit(3),
+      supabase.from('news').select('*').eq('is_active', true).order('published_date', { ascending: false }).limit(3),
+      supabase.rpc('public_request_stats'),
+      supabase.from('consultations').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    ]);
+    setSlides(slidesRes.data || []);
+    setLatestUpdate(updateRes.data?.[0] || null);
+    setConsultations(consRes.data || []);
+    setNews(newsRes.data || []);
+    setStats({ ...(statsRes.data || { total: 0, resolved: 0, open: 0 }), consultations: consCount.count || 0 });
   }, []);
 
-  const fetchAllData = async () => {
-    setLoading(true);
-    try {
-      // Slides
-      const { data: slidesData } = await supabase
-        .from('slides')
-        .select('*')
-        .eq('active', true)
-        .order('display_order', { ascending: true });
-      if (slidesData) setSlides(slidesData);
+  useEffect(() => { load(); }, [load]);
 
-      // Consultations (active, limit 3)
-      const { data: consData } = await supabase
-        .from('consultations')
-        .select('*')
-        .eq('is_active', true)
-        .order('closing_date', { ascending: true })
-        .limit(3);
-      if (consData) setConsultations(consData);
-
-      // News (active, most recent 3)
-      const { data: newsData } = await supabase
-        .from('news')
-        .select('*')
-        .eq('is_active', true)
-        .order('published_date', { ascending: false })
-        .limit(3);
-      if (newsData) setNews(newsData);
-
-      // Stats
-      const { count: consCount } = await supabase
-        .from('consultations')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
-      const { data: reqStats } = await supabase.rpc('public_request_stats');
-      const feedbackCount = reqStats?.total ?? 0;
-      setStats({
-        consultations: consCount || 0,
-        feedback: feedbackCount || 0,
-        responseRate: 93,
-        ideas: 456,
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Auto-slide for carousel
+  // Gentle rotation through hero images.
   useEffect(() => {
-    if (slides.length === 0) return;
-    const interval = setInterval(() => {
-      const nextIndex = (currentIndex + 1) % slides.length;
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-      setCurrentIndex(nextIndex);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [currentIndex, slides]);
+    if (slides.length < 2) return undefined;
+    const t = setInterval(() => setSlideIndex((i) => (i + 1) % slides.length), 6000);
+    return () => clearInterval(t);
+  }, [slides.length]);
 
-  const goToSlide = (index) => {
-    if (index < 0) index = slides.length - 1;
-    if (index >= slides.length) index = 0;
-    flatListRef.current?.scrollToIndex({ index, animated: true });
-    setCurrentIndex(index);
-  };
-
-  const renderSlide = ({ item }) => (
-    <View style={styles.slide}>
-      <Image source={{ uri: item.image_url }} style={styles.slideImage} resizeMode="cover" />
-      <View style={styles.slideOverlay}>
-        <View style={styles.slideTextContainer}>
-          <Text style={styles.slideTitle}>{item.title}</Text>
-          {item.subtitle && <Text style={styles.slideSubtitle}>{item.subtitle}</Text>}
-          {item.quote && (
-            <View style={styles.quoteBox}>
-              <Ionicons name="chatbubble-outline" size={16} color={COLORS.accent} />
-              <Text style={styles.slideQuote}>{item.quote}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-
-  // Quick action cards
-  const quickActions = [
-    { id: 'q1', icon: 'water-outline', title: 'Report a Problem', color: '#F87171', screen: 'Feedback', params: { type: 'Complaint' } },
-    { id: 'q2', icon: 'help-circle-outline', title: 'Make an Enquiry', color: '#3B82F6', screen: 'Feedback', params: { type: 'Enquiry' } },
-    { id: 'q3', icon: 'search-outline', title: 'Track My Request', color: '#0EA5E9', screen: 'TrackRequest' },
-    { id: 'q4', icon: 'megaphone-outline', title: 'Service Updates', color: '#818CF8', screen: 'Updates' },
-    { id: 'q5', icon: 'document-text-outline', title: 'Consultations', color: '#A78BFA', screen: 'Consultations' },
-    { id: 'q6', icon: 'stats-chart-outline', title: 'Take a Survey', color: '#34D399', screen: 'Surveys' },
-    { id: 'q7', icon: 'bulb-outline', title: 'Suggestions', color: '#FBBF24', screen: 'Feedback', params: { type: 'Suggestion' } },
-    { id: 'q8', icon: 'film-outline', title: 'Media Gallery', color: '#FB923C', screen: 'MediaGallery' },
-    { id: 'q9', icon: 'help-buoy-outline', title: 'FAQs', color: '#EC4899', screen: 'FAQs' },
-  ];
-
-  // Participation cards
-  const participationCards = [
-    { icon: '📄', title: 'Public Consultations', desc: 'Give your views on proposed tariffs, projects, and service changes.', screen: 'Consultations' },
-    { icon: '📊', title: 'Surveys & Polls', desc: 'Share your experience and help us improve services.', screen: 'Surveys' },
-    { icon: '💬', title: 'Discussion Forums', desc: 'Join topics, ask questions, and share knowledge.', screen: 'Forum' },
-    { icon: '🎬', title: 'Media Gallery', desc: 'Photos and short clips from NWSC projects and community events.', screen: 'MediaGallery' },
-    { icon: '🏛️', title: 'Virtual Town Halls', desc: 'See scheduled community meetings with NWSC Jinja and how to join.', screen: 'TownHalls' },
-  ];
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
-      </View>
-    );
-  }
+  const go = (screen, params) => navigation.navigate(screen, params);
+  const track = () => ref.trim() && go('TrackRequest', { ref: ref.trim().toUpperCase() });
+  const slide = slides[slideIndex];
+  const resolutionRate = stats && stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : null;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* ===== CAROUSEL ===== */}
-      <View style={styles.carouselContainer}>
-        <FlatList
-          ref={flatListRef}
-          data={slides}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id}
-          renderItem={renderSlide}
-          getItemLayout={(data, index) => ({ length: width, offset: width * index, index })}
-          onScroll={(e) => {
-            const index = Math.round(e.nativeEvent.contentOffset.x / width);
-            if (index !== currentIndex) setCurrentIndex(index);
-          }}
-          scrollEventThrottle={16}
-        />
-        <TouchableOpacity style={[styles.arrow, styles.arrowLeft]} onPress={() => goToSlide(currentIndex - 1)}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.arrow, styles.arrowRight]} onPress={() => goToSlide(currentIndex + 1)}>
-          <Ionicons name="chevron-forward" size={28} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.dotsContainer}>
-          {slides.map((_, i) => (
-            <View key={i} style={[styles.dot, i === currentIndex && styles.dotActive]} />
-          ))}
-        </View>
-      </View>
-
-      {/* ===== WELCOME ===== */}
-      <View style={styles.welcomeContainer}>
-        <Text style={styles.welcomeTitle}>💧 NWSC Jinja e‑Participation</Text>
-        <Text style={styles.welcomeSub}>
-          Report water and sewer issues, track your requests, and stay informed about services in your area.
-        </Text>
-      </View>
-
-      {/* ===== STATS CARDS ===== */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.consultations}</Text>
-          <Text style={styles.statLabel}>Active Consultations</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.feedback}</Text>
-          <Text style={styles.statLabel}>Requests Received</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.responseRate}%</Text>
-          <Text style={styles.statLabel}>Response Rate</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.ideas}</Text>
-          <Text style={styles.statLabel}>Ideas Submitted</Text>
-        </View>
-      </View>
-
-      {/* ===== QUICK ACTION CARDS ===== */}
-      <View style={styles.quickActions}>
-        {quickActions.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.actionCard}
-            onPress={() => navigation.navigate(item.screen, item.params)}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: item.color }]}>
-              <Ionicons name={item.icon} size={24} color="#fff" />
+    <ScrollView style={styles.page} showsVerticalScrollIndicator={false}>
+      {/* ================= HERO ================= */}
+      <View style={[styles.hero, gradient(COLORS.primaryDarker, COLORS.primary, 120)]}>
+        <Container style={[styles.heroInner, !isDesktop && { flexDirection: 'column' }]}>
+          <View style={[styles.heroText, !isDesktop && { maxWidth: '100%' }]}>
+            <View style={styles.heroPill}>
+              <Ionicons name="water" size={13} color={COLORS.accent} />
+              <Text style={styles.heroPillText}>{ORG.name} · {ORG.area}</Text>
             </View>
-            <Text style={styles.actionTitle}>{item.title}</Text>
-          </TouchableOpacity>
-        ))}
+            <Text style={[TYPE.display, styles.heroTitle, isMobile && { fontSize: 32, lineHeight: 40 }]} accessibilityRole="header">
+              Report it. Track it.{'\n'}See it fixed.
+            </Text>
+            <Text style={styles.heroSub}>
+              The official NWSC Jinja platform to report water and sewer problems, ask questions, follow your request
+              and help shape better services in your community.
+            </Text>
+            <View style={styles.heroCtas}>
+              <Button title="Report a problem" icon="water" size="lg" variant="light" onPress={() => go('Feedback', { type: 'Complaint' })} />
+              <Button title="Make an enquiry" size="lg" variant="outlineLight" onPress={() => go('Feedback', { type: 'Enquiry' })} />
+            </View>
+
+            <View style={[styles.trackBox, SHADOW.lg]}>
+              <Text style={styles.trackLabel}>Already reported something?</Text>
+              <View style={styles.trackRow}>
+                <View style={styles.trackInputWrap}>
+                  <Ionicons name="search" size={18} color={COLORS.gray400} />
+                  <TextInput
+                    style={styles.trackInput}
+                    value={ref}
+                    onChangeText={setRef}
+                    placeholder={isMobile ? 'Reference number' : 'Enter reference e.g. NW-2611-7KQ4XP'}
+                    placeholderTextColor={COLORS.gray400}
+                    autoCapitalize="characters"
+                    onSubmitEditing={track}
+                    returnKeyType="search"
+                    accessibilityLabel="Reference number"
+                  />
+                </View>
+                <Button title="Track" onPress={track} />
+              </View>
+            </View>
+          </View>
+
+          {isDesktop && (
+            <View style={styles.heroVisual}>
+              <View style={[styles.heroImageWrap, SHADOW.lg]}>
+                {slide?.image_url ? (
+                  <Image source={{ uri: slide.image_url }} style={styles.heroImage} resizeMode="cover" accessibilityLabel={slide.title} />
+                ) : (
+                  <View style={[styles.heroImage, { backgroundColor: COLORS.primaryLight }]} />
+                )}
+                {slide ? (
+                  <View style={styles.heroCaption}>
+                    <Text style={styles.heroCaptionTitle}>{slide.title}</Text>
+                    {slide.subtitle ? <Text style={styles.heroCaptionSub}>{slide.subtitle}</Text> : null}
+                  </View>
+                ) : null}
+              </View>
+              <View style={[styles.floatCard, SHADOW.lg]}>
+                <View style={[styles.floatIcon, { backgroundColor: COLORS.successSoft }]}>
+                  <Ionicons name={stats?.resolved > 0 ? 'checkmark-circle' : 'time'} size={22} color={COLORS.success} />
+                </View>
+                <View>
+                  <Text style={styles.floatValue}>{stats?.resolved > 0 ? stats.resolved.toLocaleString() : '24/7'}</Text>
+                  <Text style={styles.floatLabel}>{stats?.resolved > 0 ? 'requests resolved' : 'online reporting'}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </Container>
       </View>
 
-      {/* ===== ACTIVE CONSULTATIONS ===== */}
-      {consultations.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📢 Active Consultations</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Consultations')}>
-              <Text style={styles.viewAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.sectionSubtitle}>
-            Review and comment on draft policies that shape Uganda's future.
-          </Text>
-          {consultations.map((item) => (
-            <View key={item.id} style={styles.consultCard}>
-              <View style={styles.consultHeader}>
-                <View style={styles.badgeOpen}>
-                  <View style={styles.badgeDot} />
-                  <Text style={styles.badgeOpenText}>Open</Text>
-                </View>
-                <Text style={styles.badgeClosing}>
-                  Closes: {new Date(item.closing_date).toDateString()}
+      {/* ================= SERVICE STATUS ================= */}
+      <Container style={{ marginTop: -28 }}>
+        <Pressable onPress={() => go('Updates')} accessibilityRole="link">
+          {({ hovered }) => (
+            <View style={[styles.statusBar, SHADOW.md, hovered && { borderColor: COLORS.primaryLight }]}>
+              <View style={styles.statusIcon}>
+                <Ionicons name="megaphone" size={20} color={COLORS.warning} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.statusOverline}>Latest service update{latestUpdate ? ` · ${fmtDate(latestUpdate.created_at)}` : ''}</Text>
+                <Text style={styles.statusText} numberOfLines={2}>
+                  {latestUpdate ? latestUpdate.title : 'No planned interruptions announced at the moment.'}
                 </Text>
               </View>
-              <Text style={styles.consultTitle}>{item.title}</Text>
-              <Text style={styles.consultDesc}>{item.description}</Text>
-              <TouchableOpacity
-                style={styles.consultBtn}
-                onPress={() => navigation.navigate('Consultations')}
-              >
-                <Text style={styles.consultBtnText}>View & Comment →</Text>
-              </TouchableOpacity>
+              {!isMobile && (
+                <View style={[styles.cardLink, { marginTop: 0 }]}>
+                  <Text style={styles.cardLinkText}>All updates</Text>
+                  <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                </View>
+              )}
             </View>
-          ))}
-        </View>
-      )}
+          )}
+        </Pressable>
+      </Container>
 
-      {/* ===== HOW YOU CAN PARTICIPATE ===== */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🚀 How You Can Participate</Text>
-        <Text style={styles.sectionSubtitle}>
-          Multiple ways to make your voice heard and shape national policies.
-        </Text>
-        <View style={styles.participationGrid}>
-          {participationCards.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.participationCard}
-              onPress={() =>
-                item.screen
-                  ? navigation.navigate(item.screen)
-                  : showAlert('Coming Soon', `${item.title} isn't available yet — check back soon.`)
-              }
-              activeOpacity={0.7}
-            >
-              <Text style={styles.participationIcon}>{item.icon}</Text>
-              <Text style={styles.participationTitle}>{item.title}</Text>
-              <Text style={styles.participationDesc}>{item.desc}</Text>
-            </TouchableOpacity>
+      {/* ================= SERVICES ================= */}
+      <Container style={styles.section}>
+        <SectionTitle overline="Online services" title="How can we help you today?" subtitle="Everything you need from NWSC Jinja, available any time, from any phone or computer." />
+        <Grid columns={3} minItemWidth={280}>
+          {SERVICES.map((s) => (
+            <ServiceCard key={s.title} item={s} onPress={() => go(s.screen, s.params)} />
           ))}
-        </View>
+        </Grid>
+      </Container>
+
+      {/* ================= HOW IT WORKS ================= */}
+      <View style={styles.band}>
+        <Container style={styles.sectionTight}>
+          <SectionTitle overline="How it works" title="From report to resolution" align="center" />
+          <Grid columns={4} minItemWidth={220}>
+            {STEPS.map((s, i) => (
+              <View key={s.title} style={styles.step}>
+                <View style={styles.stepNum}>
+                  <Ionicons name={s.icon} size={22} color={COLORS.primary} />
+                  <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>{i + 1}</Text></View>
+                </View>
+                <Text style={[TYPE.h3, { textAlign: 'center', marginTop: SPACE.md }]}>{s.title}</Text>
+                <Text style={[TYPE.body, { textAlign: 'center', color: COLORS.gray500, marginTop: 4 }]}>{s.desc}</Text>
+              </View>
+            ))}
+          </Grid>
+        </Container>
       </View>
 
-      {/* ===== NEWS & IMPACT ===== */}
-      {news.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📰 News & Impact</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('News')}>
-              <Text style={styles.viewAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {news.map((item) => (
-            <View key={item.id} style={styles.newsCard}>
-              <Text style={styles.newsDate}>{new Date(item.published_date).toDateString()}</Text>
-              <Text style={styles.newsTitle}>{item.title}</Text>
-              {item.summary ? <Text style={styles.newsSummary} numberOfLines={2}>{item.summary}</Text> : null}
+      {/* ================= STATS (shown once there is real activity) ================= */}
+      {stats?.total > 0 && (
+      <Container style={styles.section}>
+        <View style={[styles.statsWrap, gradient(COLORS.primary, COLORS.primaryDark, 120), isMobile && { flexDirection: 'column' }]}>
+          {[
+            { value: stats ? stats.total.toLocaleString() : '—', label: 'Requests received' },
+            { value: stats ? stats.resolved.toLocaleString() : '—', label: 'Requests resolved' },
+            { value: resolutionRate !== null ? `${resolutionRate}%` : '—', label: 'Resolution rate' },
+            { value: stats ? String(stats.consultations) : '—', label: 'Open consultations' },
+          ].map((s, i) => (
+            <View key={s.label} style={[styles.stat, i > 0 && !isMobile && styles.statDivider]}>
+              <Text style={styles.statValue}>{s.value}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
         </View>
+        <Text style={[TYPE.small, { textAlign: 'center', marginTop: SPACE.md }]}>Live figures from this platform.</Text>
+      </Container>
       )}
 
-      {/* ===== FOOTER ===== */}
+      {/* ================= PARTICIPATE ================= */}
+      <Container style={styles.section}>
+        <SectionTitle
+          overline="Have your say"
+          title="Help shape water services in Jinja"
+          action={<Button title="All consultations" variant="secondary" size="sm" iconRight="arrow-forward" onPress={() => go('Consultations')} />}
+        />
+        {consultations.length > 0 && (
+          <Grid columns={3} minItemWidth={280} style={{ marginBottom: SPACE.lg }}>
+            {consultations.map((c) => (
+              <Card key={c.id} style={{ height: '100%' }}>
+                <View style={styles.consultMeta}>
+                  <Badge label="Open" tone="success" icon="ellipse" />
+                  {c.closing_date ? <Text style={TYPE.small}>Closes {fmtDate(c.closing_date)}</Text> : null}
+                </View>
+                <Text style={[TYPE.h3, { marginTop: SPACE.md }]} numberOfLines={2}>{c.title}</Text>
+                {c.description ? <Text style={[TYPE.body, { color: COLORS.gray500, marginTop: 6, flex: 1 }]} numberOfLines={3}>{c.description}</Text> : <View style={{ flex: 1 }} />}
+                <Button title="Read & respond" variant="ghost" size="sm" iconRight="arrow-forward" style={{ marginTop: SPACE.md, marginLeft: -14 }} onPress={() => go('Consultations')} />
+              </Card>
+            ))}
+          </Grid>
+        )}
+        <Grid columns={4} minItemWidth={230}>
+          {PARTICIPATE.map((p) => (
+            <Pressable key={p.title} onPress={() => go(p.screen)} accessibilityRole="link" style={{ height: '100%' }}>
+              {({ hovered }) => (
+                <View style={[styles.partCard, hovered && { backgroundColor: COLORS.primarySoft, borderColor: COLORS.primarySoft }]}>
+                  <Ionicons name={p.icon} size={22} color={COLORS.primary} />
+                  <Text style={[TYPE.label, { marginTop: SPACE.md, fontSize: 15 }]}>{p.title}</Text>
+                  <Text style={[TYPE.small, { marginTop: 4 }]}>{p.desc}</Text>
+                </View>
+              )}
+            </Pressable>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* ================= NEWS ================= */}
+      {news.length > 0 && (
+        <Container style={styles.section}>
+          <SectionTitle
+            overline="Newsroom"
+            title="News & announcements"
+            action={<Button title="All news" variant="secondary" size="sm" iconRight="arrow-forward" onPress={() => go('News')} />}
+          />
+          <Grid columns={3} minItemWidth={280}>
+            {news.map((n) => (
+              <Card key={n.id} padded={false} style={{ overflow: 'hidden', height: '100%' }}>
+                {n.image_url ? <Image source={{ uri: n.image_url }} style={styles.newsImage} resizeMode="cover" /> : null}
+                <View style={{ padding: SPACE.xl }}>
+                  <Text style={TYPE.small}>{fmtDate(n.published_date)}</Text>
+                  <Text style={[TYPE.h3, { marginTop: 6 }]} numberOfLines={2}>{n.title}</Text>
+                  {n.summary ? <Text style={[TYPE.body, { color: COLORS.gray500, marginTop: 6 }]} numberOfLines={3}>{n.summary}</Text> : null}
+                </View>
+              </Card>
+            ))}
+          </Grid>
+        </Container>
+      )}
+
+      {/* ================= EMERGENCY CTA ================= */}
+      <Container style={styles.section}>
+        <View style={[styles.cta, isMobile && { flexDirection: 'column', alignItems: 'flex-start' }]}>
+          <View style={styles.ctaIcon}>
+            <Ionicons name="alert-circle" size={28} color={COLORS.danger} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={TYPE.h3}>Burst pipe or major leak?</Text>
+            <Text style={[TYPE.body, { color: COLORS.gray600, marginTop: 4 }]}>
+              Call our toll-free line straight away, then report it online so you can track the repair.
+            </Text>
+          </View>
+          <Button
+            title={`Call ${ORG.phones[0].value}`}
+            icon="call"
+            variant="danger"
+            onPress={() => Linking.openURL(`tel:${ORG.phones[0].value.replace(/\D/g, '')}`)}
+          />
+        </View>
+      </Container>
+
       <Footer />
     </ScrollView>
   );
 }
 
-// ===== STYLES =====
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, color: COLORS.gray500 },
-
-  // Carousel
-  carouselContainer: { height: 350, width: '100%', position: 'relative' },
-  slide: { width, height: 350, position: 'relative' },
-  slideImage: { width: '100%', height: '100%' },
-  slideOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+  page: { flex: 1, backgroundColor: COLORS.bg },
+  hero: { backgroundColor: COLORS.primaryDark, paddingTop: 56, paddingBottom: 88, overflow: 'hidden' },
+  heroInner: { flexDirection: 'row', alignItems: 'center', gap: 56 },
+  heroText: { flex: 1, maxWidth: 620 },
+  heroPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: RADIUS.pill, backgroundColor: 'rgba(56,189,248,0.14)', borderWidth: 1, borderColor: 'rgba(56,189,248,0.35)',
   },
-  slideTextContainer: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 16,
-    padding: 20,
+  heroPillText: { fontFamily: FONT, color: '#E0F2FE', fontSize: 13, fontWeight: '600' },
+  heroTitle: { color: COLORS.white, marginTop: SPACE.lg },
+  heroSub: { fontFamily: FONT, color: '#CFE6FA', fontSize: 17, lineHeight: 27, marginTop: SPACE.lg, maxWidth: 560 },
+  heroCtas: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: SPACE.xxl },
+  trackBox: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.lg, marginTop: SPACE.xxl, maxWidth: 560 },
+  trackLabel: { ...TYPE.label, marginBottom: 10 },
+  trackRow: { flexDirection: 'row', gap: 10 },
+  trackInputWrap: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: COLORS.gray200,
+    borderRadius: RADIUS.md, paddingHorizontal: 12,
   },
-  slideTitle: { color: '#fff', fontSize: 28, fontWeight: '800', lineHeight: 34 },
-  slideSubtitle: { color: 'rgba(255,255,255,0.9)', fontSize: 16, marginTop: 4 },
-  quoteBox: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  slideQuote: { color: COLORS.accent, fontSize: 14, fontStyle: 'italic', flexShrink: 1, marginLeft: 6 },
-  arrow: {
-    position: 'absolute',
-    top: '50%',
-    transform: [{ translateY: -20 }],
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 20,
-    padding: 8,
-    zIndex: 5,
+  trackInput: { fontFamily: FONT, flex: 1, minWidth: 0, fontSize: 15, color: COLORS.gray900, paddingVertical: 11, letterSpacing: 0.5 },
+  heroVisual: { flex: 1, maxWidth: 500, position: 'relative' },
+  heroImageWrap: { borderRadius: RADIUS.xl, overflow: 'hidden', borderWidth: 6, borderColor: 'rgba(255,255,255,0.12)' },
+  heroImage: { width: '100%', height: 420 },
+  heroCaption: {
+    position: 'absolute', left: 0, right: 0, bottom: 0, padding: SPACE.xl,
+    ...(Platform.OS === 'web' ? { backgroundImage: 'linear-gradient(transparent, rgba(4,31,58,0.85))' } : { backgroundColor: 'rgba(4,31,58,0.6)' }),
   },
-  arrowLeft: { left: 10 },
-  arrowRight: { right: 10 },
-  dotsContainer: {
-    position: 'absolute',
-    bottom: 8,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
+  heroCaptionTitle: { fontFamily: FONT, color: '#fff', fontSize: 20, fontWeight: '800' },
+  heroCaptionSub: { fontFamily: FONT, color: '#CFE6FA', fontSize: 14, marginTop: 4 },
+  floatCard: {
+    position: 'absolute', left: -36, top: 36, backgroundColor: COLORS.white, borderRadius: RADIUS.lg,
+    padding: SPACE.lg, flexDirection: 'row', alignItems: 'center', gap: 12,
   },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.4)', marginHorizontal: 4 },
-  dotActive: { backgroundColor: COLORS.accent, width: 12 },
-
-  // Welcome
-  welcomeContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: 'rgba(30, 58, 138, 0.9)',
-    marginHorizontal: 16,
-    marginTop: -20,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  floatIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  floatValue: { fontFamily: FONT, fontSize: 22, fontWeight: '800', color: COLORS.gray900 },
+  floatLabel: { fontFamily: FONT, fontSize: 13, color: COLORS.gray500 },
+  statusBar: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg, padding: SPACE.lg, paddingHorizontal: SPACE.xl, borderWidth: 1, borderColor: COLORS.gray200,
   },
-  welcomeTitle: { fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  welcomeSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 4 },
-
-  // Stats
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 16,
+  statusIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.warningSoft, alignItems: 'center', justifyContent: 'center' },
+  statusOverline: { fontFamily: FONT, fontSize: 12, fontWeight: '700', color: COLORS.warning, textTransform: 'uppercase', letterSpacing: 0.8 },
+  statusText: { fontFamily: FONT, fontSize: 15.5, fontWeight: '600', color: COLORS.gray900, marginTop: 2 },
+  section: { marginTop: 72 },
+  sectionTight: { paddingVertical: 64 },
+  serviceCard: {
+    backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.xl, borderWidth: 1,
+    borderColor: COLORS.gray200, height: '100%',
+    ...(Platform.OS === 'web' ? { transitionDuration: '180ms' } : null),
   },
-  statCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    width: (width - 48) / 4,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+  serviceIcon: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  cardLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACE.lg },
+  cardLinkText: { fontFamily: FONT, color: COLORS.primary, fontWeight: '700', fontSize: 14 },
+  band: { backgroundColor: COLORS.white, marginTop: 72, borderTopWidth: 1, borderBottomWidth: 1, borderColor: COLORS.gray200 },
+  step: { alignItems: 'center', paddingHorizontal: SPACE.md },
+  stepNum: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primarySoft,
+    alignItems: 'center', justifyContent: 'center', position: 'relative',
   },
-  statNumber: { fontSize: 22, fontWeight: '800', color: COLORS.primary },
-  statLabel: { fontSize: 10, color: COLORS.gray500, textAlign: 'center', marginTop: 2 },
-
-  // Quick Actions
-  quickActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 16,
+  stepBadge: {
+    position: 'absolute', top: -2, right: -2, width: 22, height: 22, borderRadius: 11,
+    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.white,
   },
-  actionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    width: (width - 48) / 3,
-    marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
+  stepBadgeText: { fontFamily: FONT, color: '#fff', fontSize: 11, fontWeight: '800' },
+  statsWrap: { backgroundColor: COLORS.primary, borderRadius: RADIUS.xl, flexDirection: 'row', paddingVertical: SPACE.xxl },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg },
+  statDivider: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.15)' },
+  statValue: { fontFamily: FONT, color: '#fff', fontSize: 36, fontWeight: '800', letterSpacing: -0.5 },
+  statLabel: { fontFamily: FONT, color: '#BAE6FD', fontSize: 14, marginTop: 4, fontWeight: '500' },
+  consultMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  partCard: { borderRadius: RADIUS.lg, padding: SPACE.xl, borderWidth: 1, borderColor: COLORS.gray200, backgroundColor: COLORS.white, height: '100%' },
+  newsImage: { width: '100%', height: 170 },
+  cta: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACE.xl, backgroundColor: COLORS.dangerSoft,
+    borderRadius: RADIUS.xl, padding: SPACE.xxl, borderWidth: 1, borderColor: '#FECACA',
   },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  actionTitle: { fontWeight: '700', fontSize: 11, textAlign: 'center', color: COLORS.gray700 },
-
-  // Section
-  section: { paddingHorizontal: 16, marginTop: 20 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', color: COLORS.gray800 },
-  sectionSubtitle: { fontSize: 14, color: COLORS.gray500, marginBottom: 16 },
-  viewAll: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
-
-  // Consultations
-  consultCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  consultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  badgeOpen: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.success, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff', marginRight: 4 },
-  badgeOpenText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-  badgeClosing: { color: COLORS.warning, fontSize: 12, fontWeight: '600' },
-  consultTitle: { fontSize: 16, fontWeight: '700', color: COLORS.primary, marginTop: 8 },
-  consultDesc: { color: COLORS.gray500, fontSize: 14, marginTop: 4 },
-  consultBtn: { marginTop: 10, alignSelf: 'flex-start' },
-  consultBtnText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
-
-  // Participation
-  participationGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  participationCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    width: (width - 48) / 2,
-    marginBottom: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  participationIcon: { fontSize: 32 },
-  participationTitle: { fontWeight: '700', marginTop: 6, textAlign: 'center', color: COLORS.gray800 },
-  participationDesc: { fontSize: 12, color: COLORS.gray500, textAlign: 'center', marginTop: 2 },
-
-  // News
-  newsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  newsDate: { fontSize: 12, color: COLORS.gray500, marginBottom: 4 },
-  newsTitle: { fontSize: 15, fontWeight: '700', color: COLORS.gray800, marginBottom: 4 },
-  newsSummary: { fontSize: 13, color: COLORS.gray600 },
+  ctaIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
 });

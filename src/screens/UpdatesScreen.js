@@ -2,14 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray800: '#1E293B',
-};
 
 const CATEGORY_STYLE = {
   Announcement: { color: '#0B5FA5', bg: '#EEF2FF', icon: 'megaphone-outline' },
@@ -52,12 +48,12 @@ export default function UpdatesScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>🕘 Platform Updates</Text>
-      <Text style={styles.sub}>Official NWSC service updates, planned interruptions, and restorations.</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Service updates" subtitle="Official NWSC service updates, planned interruptions and restorations. Each update shows when it was posted." icon="megaphone-outline" overline="Services" />
+      <Container style={styles.content}>
 
       {updates.length === 0 ? (
-        <Text style={styles.emptyText}>No updates posted yet.</Text>
+        <EmptyState icon="megaphone-outline" title="No service updates right now" message="Planned interruptions, repairs and restorations will be posted here. For an urgent problem call 0800-200-977." />
       ) : (
         <View style={styles.timeline}>
           {updates.map((item, index) => {
@@ -84,6 +80,8 @@ export default function UpdatesScreen() {
           })}
         </View>
       )}
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

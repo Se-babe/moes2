@@ -16,21 +16,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState, useBreakpoint } from '../components/ui';
+import { useAuth } from '../context/AuthContext';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  info: '#3B82F6',
-  accent: '#FCD34D',
-};
 
 const REACTIONS = [
   { type: 'like', emoji: '👍', color: '#3B82F6' },
@@ -41,12 +31,13 @@ const REACTIONS = [
 ];
 
 export default function ConsultationsScreen() {
+  const { isDesktop } = useBreakpoint();
   const navigation = useNavigation();
   const [consultations, setConsultations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [commentText, setCommentText] = useState('');
   const [commentImage, setCommentImage] = useState(null);
   const [activeConsultation, setActiveConsultation] = useState(null);
@@ -70,20 +61,6 @@ export default function ConsultationsScreen() {
     const { data } = await supabase.from('users').select('id').eq('role', 'admin').limit(1);
     return data?.[0];
   };
-
-  // ----- Get current user -----
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-      } else {
-        const { data } = await supabase.from('users').select('*').limit(1);
-        if (data) setUser(data[0]);
-      }
-    };
-    getUser();
-  }, []);
 
   // ----- Fetch data -----
   useEffect(() => {
@@ -452,6 +429,7 @@ export default function ConsultationsScreen() {
           </TouchableOpacity>
         ))}
       </View>
+      {['officer', 'supervisor', 'admin'].includes(user?.role) && (
       <View style={styles.statsSection}>
         <TouchableOpacity style={styles.statsBtn} onPress={handlePrint}>
           <Ionicons name="print-outline" size={18} color="#fff" />
@@ -462,6 +440,7 @@ export default function ConsultationsScreen() {
           <Text style={styles.statsBtnText}>Download CSV</Text>
         </TouchableOpacity>
       </View>
+      )}
     </View>
   );
 
@@ -501,10 +480,9 @@ export default function ConsultationsScreen() {
 
   return (
     <View style={styles.container}>
+      <PageHeader title="Public consultations" subtitle="Read proposals from NWSC Jinja and tell us what you think before decisions are made." icon="document-text-outline" overline="Participate" />
       <View style={styles.mainRow}>
         <View style={styles.mainContent}>
-          <Text style={styles.sectionTitle}>📢 Active Consultations</Text>
-          <Text style={styles.sectionSub}>Review and comment on draft policies that shape Uganda's future.</Text>
 
           {/* ✅ "PROPOSE A CONSULTATION" BUTTON */}
           <TouchableOpacity
@@ -521,9 +499,16 @@ export default function ConsultationsScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <EmptyState
+                icon="document-text-outline"
+                title="No open consultations right now"
+                message="When NWSC Jinja asks for public views on a project or service change, it will appear here. You can also propose a topic."
+              />
+            }
           />
         </View>
-        {renderSidebar()}
+        {isDesktop && renderSidebar()}
       </View>
 
       <Modal
@@ -556,10 +541,10 @@ export default function ConsultationsScreen() {
 
 // ===== STYLES =====
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50, paddingHorizontal: 16 },
-  mainRow: { flex: 1, flexDirection: 'row', justifyContent: 'space-between' },
-  mainContent: { flex: 0.6, paddingRight: 12 },
-  sidebar: { flex: 0.3, backgroundColor: '#fff', borderRadius: 12, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2, maxHeight: '100%' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  mainRow: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', gap: 24, width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24 },
+  mainContent: { flex: 2 },
+  sidebar: { flex: 1, backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.gray200, maxHeight: '100%', alignSelf: 'flex-start' },
   sidebarTitle: { fontSize: 16, fontWeight: '700', color: COLORS.gray800, marginBottom: 8 },
   categoryItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, marginBottom: 4 },
   categoryActive: { backgroundColor: COLORS.primary },

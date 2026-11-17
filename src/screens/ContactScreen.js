@@ -5,15 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import LocationMap from '../components/LocationMap';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray800: '#1E293B',
-  accent: '#FCD34D',
-};
 
 const DEFAULTS = {
   phone1: 'Toll Free: 0800-200-977',
@@ -72,9 +67,9 @@ export default function ContactScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>📞 Contact Us</Text>
-      <Text style={styles.sub}>Reach NWSC Jinja customer care directly, or send us a message.</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Contact us" subtitle="Reach NWSC Jinja customer care by phone, email or in person." icon="call-outline" overline="Help" />
+      <Container style={styles.content}>
 
       <View style={styles.card}>
         <TouchableOpacity style={styles.row} onPress={() => call(info.phone1)}>
@@ -149,6 +144,8 @@ export default function ContactScreen() {
         <Ionicons name="create-outline" size={18} color="#fff" />
         <Text style={styles.ctaBtnText}>Submit Feedback</Text>
       </TouchableOpacity>
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

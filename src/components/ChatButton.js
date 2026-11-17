@@ -1,40 +1,45 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const COLORS = { primary: '#0B5FA5', accent: '#FCD34D' };
+import { COLORS, FONT, SHADOW, gradient } from '../theme';
+import { useBreakpoint } from './ui';
 
 export default function ChatButton({ onPress }) {
+  const { isMobile } = useBreakpoint();
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.button}>
-        <Ionicons name="chatbubbles" size={28} color="#fff" />
-      </View>
-    </TouchableOpacity>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Chat with Maji, the NWSC assistant"
+      style={({ hovered }) => [
+        styles.button,
+        gradient(COLORS.primaryLight, COLORS.primary),
+        SHADOW.lg,
+        isMobile && styles.round,
+        hovered && { transform: [{ translateY: -2 }] },
+      ]}
+    >
+      <Ionicons name="chatbubble-ellipses" size={22} color="#fff" />
+      {!isMobile && <Text style={styles.label}>Ask Maji</Text>}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    zIndex: 999,
-    elevation: 10,
-  },
   button: {
-    backgroundColor: COLORS.primary,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    zIndex: 999,
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: COLORS.accent,
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    ...(Platform.OS === 'web' ? { transitionDuration: '150ms', cursor: 'pointer' } : null),
   },
+  round: { width: 56, height: 56, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center', bottom: 16, right: 16 },
+  label: { fontFamily: FONT, color: '#fff', fontWeight: '700', fontSize: 15 },
 });

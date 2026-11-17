@@ -3,16 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray400: '#94A3B8',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray800: '#1E293B',
-};
 
 export default function NewsScreen() {
   const navigation = useNavigation();
@@ -51,21 +45,12 @@ export default function NewsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>📰 News & Impact</Text>
-        <TouchableOpacity onPress={fetchNews}>
-          <Ionicons name="refresh-outline" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      <PageHeader title="News & announcements" subtitle="Official news, project updates and announcements from NWSC Jinja." icon="newspaper-outline" overline="Newsroom" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {news.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="newspaper-outline" size={60} color={COLORS.gray400} />
-            <Text style={styles.emptyText}>No news yet</Text>
+            <EmptyState icon="newspaper-outline" title="No news yet" message="News and announcements from NWSC Jinja will appear here." />
           </View>
         ) : (
           news.map((item) => (

@@ -1,55 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
+  Pressable,
   Image,
   Modal,
-  Animated,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
-import { showAlert } from '../utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabaseClient';
-
-const COLORS = {
-  primary: '#0B5FA5',
-  primaryLight: '#3B82F6',
-  primaryDark: '#0F172A',
-  accent: '#FCD34D',
-  white: '#FFFFFF',
-  gray50: '#F8FAFC',
-  gray100: '#F1F5F9',
-  gray200: '#E2E8F0',
-  gray300: '#CBD5E1',
-  gray400: '#94A3B8',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  info: '#3B82F6',
-};
-
-const CATEGORIES = [
-  { label: 'No Water / Supply', icon: 'water-outline', color: '#0EA5E9' },
-  { label: 'Leak / Burst Pipe', icon: 'warning-outline', color: '#EF4444' },
-  { label: 'Billing & Payments', icon: 'receipt-outline', color: '#F59E0B' },
-  { label: 'Water Quality', icon: 'beaker-outline', color: '#22C55E' },
-  { label: 'Sewer & Sanitation', icon: 'construct-outline', color: '#8B5CF6' },
-  { label: 'New Connection', icon: 'git-branch-outline', color: '#3B82F6' },
-  { label: 'General', icon: 'chatbubble-outline', color: COLORS.gray500 },
-];
+import { useAuth } from '../context/AuthContext';
+import { showAlert } from '../utils/alert';
+import Footer from '../components/Footer';
+import { PageHeader, Container, Card, Button, TextField, useBreakpoint } from '../components/ui';
+import { COLORS, TYPE, SPACE, RADIUS, SHADOW, FONT } from '../theme';
+import { ORG } from '../config/org';
 
 const REQUEST_TYPES = [
   { value: 'Complaint', icon: 'alert-circle-outline', hint: 'Something is wrong with a service' },
@@ -58,24 +29,72 @@ const REQUEST_TYPES = [
   { value: 'Compliment', icon: 'heart-outline', hint: 'Something went well' },
 ];
 
+const CATEGORIES = [
+  { label: 'No Water / Supply', icon: 'water-outline' },
+  { label: 'Leak / Burst Pipe', icon: 'warning-outline' },
+  { label: 'Billing & Payments', icon: 'receipt-outline' },
+  { label: 'Water Quality', icon: 'beaker-outline' },
+  { label: 'Sewer & Sanitation', icon: 'construct-outline' },
+  { label: 'New Connection', icon: 'git-branch-outline' },
+  { label: 'General', icon: 'chatbubble-outline' },
+];
+
+const NEXT_STEPS = [
+  ['Instant reference', 'You get a reference number on screen and by SMS/email.'],
+  ['Sent to the right team', 'Your request goes to the department responsible.'],
+  ['Progress updates', 'We notify you as it moves forward and when it’s resolved.'],
+];
+
+const MAX_TITLE = 100;
+const MAX_DESC = 1000;
+
+function Choice({ active, onPress, icon, label, hint, compact }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={hint ? `${label}: ${hint}` : label}
+      style={({ hovered }) => [
+        compact ? styles.chip : styles.typeCard,
+        hovered && !active && { borderColor: COLORS.primaryLight },
+        active && (compact ? styles.chipActive : styles.typeCardActive),
+      ]}
+    >
+      <Ionicons name={icon} size={compact ? 16 : 22} color={active ? (compact ? COLORS.primary : '#fff') : COLORS.primary} />
+      <View style={compact ? null : { marginTop: 8 }}>
+        <Text style={[compact ? styles.chipText : styles.typeTitle, active && (compact ? { color: COLORS.primary } : { color: '#fff' })]}>{label}</Text>
+        {hint && !compact ? <Text style={[styles.typeHint, active && { color: '#DBEAFE' }]}>{hint}</Text> : null}
+      </View>
+    </Pressable>
+  );
+}
+
 export default function FeedbackScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
-  const initialType = REQUEST_TYPES.some((t) => t.value === route.params?.type) ? route.params.type : 'Complaint';
-  const [requestType, setRequestType] = useState(initialType);
+  const { isDesktop } = useBreakpoint();
+
+  const [requestType, setRequestType] = useState('Complaint');
+  const [category, setCategory] = useState('General');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [locationText, setLocationText] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
-  const [locationText, setLocationText] = useState('');
-  const [referenceNo, setReferenceNo] = useState(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('General');
   const [image, setImage] = useState(null);
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [referenceNo, setReferenceNo] = useState(null);
+
+  // Pre-select from links such as "Billing & payments" on the home page.
+  useEffect(() => {
+    const { type, category: cat } = route.params || {};
+    if (type && REQUEST_TYPES.some((t) => t.value === type)) setRequestType(type);
+    if (cat && CATEGORIES.some((c) => c.label === cat)) setCategory(cat);
+  }, [route.params]);
 
   // Pre-fill contact details for signed-in users (still editable).
   useEffect(() => {
@@ -85,60 +104,43 @@ export default function FeedbackScreen() {
     setContactEmail((v) => v || user.email || '');
   }, [user]);
 
-  useEffect(() => {
-    if (route.params?.type && REQUEST_TYPES.some((t) => t.value === route.params.type)) {
-      setRequestType(route.params.type);
-    }
-  }, [route.params?.type]);
-
-  const maxTitleChars = 100;
-  const maxDescChars = 500;
-
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      showAlert('Permission Needed', 'Please grant camera roll permissions.');
+      showAlert('Permission needed', 'Please allow access to your photos to attach an image.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setImage(result.assets[0]);
-    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.7 });
+    if (!result.canceled) setImage(result.assets[0]);
   };
 
-  const removeImage = () => setImage(null);
+  const validate = () => {
+    const e = {};
+    if (!title.trim()) e.title = 'Please give your request a short title.';
+    if (!description.trim()) e.description = 'Please describe the issue.';
+    if (!contactPhone.trim() && !contactEmail.trim()) e.contact = 'Give a phone number or email so we can send your reference number.';
+    if (contactPhone.trim() && !/^(\+?256|0)?7\d{8}$|^(\+?256|0)?[23]\d{8}$/.test(contactPhone.replace(/[\s-]/g, ''))) {
+      e.phone = 'Enter a valid Ugandan number, e.g. 0772 123456.';
+    }
+    if (contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) e.email = 'Enter a valid email address.';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const handleSubmit = async () => {
-    if (!title.trim() || !description.trim()) {
-      showAlert('Missing details', 'Please fill in both the title and the description.');
-      return;
-    }
-    if (!contactPhone.trim() && !contactEmail.trim()) {
-      showAlert('Contact needed', 'Please give a phone number or email so we can send your reference number and updates.');
-      return;
-    }
-
+    if (!validate()) return;
     setLoading(true);
     try {
       let imageUrl = null;
       if (image) {
-        const blob = await fetch(image.uri).then(r => r.blob());
+        const blob = await fetch(image.uri).then((r) => r.blob());
         const fileName = `feedback_${Date.now()}.jpg`;
-        const { data, error } = await supabase.storage
-          .from('feedback_images')
-          .upload(fileName, blob, { contentType: 'image/jpeg' });
+        const { error } = await supabase.storage.from('feedback_images').upload(fileName, blob, { contentType: 'image/jpeg' });
         if (error) throw error;
-        const { data: { publicUrl } } = supabase.storage
-          .from('feedback_images')
-          .getPublicUrl(fileName);
-        imageUrl = publicUrl;
+        imageUrl = supabase.storage.from('feedback_images').getPublicUrl(fileName).data.publicUrl;
       }
 
-      const { data: fnData, error } = await supabase.functions.invoke('submit-feedback', {
+      const { data, error } = await supabase.functions.invoke('submit-feedback', {
         body: {
           request_type: requestType,
           title: title.trim(),
@@ -151,279 +153,218 @@ export default function FeedbackScreen() {
           contact_email: contactEmail.trim() || null,
         },
       });
-      if (error) throw error;
-      if (fnData?.error) throw new Error(fnData.error);
-
-      // Keep the success dialog open until the citizen dismisses it — they
-      // need time to note the reference number.
-      setReferenceNo(fnData?.reference_no || null);
-      setShowSuccess(true);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } catch (error) {
-      showAlert('Submission Failed', error.message || 'Please try again.');
+      if (error) {
+        // Surface the function's own message (e.g. rate limit) when there is one.
+        const msg = await error.context?.json?.().then((b) => b?.error).catch(() => null);
+        throw new Error(msg || error.message);
+      }
+      if (data?.error) throw new Error(data.error);
+      setReferenceNo(data?.reference_no || '');
+    } catch (err) {
+      showAlert('We couldn’t submit your request', err.message || 'Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
+  const reset = () => {
     setTitle('');
     setDescription('');
-    setCategory('General');
     setLocationText('');
+    setCategory('General');
     setImage(null);
-    setShowSuccess(false);
-    fadeAnim.setValue(0);
+    setErrors({});
+    setReferenceNo(null);
   };
 
-  const closeSuccess = (goTrack) => {
+  const finish = (track) => {
     const ref = referenceNo;
-    resetForm();
-    if (goTrack && ref) navigation.navigate('TrackRequest', { ref });
+    reset();
+    if (track && ref) navigation.navigate('TrackRequest', { ref });
   };
 
-  const renderTypeSelector = () => (
-    <View style={styles.typeGrid}>
-      {REQUEST_TYPES.map((t) => {
-        const active = requestType === t.value;
-        return (
-          <TouchableOpacity
-            key={t.value}
-            style={[styles.typeCard, active && styles.typeCardActive]}
-            onPress={() => setRequestType(t.value)}
-            activeOpacity={0.8}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`${t.value}: ${t.hint}`}
-          >
-            <Ionicons name={t.icon} size={22} color={active ? '#fff' : COLORS.primary} />
-            <Text style={[styles.typeTitle, active && { color: '#fff' }]}>{t.value}</Text>
-            <Text style={[styles.typeHint, active && { color: '#E0F2FE' }]}>{t.hint}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-
-  const renderCategoryPills = () => (
-    <View style={styles.categoryContainer}>
-      {CATEGORIES.map((cat) => {
-        const isActive = category === cat.label;
-        return (
-          <TouchableOpacity
-            key={cat.label}
-            style={[
-              styles.categoryPill,
-              isActive && styles.categoryPillActive,
-              { borderColor: isActive ? cat.color : COLORS.gray200 },
-            ]}
-            onPress={() => setCategory(cat.label)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={cat.icon}
-              size={18}
-              color={isActive ? cat.color : COLORS.gray500}
-              style={styles.categoryIcon}
-            />
-            <Text
-              style={[
-                styles.categoryLabel,
-                isActive && { color: cat.color, fontWeight: '700' },
-              ]}
-            >
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+  const sidePanel = (
+    <View style={{ gap: SPACE.lg }}>
+      <Card>
+        <Text style={TYPE.h3}>What happens next</Text>
+        {NEXT_STEPS.map(([t, d], i) => (
+          <View key={t} style={styles.nextRow}>
+            <View style={styles.nextNum}><Text style={styles.nextNumText}>{i + 1}</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={TYPE.label}>{t}</Text>
+              <Text style={[TYPE.small, { marginTop: 2 }]}>{d}</Text>
+            </View>
+          </View>
+        ))}
+      </Card>
+      <View style={styles.emergency}>
+        <Ionicons name="alert-circle" size={22} color={COLORS.danger} />
+        <View style={{ flex: 1 }}>
+          <Text style={[TYPE.label, { color: '#991B1B' }]}>Emergency?</Text>
+          <Text style={[TYPE.small, { color: '#7F1D1D', marginTop: 2 }]}>
+            For a burst pipe or major leak, call toll-free{' '}
+            <Text style={{ fontWeight: '700' }} onPress={() => Linking.openURL(`tel:${ORG.phones[0].value.replace(/\D/g, '')}`)}>
+              {ORG.phones[0].value}
+            </Text>{' '}
+            as well.
+          </Text>
+        </View>
+      </View>
+      <View style={styles.privacy}>
+        <Ionicons name="lock-closed-outline" size={18} color={COLORS.gray500} />
+        <Text style={[TYPE.small, { flex: 1 }]}>
+          Your contact details are only visible to NWSC staff handling your request.{' '}
+          <Text style={{ color: COLORS.primary, fontWeight: '600' }} onPress={() => navigation.navigate('Privacy')}>Privacy notice</Text>
+        </Text>
+      </View>
     </View>
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={80}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Enquiries & Complaints</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.page} keyboardShouldPersistTaps="handled">
+        <PageHeader
+          overline="Customer service"
+          title="Enquiries & complaints"
+          subtitle="Report a water or sewer problem, ask a question, or share an idea. You'll get a reference number to track it."
+          icon="chatbox-ellipses-outline"
+        />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>💧 How can we help?</Text>
-          <Text style={styles.cardSub}>
-            Report a water or sewer problem, ask a question, or share a suggestion. You'll get a reference number to track it.
-            For emergencies such as a burst pipe, also call toll-free 0800-200-977.
-          </Text>
+        <Container style={[styles.layout, !isDesktop && { flexDirection: 'column' }]}>
+          <Card elevated style={[styles.formCard, isDesktop && { flex: 2 }]}>
+            {/* Step 1 */}
+            <Text style={styles.stepLabel}>1 · What would you like to do?</Text>
+            <View style={styles.typeGrid}>
+              {REQUEST_TYPES.map((t) => (
+                <Choice key={t.value} active={requestType === t.value} onPress={() => setRequestType(t.value)} icon={t.icon} label={t.value} hint={t.hint} />
+              ))}
+            </View>
 
-          <Text style={styles.label}>What would you like to do?</Text>
-          {renderTypeSelector()}
+            <Text style={[TYPE.label, { marginTop: SPACE.xl, marginBottom: 8 }]}>Category</Text>
+            <View style={styles.chips}>
+              {CATEGORIES.map((c) => (
+                <Choice key={c.label} compact active={category === c.label} onPress={() => setCategory(c.label)} icon={c.icon} label={c.label} />
+              ))}
+            </View>
 
-          <Text style={styles.label}>Category</Text>
-          {renderCategoryPills()}
-
-          <Text style={styles.label}>Title</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter a short, descriptive title"
-              placeholderTextColor={COLORS.gray400}
+            {/* Step 2 */}
+            <Text style={[styles.stepLabel, styles.stepGap]}>2 · Tell us about it</Text>
+            <TextField
+              label="Title"
+              required
+              placeholder="e.g. Burst pipe on Main Street"
               value={title}
               onChangeText={setTitle}
-              maxLength={maxTitleChars}
+              maxLength={MAX_TITLE}
+              error={errors.title}
+              hint={`${title.length}/${MAX_TITLE}`}
             />
-            <Text style={styles.charCounter}>
-              {title.length}/{maxTitleChars}
-            </Text>
-          </View>
-
-          <Text style={styles.label}>Description</Text>
-          <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Describe the issue: what happened, where (area, street, landmark), and since when..."
-              placeholderTextColor={COLORS.gray400}
+            <TextField
+              label="Description"
+              required
+              multiline
+              placeholder="What happened, exactly where, and since when? For billing, include your account number."
               value={description}
               onChangeText={setDescription}
-              multiline
-              numberOfLines={6}
-              maxLength={maxDescChars}
-              textAlignVertical="top"
+              maxLength={MAX_DESC}
+              error={errors.description}
+              hint={`${description.length}/${MAX_DESC}`}
             />
-            <Text style={[styles.charCounter, styles.charCounterBottom]}>
-              {description.length}/{maxDescChars}
-            </Text>
-          </View>
+            <TextField
+              label="Location"
+              placeholder="Area, street or landmark, e.g. Walukuba, near the market"
+              value={locationText}
+              onChangeText={setLocationText}
+              maxLength={200}
+            />
 
-          <Text style={styles.label}>Location (area, street or landmark)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Walukuba, near the market"
-            placeholderTextColor={COLORS.gray400}
-            value={locationText}
-            onChangeText={setLocationText}
-            maxLength={200}
-          />
-
-          <Text style={styles.sectionHeading}>Your contact details</Text>
-          <Text style={styles.helper}>We'll send your reference number and progress updates here. Give at least a phone number or an email.</Text>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Your name"
-            placeholderTextColor={COLORS.gray400}
-            value={contactName}
-            onChangeText={setContactName}
-            maxLength={120}
-            autoComplete="name"
-          />
-          <Text style={styles.label}>Phone number (for SMS updates)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. 0772 123456"
-            placeholderTextColor={COLORS.gray400}
-            value={contactPhone}
-            onChangeText={setContactPhone}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            maxLength={20}
-          />
-          <Text style={styles.label}>Email (optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@example.com"
-            placeholderTextColor={COLORS.gray400}
-            value={contactEmail}
-            onChangeText={setContactEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            maxLength={120}
-          />
-
-          <Text style={styles.label}>Attach Image (Optional)</Text>
-          <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
-            <Ionicons name="image-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.attachText}>
-              {image ? 'Change Image' : 'Tap to attach an image'}
-            </Text>
-          </TouchableOpacity>
-          {image && (
-            <View style={styles.imagePreviewContainer}>
-              <Image source={{ uri: image.uri }} style={styles.imagePreview} />
-              <TouchableOpacity style={styles.removeImageBtn} onPress={removeImage}>
-                <Ionicons name="close-circle" size={28} color={COLORS.danger} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
+            <Text style={[TYPE.label, { marginBottom: 8 }]}>Photo <Text style={TYPE.small}>(optional)</Text></Text>
+            {image ? (
+              <View style={styles.preview}>
+                <Image source={{ uri: image.uri }} style={styles.previewImg} />
+                <View style={{ flex: 1 }}>
+                  <Text style={TYPE.label}>Photo attached</Text>
+                  <Button title="Remove" variant="ghost" size="sm" icon="trash-outline" style={{ marginLeft: -14 }} onPress={() => setImage(null)} />
+                </View>
+              </View>
             ) : (
-              <Text style={styles.submitBtnText}>Submit</Text>
+              <Pressable onPress={pickImage} style={({ hovered }) => [styles.drop, hovered && { borderColor: COLORS.primaryLight, backgroundColor: COLORS.primarySoft }]}>
+                <Ionicons name="camera-outline" size={24} color={COLORS.primary} />
+                <Text style={[TYPE.label, { color: COLORS.primary }]}>Add a photo</Text>
+                <Text style={TYPE.small}>A picture helps our team find and fix the problem faster.</Text>
+              </Pressable>
             )}
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.viewAllBtn}
-            onPress={() => navigation.navigate('TrackRequest')}
-          >
-            <Text style={styles.viewAllText}>🔎 Track an existing request</Text>
-          </TouchableOpacity>
+            {/* Step 3 */}
+            <Text style={[styles.stepLabel, styles.stepGap]}>3 · How can we reach you?</Text>
+            <Text style={[TYPE.small, { marginTop: -8, marginBottom: SPACE.lg }]}>
+              We'll send your reference number and updates here. Give at least a phone number or an email.
+            </Text>
+            <TextField label="Full name" placeholder="Your name" value={contactName} onChangeText={setContactName} maxLength={120} autoComplete="name" />
+            <View style={[styles.row, !isDesktop && { flexDirection: 'column', gap: 0 }]}>
+              <TextField
+                style={{ flex: 1 }}
+                label="Phone (for SMS updates)"
+                placeholder="0772 123456"
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                maxLength={20}
+                error={errors.phone}
+              />
+              <TextField
+                style={{ flex: 1 }}
+                label="Email"
+                placeholder="you@example.com"
+                value={contactEmail}
+                onChangeText={setContactEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                maxLength={120}
+                error={errors.email}
+              />
+            </View>
+            {errors.contact ? (
+              <View style={styles.inlineError}>
+                <Ionicons name="information-circle" size={16} color={COLORS.danger} />
+                <Text style={[TYPE.small, { color: COLORS.danger, flex: 1 }]}>{errors.contact}</Text>
+              </View>
+            ) : null}
 
-          <Text style={styles.footerNote}>
-            Your contact details are only visible to NWSC staff handling your request.
-          </Text>
-        </View>
-        <View style={{ height: 40 }} />
+            <View style={styles.submitRow}>
+              <Button title={`Submit ${requestType.toLowerCase()}`} icon="send" size="lg" loading={loading} onPress={handleSubmit} />
+              <Button title="Track an existing request" variant="ghost" onPress={() => navigation.navigate('TrackRequest')} />
+            </View>
+          </Card>
+
+          <View style={isDesktop ? { flex: 1 } : null}>{sidePanel}</View>
+        </Container>
+
+        <Footer />
       </ScrollView>
 
-      <Modal
-        visible={showSuccess}
-        transparent
-        animationType="fade"
-        onRequestClose={() => closeSuccess(false)}
-      >
-        <View style={styles.successOverlay}>
-          <Animated.View style={[styles.successModal, { opacity: fadeAnim }]}>
-            <Ionicons name="checkmark-circle" size={60} color={COLORS.success} />
-            <Text style={styles.successTitle}>Thank you!</Text>
-            <Text style={styles.successSub}>
+      {/* Success dialog — stays open until dismissed so the reference can be noted. */}
+      <Modal visible={referenceNo !== null} transparent animationType="fade" onRequestClose={() => finish(false)}>
+        <View style={styles.overlay}>
+          <View style={[styles.success, SHADOW.lg]}>
+            <View style={styles.successIcon}>
+              <Ionicons name="checkmark" size={36} color="#fff" />
+            </View>
+            <Text style={[TYPE.h2, { textAlign: 'center', marginTop: SPACE.lg }]}>Thank you — we've got it</Text>
+            <Text style={[TYPE.body, { textAlign: 'center', color: COLORS.gray500, marginTop: 6 }]}>
               Your {requestType.toLowerCase()} has been received. Keep this reference number to track it:
             </Text>
             {referenceNo ? (
-              <Text style={styles.refText} selectable accessibilityLabel={`Reference number ${referenceNo.split('').join(' ')}`}>
-                {referenceNo}
-              </Text>
+              <Text style={styles.ref} selectable accessibilityLabel={`Reference number ${referenceNo.split('').join(' ')}`}>{referenceNo}</Text>
             ) : null}
-            <Text style={styles.successNote}>We've also sent it to you by SMS/email.</Text>
-            <TouchableOpacity style={styles.successPrimary} onPress={() => closeSuccess(true)}>
-              <Text style={styles.successPrimaryText}>Track this request</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.successSecondary} onPress={() => closeSuccess(false)}>
-              <Text style={styles.successSecondaryText}>Done</Text>
-            </TouchableOpacity>
-          </Animated.View>
+            <Text style={[TYPE.small, { textAlign: 'center' }]}>We've also sent it to you by SMS/email.</Text>
+            <View style={{ gap: 10, marginTop: SPACE.xl, alignSelf: 'stretch' }}>
+              <Button title="Track this request" icon="search" full onPress={() => finish(true)} />
+              <Button title="Done" variant="secondary" full onPress={() => finish(false)} />
+            </View>
+          </View>
         </View>
       </Modal>
     </KeyboardAvoidingView>
@@ -431,132 +372,48 @@ export default function FeedbackScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray200,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.primary },
-  scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    backdropFilter: 'blur(12px)',
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  cardTitle: { fontSize: 22, fontWeight: '800', color: COLORS.primary, marginBottom: 4 },
-  cardSub: { fontSize: 14, color: COLORS.gray600, marginBottom: 24, lineHeight: 20 },
-  label: { fontSize: 15, fontWeight: '600', color: COLORS.gray700, marginBottom: 8, marginTop: 16 },
-  categoryContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4, gap: 8 },
-  categoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 30,
-    borderWidth: 1.5,
-    backgroundColor: '#fff',
-    marginRight: 6,
-    marginBottom: 6,
-  },
-  categoryPillActive: { backgroundColor: 'rgba(30, 58, 138, 0.05)', borderWidth: 2 },
-  categoryIcon: { marginRight: 6 },
-  categoryLabel: { fontSize: 14, fontWeight: '500', color: COLORS.gray600 },
-  inputWrapper: { position: 'relative', marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 16,
-    color: COLORS.gray800,
-    backgroundColor: '#fff',
-    paddingRight: 50,
-  },
-  textArea: { height: 150, paddingTop: 14, textAlignVertical: 'top' },
-  textAreaWrapper: { height: 150 },
-  charCounter: { position: 'absolute', right: 14, top: 14, fontSize: 12, color: COLORS.gray400 },
-  charCounterBottom: { top: 'auto', bottom: 10 },
-  attachBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.gray100,
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    borderStyle: 'dashed',
-  },
-  attachText: { marginLeft: 10, fontSize: 15, color: COLORS.primary, fontWeight: '500' },
-  imagePreviewContainer: { position: 'relative', marginVertical: 8, alignSelf: 'center' },
-  imagePreview: { width: 120, height: 120, borderRadius: 12, borderWidth: 1, borderColor: COLORS.gray200 },
-  removeImageBtn: { position: 'absolute', top: -10, right: -10, backgroundColor: '#fff', borderRadius: 16 },
-  submitBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 40,
-    alignItems: 'center',
-    marginTop: 24,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText: { color: '#fff', fontSize: 18, fontWeight: '700', letterSpacing: 0.5 },
-  viewAllBtn: { marginTop: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: COLORS.gray100, borderRadius: 30 },
-  viewAllText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
-  footerNote: { marginTop: 16, fontSize: 13, color: COLORS.gray500, textAlign: 'center' },
-  successOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  successModal: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 32,
-    maxWidth: 440,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.1,
-    shadowRadius: 40,
-    elevation: 10,
-    width: '80%',
-  },
-  successTitle: { fontSize: 26, fontWeight: '800', color: COLORS.gray800, marginTop: 12 },
-  successSub: { fontSize: 16, color: COLORS.gray500, textAlign: 'center', marginTop: 8 },
-  refText: {
-    fontSize: 26, fontWeight: '800', color: COLORS.primary, letterSpacing: 2, marginTop: 16,
-    paddingVertical: 10, paddingHorizontal: 18, backgroundColor: '#E0F2FE', borderRadius: 12,
-  },
-  successNote: { fontSize: 13, color: COLORS.gray500, marginTop: 10, textAlign: 'center' },
-  successPrimary: { marginTop: 20, backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 28, borderRadius: 30 },
-  successPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  successSecondary: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
-  successSecondaryText: { color: COLORS.gray600, fontWeight: '600' },
+  page: { flex: 1, backgroundColor: COLORS.bg },
+  layout: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.xl, marginTop: -24 },
+  formCard: { width: '100%' },
+  stepLabel: { fontFamily: FONT, fontSize: 17, fontWeight: '800', color: COLORS.primaryDark, marginBottom: SPACE.md },
+  stepGap: { marginTop: SPACE.xxl, paddingTop: SPACE.xl, borderTopWidth: 1, borderTopColor: COLORS.gray200 },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   typeCard: {
-    flexGrow: 1, flexBasis: 140, padding: 12, borderRadius: 14, borderWidth: 1.5,
-    borderColor: COLORS.gray200, backgroundColor: '#fff',
+    flexGrow: 1, flexBasis: 130, padding: 14, borderRadius: RADIUS.md, borderWidth: 1.5,
+    borderColor: COLORS.gray200, backgroundColor: COLORS.white,
   },
   typeCardActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeTitle: { fontSize: 15, fontWeight: '700', color: COLORS.gray800, marginTop: 6 },
-  typeHint: { fontSize: 12, color: COLORS.gray500, marginTop: 2 },
-  sectionHeading: { fontSize: 17, fontWeight: '700', color: COLORS.primary, marginTop: 28 },
-  helper: { fontSize: 13, color: COLORS.gray500, marginTop: 4 },
+  typeTitle: { fontFamily: FONT, fontSize: 15, fontWeight: '700', color: COLORS.gray900 },
+  typeHint: { fontFamily: FONT, fontSize: 12.5, color: COLORS.gray500, marginTop: 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: COLORS.gray200, backgroundColor: COLORS.white,
+  },
+  chipActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
+  chipText: { fontFamily: FONT, fontSize: 13.5, fontWeight: '600', color: COLORS.gray700 },
+  drop: {
+    alignItems: 'center', gap: 4, padding: SPACE.xl, borderRadius: RADIUS.md, borderWidth: 1.5,
+    borderStyle: 'dashed', borderColor: COLORS.gray300, backgroundColor: COLORS.gray50,
+  },
+  preview: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg },
+  previewImg: { width: 96, height: 96, borderRadius: RADIUS.md },
+  row: { flexDirection: 'row', gap: SPACE.lg },
+  inlineError: { flexDirection: 'row', gap: 6, alignItems: 'center', backgroundColor: COLORS.dangerSoft, padding: 10, borderRadius: RADIUS.sm },
+  submitRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: SPACE.xl },
+  nextRow: { flexDirection: 'row', gap: 12, marginTop: SPACE.lg },
+  nextNum: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  nextNumText: { fontFamily: FONT, fontWeight: '800', color: COLORS.primary, fontSize: 13 },
+  emergency: {
+    flexDirection: 'row', gap: 12, padding: SPACE.lg, borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.dangerSoft, borderWidth: 1, borderColor: '#FECACA',
+  },
+  privacy: { flexDirection: 'row', gap: 10, paddingHorizontal: 4 },
+  overlay: { flex: 1, backgroundColor: 'rgba(4,31,58,0.55)', alignItems: 'center', justifyContent: 'center', padding: SPACE.lg },
+  success: { width: '100%', maxWidth: 440, backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACE.xxl, alignItems: 'center' },
+  successIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.success, alignItems: 'center', justifyContent: 'center' },
+  ref: {
+    fontFamily: FONT, fontSize: 26, fontWeight: '800', color: COLORS.primary, letterSpacing: 2,
+    marginVertical: SPACE.lg, paddingVertical: 12, paddingHorizontal: 20, backgroundColor: COLORS.primarySoft, borderRadius: RADIUS.md,
+  },
 });

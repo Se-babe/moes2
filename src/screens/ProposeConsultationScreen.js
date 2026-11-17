@@ -17,20 +17,10 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container } from '../components/ui';
+import Footer from '../components/Footer';
 
-// ----- Colors -----
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray600: '#475569',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  success: '#22C55E',
-  danger: '#EF4444',
-  info: '#3B82F6',
-};
 
 // ----- Categories -----
 const CATEGORIES = ['Water Supply', 'Tariffs & Billing', 'Sewerage', 'Infrastructure Projects', 'Customer Service', 'General'];
@@ -184,13 +174,7 @@ export default function ProposeConsultationScreen() {
       keyboardVerticalOffset={80}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Propose Consultation</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <PageHeader title="Propose a consultation" subtitle="Suggest a topic you think NWSC should consult the public on. Our team reviews every proposal." icon="add-circle-outline" overline="Participate" />
 
       <ScrollView
         style={styles.scrollView}

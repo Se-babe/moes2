@@ -2,14 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray200: '#E2E8F0',
-  gray500: '#64748B',
-  gray800: '#1E293B',
-};
 
 const SECTIONS = [
   {
@@ -72,9 +68,9 @@ export default function SitemapScreen() {
   const navigation = useNavigation();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>🗺️ Sitemap</Text>
-      <Text style={styles.sub}>Every section of the NWSC e-Participation platform, in one place.</Text>
+    <ScrollView style={styles.container}>
+      <PageHeader title="Sitemap" subtitle="Every section of the NWSC e-Participation platform in one place." icon="map-outline" overline="Help" />
+      <Container style={styles.content}>
 
       {SECTIONS.map((section) => (
         <View key={section.heading} style={styles.card}>
@@ -94,6 +90,8 @@ export default function SitemapScreen() {
           ))}
         </View>
       ))}
+      </Container>
+      <Footer />
     </ScrollView>
   );
 }

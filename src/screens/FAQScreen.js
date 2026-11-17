@@ -10,18 +10,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseClient';
+import { COLORS, FONT } from '../theme';
+import { PageHeader, Container, EmptyState } from '../components/ui';
+import Footer from '../components/Footer';
 
-const COLORS = {
-  primary: '#0B5FA5',
-  gray50: '#F8FAFC',
-  gray100: '#F1F5F9',
-  gray200: '#E2E8F0',
-  gray400: '#94A3B8',
-  gray500: '#64748B',
-  gray700: '#334155',
-  gray800: '#1E293B',
-  danger: '#EF4444',
-};
 
 export default function FAQScreen() {
   const [faqs, setFaqs] = useState([]);
@@ -57,6 +49,7 @@ export default function FAQScreen() {
 
   return (
     <View style={styles.container}>
+      <PageHeader title="Frequently asked questions" subtitle="Quick answers about water supply, billing, connections and using this platform." icon="help-buoy-outline" overline="Help" />
       <View style={styles.searchContainer}>
         <Ionicons name="search-outline" size={20} color={COLORS.gray400} />
         <TextInput
@@ -70,7 +63,7 @@ export default function FAQScreen() {
 
       <ScrollView style={styles.list}>
         {filteredFAQs.length === 0 ? (
-          <Text style={styles.emptyText}>No FAQs yet — check back soon.</Text>
+          <EmptyState icon="help-buoy-outline" title="No matching questions" message="Try different words, or ask Maji, our assistant, using the chat button." />
         ) : (
           filteredFAQs.map((item) => (
             <View key={item.id} style={styles.faqItem}>
@@ -95,10 +88,11 @@ export default function FAQScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50, padding: 16 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, color: COLORS.gray500 },
   searchContainer: {
+    width: '100%', maxWidth: 820, alignSelf: 'center', marginTop: 24,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -112,7 +106,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: COLORS.gray800 },
   addBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginBottom: 12 },
   addBtnText: { color: COLORS.primary, fontWeight: '600', marginLeft: 4 },
-  list: { flex: 1 },
+  list: { flex: 1, width: '100%', maxWidth: 860, alignSelf: 'center', paddingHorizontal: 20 },
   faqItem: {
     backgroundColor: '#fff',
     borderRadius: 12,
