@@ -51,6 +51,7 @@ function FooterLink({ label, onPress }) {
 export default function Footer() {
   const navigation = useNavigation();
   const { user, signOut } = useAuth();
+  const isStaff = user && ['officer', 'supervisor', 'admin'].includes(user.role);
   const { isDesktop, isMobile } = useBreakpoint();
   const [socialLinks, setSocialLinks] = useState([]);
 
@@ -121,11 +122,7 @@ export default function Footer() {
           <View style={styles.bottomLinks}>
             <FooterLink label="Privacy & terms" onPress={() => goTo('Privacy')} />
             <FooterLink label="Contact" onPress={() => goTo('Contact')} />
-            {user ? (
-              <FooterLink label="Sign out" onPress={signOut} />
-            ) : (
-              <FooterLink label="Staff sign in" onPress={() => goTo('Login')} />
-            )}
+            {isStaff && <FooterLink label="Sign out" onPress={signOut} />}
           </View>
         </View>
       </View>

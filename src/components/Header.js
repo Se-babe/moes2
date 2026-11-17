@@ -184,18 +184,14 @@ export default function Header() {
                 />
               </View>
             )}
-            {!compact && (
-              user ? (
-                <Button
-                  title={isStaff ? (user.role === 'admin' ? 'Admin console' : 'Staff portal') : 'My requests'}
-                  variant="secondary"
-                  size="sm"
-                  icon={isStaff ? 'briefcase-outline' : 'person-circle-outline'}
-                  onPress={() => go(isStaff ? (user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal') : 'TrackRequest')}
-                />
-              ) : (
-                <Button title="Sign in" variant="ghost" size="sm" onPress={() => go('Login')} />
-              )
+            {!compact && isStaff && (
+              <Button
+                title={user.role === 'admin' ? 'Admin console' : 'Staff portal'}
+                variant="secondary"
+                size="sm"
+                icon="briefcase-outline"
+                onPress={() => go(user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal')}
+              />
             )}
             {width >= 420 && (
               <Button title="Report a problem" icon="water" size="sm" onPress={() => go('Feedback', { type: 'Complaint' })} />
@@ -246,28 +242,19 @@ export default function Header() {
                   ))}
                 </View>
               ))}
-              <View style={{ marginTop: 24 }}>
-                <Text style={styles.drawerSection}>Account</Text>
-                {user ? (
-                  <>
-                    {isStaff && (
-                      <Pressable style={styles.drawerLink} onPress={() => go(user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal')}>
-                        <Ionicons name="briefcase-outline" size={18} color={COLORS.primary} />
-                        <Text style={styles.drawerLinkText}>Staff area</Text>
-                      </Pressable>
-                    )}
-                    <Pressable style={styles.drawerLink} onPress={() => { setMenuOpen(false); signOut(); }}>
-                      <Ionicons name="log-out-outline" size={18} color={COLORS.primary} />
-                      <Text style={styles.drawerLinkText}>Sign out</Text>
-                    </Pressable>
-                  </>
-                ) : (
-                  <Pressable style={styles.drawerLink} onPress={() => go('Login')}>
-                    <Ionicons name="log-in-outline" size={18} color={COLORS.primary} />
-                    <Text style={styles.drawerLinkText}>Sign in</Text>
+              {isStaff && (
+                <View style={{ marginTop: 24 }}>
+                  <Text style={styles.drawerSection}>Staff</Text>
+                  <Pressable style={styles.drawerLink} onPress={() => go(user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal')}>
+                    <Ionicons name="briefcase-outline" size={18} color={COLORS.primary} />
+                    <Text style={styles.drawerLinkText}>Staff area</Text>
                   </Pressable>
-                )}
-              </View>
+                  <Pressable style={styles.drawerLink} onPress={() => { setMenuOpen(false); signOut(); }}>
+                    <Ionicons name="log-out-outline" size={18} color={COLORS.primary} />
+                    <Text style={styles.drawerLinkText}>Sign out</Text>
+                  </Pressable>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>

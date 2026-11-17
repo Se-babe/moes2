@@ -127,7 +127,7 @@ export default function ConsultationsScreen() {
   // ----- Like / React on post -----
   const handleReact = async (consultationId, reactionType) => {
     if (!user) {
-      showAlert('Please login', 'You need to be logged in to react.');
+      showAlert('View only', 'You can read this consultation here. Reactions are for NWSC staff.');
       return;
     }
     const { data: existing } = await supabase
@@ -150,6 +150,10 @@ export default function ConsultationsScreen() {
 
   // ----- Comment -----
   const openCommentModal = (consultation) => {
+    if (!user) {
+      showAlert('View only', 'You can read comments here. Adding one is for NWSC staff.');
+      return;
+    }
     setActiveConsultation(consultation);
     setCommentText('');
     setCommentImage(null);
@@ -213,7 +217,7 @@ export default function ConsultationsScreen() {
   // ----- Poll Vote -----
   const handlePollVote = async (pollOptionId, consultationId) => {
     if (!user) {
-      showAlert('Please login', 'You need to be logged in to vote.');
+      showAlert('View only', 'You can read this consultation here. Voting is for NWSC staff.');
       return;
     }
     const { data: existing } = await supabase
@@ -248,7 +252,7 @@ export default function ConsultationsScreen() {
   // ----- Like a comment -----
   const handleCommentLike = async (commentId, consultationId) => {
     if (!user) {
-      showAlert('Please login', 'You need to be logged in to like a comment.');
+      showAlert('View only', 'You can read comments here. Liking one is for NWSC staff.');
       return;
     }
     setCommentLikeLoading(prev => ({ ...prev, [commentId]: true }));

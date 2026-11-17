@@ -22,7 +22,7 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, signOut } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -35,10 +35,11 @@ export default function LoginScreen({ navigation }) {
       const role = profile?.role;
       if (role === 'admin') navigation.navigate('AdminDashboard');
       else if (role === 'officer' || role === 'supervisor') navigation.navigate('StaffPortal');
-      else if (navigation.canGoBack()) navigation.goBack();
-      else navigation.navigate('Home');
+      else {
+        await signOut();
+        showAlert('Staff only', 'This sign-in is for NWSC staff and administrators.');
+      }
     } catch (error) {
-      // Show the full error message from Supabase
       showAlert('Login Failed', error.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
@@ -50,7 +51,7 @@ export default function LoginScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <PageHeader title="Sign in" subtitle="Sign in to see all your requests in one place. NWSC staff sign in here too." icon="log-in-outline" overline="Your account" />
+      <PageHeader title="Staff sign in" subtitle="For NWSC officers, supervisors, and administrators." icon="briefcase-outline" overline="Staff portal" />
       <View style={styles.form}>
         <Text style={styles.label}>Email</Text>
         <TextInput
@@ -82,12 +83,6 @@ export default function LoginScreen({ navigation }) {
         <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginBtnText}>Login</Text>}
         </TouchableOpacity>
-        <View style={styles.signupRow}>
-          <Text style={styles.signupText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.signupLink}>Sign Up</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -128,7 +123,4 @@ const styles = StyleSheet.create({
   forgotText: { color: COLORS.primary, textAlign: 'right', marginBottom: 16 },
   loginBtn: { backgroundColor: COLORS.primary, padding: 16, borderRadius: 30, alignItems: 'center' },
   loginBtnText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  signupRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
-  signupText: { color: COLORS.gray500 },
-  signupLink: { color: COLORS.primary, fontWeight: '600' },
 });

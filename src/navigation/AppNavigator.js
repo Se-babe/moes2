@@ -30,7 +30,6 @@ import ProposeConsultationScreen from '../screens/ProposeConsultationScreen';
 import FAQScreen from '../screens/FAQScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
 import LoginScreen from '../screens/LoginScreen';
-import SignUpScreen from '../screens/SignUpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AboutScreen from '../screens/AboutScreen';
@@ -69,7 +68,6 @@ const linking = {
       ProposeConsultation: 'consultations/propose',
       FAQs: 'faqs',
       Login: 'login',
-      SignUp: 'signup',
       ForgotPassword: 'forgot-password',
       About: 'about',
       News: 'news',
@@ -101,8 +99,7 @@ const TITLES = {
   ProposeConsultation: 'Propose a consultation',
   FAQs: 'FAQs',
   ChatBot: 'Assistant',
-  Login: 'Sign in',
-  SignUp: 'Create account',
+  Login: 'Staff sign in',
   ForgotPassword: 'Reset password',
   About: 'About NWSC Jinja',
   News: 'News & announcements',
@@ -124,7 +121,7 @@ const TITLES = {
 
 // Staff and admin work areas get a focused layout without the public header
 // and assistant button.
-const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'AdminDashboard'];
+const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'AdminDashboard', 'Login', 'ForgotPassword', 'SetPassword'];
 
 const AppNavigatorContent = ({ currentRoute }) => {
   const { user, loading } = useAuth();
@@ -157,7 +154,6 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="FAQs" component={FAQScreen} options={{ title: TITLES.FAQs }} />
         <Stack.Screen name="ChatBot" component={ChatBotScreen} options={{ title: TITLES.ChatBot }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: TITLES.Login }} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: TITLES.SignUp }} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: TITLES.ForgotPassword }} />
         <Stack.Screen name="About" component={AboutScreen} options={{ title: TITLES.About }} />
         <Stack.Screen name="News" component={NewsScreen} options={{ title: TITLES.News }} />

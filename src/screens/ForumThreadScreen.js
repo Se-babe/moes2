@@ -53,10 +53,7 @@ export default function ForumThreadScreen() {
 
   const sendReply = async () => {
     if (!user) {
-      showAlert('Please login', 'You need to be logged in to reply.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Login', onPress: () => navigation.navigate('Login') },
-      ]);
+      showAlert('Staff only', 'Anyone can read this discussion. Replies are for NWSC staff.');
       return;
     }
     if (!replyText.trim()) return;

@@ -54,10 +54,7 @@ export default function ForumScreen() {
 
   const openNewTopic = () => {
     if (!user) {
-      showAlert('Please login', 'You need to be logged in to start a discussion.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Login', onPress: () => navigation.navigate('Login') },
-      ]);
+      showAlert('Staff only', 'Anyone can read discussions. Starting one is for NWSC staff.');
       return;
     }
     setModalVisible(true);

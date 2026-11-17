@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { showAlert } from '../utils/alert';
-import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState } from '../components/ui';
@@ -9,7 +8,6 @@ import Footer from '../components/Footer';
 
 
 export default function SurveysScreen() {
-  const navigation = useNavigation();
   const [surveys, setSurveys] = useState([]);
   const [polls, setPolls] = useState([]);
   const [userVotes, setUserVotes] = useState({}); // consultationId -> poll_option_id
@@ -53,10 +51,7 @@ export default function SurveysScreen() {
 
   const vote = async (consultationId, pollOptionId) => {
     if (!user) {
-      showAlert('Login Required', 'Please log in to vote on this poll.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Log In', onPress: () => navigation.navigate('Login') },
-      ]);
+      showAlert('View only', 'Poll results are public. Casting a vote uses an NWSC staff account.');
       return;
     }
     setVotingId(pollOptionId);

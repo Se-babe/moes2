@@ -48,14 +48,6 @@ const SECTIONS = [
     ],
   },
   {
-    heading: 'Account',
-    icon: 'person-outline',
-    links: [
-      { label: 'Log In', screen: 'Login' },
-      { label: 'Sign Up', screen: 'SignUp' },
-    ],
-  },
-  {
     heading: 'Contact',
     icon: 'call-outline',
     links: [
