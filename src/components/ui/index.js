@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, TYPE, SPACE, RADIUS, SHADOW, LAYOUT, FONT, gradient } from '../../theme';
+import { usePreferences } from '../../context/PreferencesContext';
 
 // ------------------------------------------------------------------
 // Shared UI kit. Screens compose these instead of styling from scratch.
@@ -40,6 +41,7 @@ export function Container({ children, style, narrow }) {
 export function PageHeader({ title, subtitle, icon, overline, children, back = true }) {
   const navigation = useNavigation();
   const { isMobile } = useBreakpoint();
+  const { t } = usePreferences();
   return (
     <View style={[styles.pageHeader, gradient(COLORS.primaryDark, COLORS.primary), isMobile && styles.pageHeaderMobile]}>
       <Container>
@@ -51,7 +53,7 @@ export function PageHeader({ title, subtitle, icon, overline, children, back = t
             accessibilityLabel="Go back"
           >
             <Ionicons name="arrow-back" size={16} color="#BAE6FD" />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>{t('common.back')}</Text>
           </Pressable>
         )}
         <View style={styles.pageHeaderRow}>

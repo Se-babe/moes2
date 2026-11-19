@@ -17,6 +17,7 @@ import Footer from '../components/Footer';
 import { PageHeader, Container, Button, Badge, STATUS_TONE, TextField } from '../components/ui';
 import { showAlert } from '../utils/alert';
 import { COLORS, FONT, SHADOW } from '../theme';
+import { usePreferences } from '../context/PreferencesContext';
 
 
 // Citizen-facing progress steps. 'Escalated' is shown as part of "In Progress".
@@ -69,6 +70,7 @@ function ParticipationBadge({ count }) {
 }
 
 function RateService({ reference, onRated }) {
+  const { t: tr } = usePreferences();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
@@ -83,8 +85,8 @@ function RateService({ reference, onRated }) {
   };
   return (
     <View style={styles.rateBox}>
-      <Text style={styles.sectionTitle}>How did we do?</Text>
-      <Text style={styles.helper}>Your rating helps us improve. It takes 10 seconds.</Text>
+      <Text style={styles.sectionTitle}>{tr('track.rateTitle')}</Text>
+      <Text style={styles.helper}>{tr('track.rateHint')}</Text>
       <View style={styles.stars} accessibilityRole="radiogroup">
         {[1, 2, 3, 4, 5].map((n) => (
           <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="radio" accessibilityState={{ checked: rating === n }} accessibilityLabel={`${n} — ${labels[n - 1]}`} style={styles.star}>
@@ -94,12 +96,13 @@ function RateService({ reference, onRated }) {
         {rating ? <Text style={[styles.helper, { marginLeft: 8, marginBottom: 0 }]}>{labels[rating - 1]}</Text> : null}
       </View>
       <TextField multiline value={comment} onChangeText={setComment} maxLength={1000} placeholder="Anything you'd like to add? (optional)" inputStyle={{ minHeight: 80 }} />
-      <Button title="Send rating" icon="send" loading={busy} onPress={submit} />
+      <Button title={tr('track.sendRating')} icon="send" loading={busy} onPress={submit} />
     </View>
   );
 }
 
 export default function TrackRequestScreen() {
+  const { t: tr } = usePreferences();
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
@@ -153,13 +156,13 @@ export default function TrackRequestScreen() {
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       <PageHeader
         overline="Customer service"
-        title="Track my request"
-        subtitle="Enter the reference number we sent you to see the latest progress on your enquiry or complaint."
+        title={tr('track.title')}
+        subtitle={tr('track.sub')}
         icon="search-outline"
       />
       <Container narrow style={styles.content}>
         <View style={[styles.card, SHADOW.md]}>
-          <Text style={styles.label}>Reference number</Text>
+          <Text style={styles.label}>{tr('track.label')}</Text>
           <Text style={styles.helper}>You received it by SMS/email when you submitted, e.g. NW-2611-7KQ4XP.</Text>
           <View style={styles.searchRow}>
             <TextInput
@@ -174,7 +177,7 @@ export default function TrackRequestScreen() {
               returnKeyType="search"
               accessibilityLabel="Reference number"
             />
-            <Button title="Track" icon="search" loading={loading} onPress={() => lookup()} />
+            <Button title={tr('track.button')} icon="search" loading={loading} onPress={() => lookup()} />
           </View>
         </View>
 
@@ -182,7 +185,7 @@ export default function TrackRequestScreen() {
           <View style={[styles.card, styles.notFound]}>
             <Ionicons name="search-outline" size={28} color={COLORS.danger} />
             <Text style={styles.notFoundText}>
-              We couldn't find that reference number. Check it and try again, or call toll-free 0800-200-977.
+              {tr('track.notFound')}
             </Text>
           </View>
         )}
@@ -210,7 +213,7 @@ export default function TrackRequestScreen() {
                     <View style={[styles.stepDot, done && styles.stepDotDone]}>
                       {done && <Ionicons name="checkmark" size={14} color="#fff" />}
                     </View>
-                    <Text style={[styles.stepLabel, done && styles.stepLabelDone]}>{s}</Text>
+                    <Text style={[styles.stepLabel, done && styles.stepLabelDone]}>{tr(`status.${s}`)}</Text>
                     {i < STEPS.length - 1 && <View style={[styles.stepLine, i < current && styles.stepLineDone]} />}
                   </View>
                 );
@@ -228,7 +231,7 @@ export default function TrackRequestScreen() {
 
             {result.participation > 0 && <ParticipationBadge count={result.participation} />}
 
-            <Text style={styles.sectionTitle}>Updates</Text>
+            <Text style={styles.sectionTitle}>{tr('track.updates')}</Text>
             {(result.timeline || []).slice().reverse().map((u, i) => (
               <View key={i} style={styles.update}>
                 <View style={styles.updateRail}>
@@ -263,7 +266,7 @@ export default function TrackRequestScreen() {
         )}
 
         <Button
-          title="Submit a new enquiry or complaint"
+          title={tr('track.new')}
           icon="add-circle-outline"
           variant="ghost"
           style={{ alignSelf: 'center' }}

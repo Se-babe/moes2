@@ -6,9 +6,11 @@ import { supabase } from '../services/supabaseClient';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState } from '../components/ui';
 import Footer from '../components/Footer';
+import { usePreferences } from '../context/PreferencesContext';
 
 
 export default function NewsScreen() {
+  const { lite } = usePreferences();
   const navigation = useNavigation();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function NewsScreen() {
         ) : (
           news.map((item) => (
             <View key={item.id} style={styles.card}>
-              {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.cardImage} /> : null}
+              {item.image_url && !lite ? <Image source={{ uri: item.image_url }} style={styles.cardImage} /> : null}
               <Text style={styles.cardDate}>{new Date(item.published_date).toDateString()}</Text>
               <Text style={styles.cardTitle}>{item.title}</Text>
               {item.summary ? <Text style={styles.cardSummary}>{item.summary}</Text> : null}

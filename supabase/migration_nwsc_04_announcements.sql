@@ -300,4 +300,7 @@ exception when others then
 end;
 $$;
 
+-- Make the API pick up the new columns and functions immediately.
+notify pgrst, 'reload schema';
+
 commit;

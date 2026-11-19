@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { PreferencesProvider } from '../context/PreferencesContext';
 import Header from '../components/Header';
 import ChatButton from '../components/ChatButton';
 
@@ -230,7 +231,9 @@ export default function AppNavigator() {
         documentTitle={{ formatter: (options) => `${options?.title ?? 'Home'} · NWSC Jinja e-Participation` }}
       >
         <AuthProvider>
-          <AppNavigatorContent currentRoute={currentRoute} />
+          <PreferencesProvider>
+            <AppNavigatorContent currentRoute={currentRoute} />
+          </PreferencesProvider>
         </AuthProvider>
       </NavigationContainer>
     </SafeAreaProvider>

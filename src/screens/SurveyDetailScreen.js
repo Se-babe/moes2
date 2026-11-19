@@ -8,6 +8,7 @@ import Footer from '../components/Footer';
 import { COLORS, FONT, RADIUS, SPACE, TYPE } from '../theme';
 import { showAlert } from '../utils/alert';
 import { fetchAreas } from '../services/announcements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RATING_LABELS = ['Very poor', 'Poor', 'Okay', 'Good', 'Excellent'];
 
@@ -53,6 +54,18 @@ export default function SurveyDetailScreen() {
     fetchAreas().then(setAreas);
   }, [params?.id]);
 
+  // Save-and-resume: answers are kept on this device until submitted.
+  const draftKey = `nwsc_survey_draft_${params?.id}`;
+  const [resumed, setResumed] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(draftKey).then((raw) => {
+      if (raw) { try { const d = JSON.parse(raw); if (d && Object.keys(d).length) { setAnswers(d); setResumed(true); } } catch {} }
+    }).catch(() => {});
+  }, [draftKey]);
+  useEffect(() => {
+    if (Object.keys(answers).length) AsyncStorage.setItem(draftKey, JSON.stringify(answers)).catch(() => {});
+  }, [answers, draftKey]);
+
   const setAnswer = (id, v) => setAnswers((a) => ({ ...a, [id]: v }));
   const toggleMulti = (id, v) => setAnswers((a) => {
     const cur = a[id] || [];
@@ -71,7 +84,7 @@ export default function SurveyDetailScreen() {
     });
     setSending(false);
     if (error) showAlert('Could not submit', error.message);
-    else setDone(true);
+    else { setDone(true); AsyncStorage.removeItem(draftKey).catch(() => {}); }
   };
 
   const closed = survey && (!survey.is_active || (survey.end_date && survey.end_date < new Date().toISOString().slice(0, 10)));
@@ -92,6 +105,13 @@ export default function SurveyDetailScreen() {
   } else {
     body = (
       <View style={{ gap: SPACE.xl }}>
+        {resumed && (
+          <View style={styles.resumed}>
+            <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+            <Text style={[TYPE.small, { flex: 1, color: COLORS.gray800 }]}>We kept the answers you started earlier.</Text>
+            <Button title="Start over" size="sm" variant="ghost" onPress={() => { setAnswers({}); setResumed(false); AsyncStorage.removeItem(draftKey).catch(() => {}); }} />
+          </View>
+        )}
         {questions.map((q, i) => (
           <View key={q.id} accessibilityRole="radiogroup">
             <Text style={TYPE.label}>
@@ -165,6 +185,7 @@ const styles = StyleSheet.create({
   ratingOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   ratingNum: { fontFamily: FONT, fontSize: 20, fontWeight: '800', color: COLORS.gray900 },
   ratingLabel: { fontFamily: FONT, fontSize: 12, color: COLORS.gray500, marginTop: 2 },
+  resumed: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, paddingLeft: 14, borderRadius: RADIUS.md, backgroundColor: COLORS.primarySoft },
   about: { padding: SPACE.lg, borderRadius: RADIUS.md, backgroundColor: COLORS.gray50, borderWidth: 1, borderColor: COLORS.gray200 },
   areas: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   area: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.gray200, backgroundColor: COLORS.white },

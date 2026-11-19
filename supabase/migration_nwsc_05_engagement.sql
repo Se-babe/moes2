@@ -212,4 +212,7 @@ end;
 $$;
 revoke execute on function public.cast_guest_vote(uuid, text) from public, anon, authenticated;
 
+-- Make the API pick up the new columns and functions immediately.
+notify pgrst, 'reload schema';
+
 commit;

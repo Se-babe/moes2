@@ -18,36 +18,38 @@ import { useAuth } from '../context/AuthContext';
 import { ORG } from '../config/org';
 import { COLORS, FONT, RADIUS, SHADOW, LAYOUT } from '../theme';
 import { Button, useBreakpoint } from './ui';
+import DisplaySettings from './DisplaySettings';
+import { usePreferences } from '../context/PreferencesContext';
 
 export const NAV = [
   {
-    label: 'Services',
+    label: 'Services', k: 'nav.services',
     items: [
-      { label: 'Report a problem', desc: 'Leaks, no water, sewer issues', icon: 'water-outline', screen: 'Feedback', params: { type: 'Complaint' } },
-      { label: 'Make an enquiry', desc: 'Billing, connections, questions', icon: 'help-circle-outline', screen: 'Feedback', params: { type: 'Enquiry' } },
-      { label: 'Track my request', desc: 'Check progress with your reference', icon: 'search-outline', screen: 'TrackRequest' },
-      { label: 'Service updates', desc: 'Interruptions and restorations', icon: 'megaphone-outline', screen: 'Updates' },
-      { label: 'Get SMS & email alerts', desc: 'Notices for your area', icon: 'notifications-outline', screen: 'Alerts' },
+      { label: 'Report a problem', k: 'nav.report', desc: 'Leaks, no water, sewer issues', icon: 'water-outline', screen: 'Feedback', params: { type: 'Complaint' } },
+      { label: 'Make an enquiry', k: 'nav.enquiry', desc: 'Billing, connections, questions', icon: 'help-circle-outline', screen: 'Feedback', params: { type: 'Enquiry' } },
+      { label: 'Track my request', k: 'nav.track', desc: 'Check progress with your reference', icon: 'search-outline', screen: 'TrackRequest' },
+      { label: 'Service updates', k: 'nav.updates', desc: 'Interruptions and restorations', icon: 'megaphone-outline', screen: 'Updates' },
+      { label: 'Get SMS & email alerts', k: 'nav.alerts', desc: 'Notices for your area', icon: 'notifications-outline', screen: 'Alerts' },
     ],
   },
   {
-    label: 'Participate',
+    label: 'Participate', k: 'nav.participate',
     items: [
-      { label: 'Public consultations', desc: 'Have your say on proposals', icon: 'document-text-outline', screen: 'Consultations' },
-      { label: 'Surveys & polls', desc: 'Rate our services', icon: 'stats-chart-outline', screen: 'Surveys' },
-      { label: 'Discussion forums', desc: 'Ask and answer questions', icon: 'chatbubbles-outline', screen: 'Forum' },
-      { label: 'Community meetings', desc: 'Town halls in your area', icon: 'people-outline', screen: 'TownHalls' },
-      { label: 'Share a suggestion', desc: 'Ideas to improve services', icon: 'bulb-outline', screen: 'Feedback', params: { type: 'Suggestion' } },
+      { label: 'Public consultations', k: 'nav.consultations', desc: 'Have your say on proposals', icon: 'document-text-outline', screen: 'Consultations' },
+      { label: 'Surveys & polls', k: 'nav.surveys', desc: 'Rate our services', icon: 'stats-chart-outline', screen: 'Surveys' },
+      { label: 'Discussion forums', k: 'nav.forums', desc: 'Ask and answer questions', icon: 'chatbubbles-outline', screen: 'Forum' },
+      { label: 'Community meetings', k: 'nav.meetings', desc: 'Town halls in your area', icon: 'people-outline', screen: 'TownHalls' },
+      { label: 'Share a suggestion', k: 'nav.suggestion', desc: 'Ideas to improve services', icon: 'bulb-outline', screen: 'Feedback', params: { type: 'Suggestion' } },
     ],
   },
   {
-    label: 'About',
+    label: 'About', k: 'nav.about',
     items: [
-      { label: 'About NWSC Jinja', desc: 'Who we are and our teams', icon: 'business-outline', screen: 'About' },
-      { label: 'News & announcements', desc: 'Latest from NWSC', icon: 'newspaper-outline', screen: 'News' },
-      { label: 'Media gallery', desc: 'Projects and community events', icon: 'images-outline', screen: 'MediaGallery' },
-      { label: 'FAQs', desc: 'Answers to common questions', icon: 'help-buoy-outline', screen: 'FAQs' },
-      { label: 'Contact us', desc: 'Offices, phone and email', icon: 'call-outline', screen: 'Contact' },
+      { label: 'About NWSC Jinja', k: 'nav.aboutUs', desc: 'Who we are and our teams', icon: 'business-outline', screen: 'About' },
+      { label: 'News & announcements', k: 'nav.news', desc: 'Latest from NWSC', icon: 'newspaper-outline', screen: 'News' },
+      { label: 'Media gallery', k: 'nav.gallery', desc: 'Projects and community events', icon: 'images-outline', screen: 'MediaGallery' },
+      { label: 'FAQs', k: 'nav.faqs', desc: 'Answers to common questions', icon: 'help-buoy-outline', screen: 'FAQs' },
+      { label: 'Contact us', k: 'nav.contact', desc: 'Offices, phone and email', icon: 'call-outline', screen: 'Contact' },
     ],
   },
 ];
@@ -126,6 +128,13 @@ export default function Header() {
 
   const isStaff = user && ['officer', 'supervisor', 'admin'].includes(user.role);
   const tollFree = ORG.phones[0];
+  const { t } = usePreferences();
+  // Menu labels in the visitor's chosen language.
+  const nav = NAV.map((sec) => ({
+    ...sec,
+    label: t(sec.k),
+    items: sec.items.map((i) => ({ ...i, label: t(i.k), desc: t(`${i.k}Desc`) })),
+  }));
 
   return (
     <View style={styles.wrap}>
@@ -135,9 +144,12 @@ export default function Header() {
           <Pressable style={styles.utilItem} onPress={() => Linking.openURL(`tel:${tollFree.value.replace(/\D/g, '')}`)}>
             <Ionicons name="call" size={13} color={COLORS.accent} />
             <Text style={styles.utilText}>
-              {compact ? `${tollFree.label}: ${tollFree.value}` : `Emergency or burst pipe? Call ${tollFree.label.toLowerCase()} ${tollFree.value}`}
+              {compact ? t('nav.tollFree', { phone: tollFree.value }) : t('nav.emergency', { phone: tollFree.value })}
             </Text>
           </Pressable>
+          <View style={styles.utilRight}>
+            <DisplaySettings />
+          </View>
           {!compact && (
             <View style={styles.utilRight}>
               <Pressable style={styles.utilItem} onPress={() => Linking.openURL(`mailto:${ORG.email}`)}>
@@ -163,7 +175,7 @@ export default function Header() {
 
           {!compact && (
             <View style={styles.nav}>
-              {NAV.map((section) => (
+              {nav.map((section) => (
                 <NavDropdown key={section.label} section={section} onNavigate={go} />
               ))}
             </View>
@@ -175,7 +187,7 @@ export default function Header() {
                 <Ionicons name="search" size={16} color={COLORS.gray400} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Search"
+                  placeholder={t('nav.search')}
                   placeholderTextColor={COLORS.gray400}
                   value={query}
                   onChangeText={setQuery}
@@ -195,7 +207,7 @@ export default function Header() {
               />
             )}
             {width >= 420 && (
-              <Button title="Report a problem" icon="water" size="sm" onPress={() => go('Feedback', { type: 'Complaint' })} />
+              <Button title={t('nav.report')} icon="water" size="sm" onPress={() => go('Feedback', { type: 'Complaint' })} />
             )}
             {compact && (
               <Pressable style={styles.burger} onPress={() => setMenuOpen(true)} accessibilityLabel="Open menu" accessibilityRole="button">
@@ -230,9 +242,9 @@ export default function Header() {
                   returnKeyType="search"
                 />
               </View>
-              <Button title="Report a problem" icon="water" full onPress={() => go('Feedback', { type: 'Complaint' })} />
-              <Button title="Track my request" icon="search" variant="secondary" full style={{ marginTop: 10 }} onPress={() => go('TrackRequest')} />
-              {NAV.map((section) => (
+              <Button title={t('nav.report')} icon="water" full onPress={() => go('Feedback', { type: 'Complaint' })} />
+              <Button title={t('nav.track')} icon="search" variant="secondary" full style={{ marginTop: 10 }} onPress={() => go('TrackRequest')} />
+              {nav.map((section) => (
                 <View key={section.label} style={{ marginTop: 24 }}>
                   <Text style={styles.drawerSection}>{section.label}</Text>
                   {section.items.map((item) => (

@@ -35,8 +35,9 @@ Deno.serve(async (req) => {
   try {
     const {
       request_type = 'Complaint', title, description, category, image_url,
-      latitude, longitude, location_text, contact_name, contact_phone, contact_email,
+      latitude, longitude, location_text, contact_name, contact_phone, contact_email, language,
     } = await req.json();
+    const lang = ['en', 'lg', 'xog'].includes(language) ? language : 'en';
 
     if (!title || !String(title).trim()) return json({ error: 'Title is required.' }, 400);
     if (!REQUEST_TYPES.includes(request_type)) return json({ error: 'Invalid request type.' }, 400);
@@ -77,6 +78,7 @@ Deno.serve(async (req) => {
         contact_email: email || null,
         status: 'Submitted',
         user_id: userId ?? 'anonymous',
+        language: lang,
       }),
     });
 
@@ -89,7 +91,14 @@ Deno.serve(async (req) => {
 
     // Acknowledgement — never fails the submission itself.
     const kind = String(request_type).toLowerCase();
-    const sms = `NWSC: We have received your ${kind} "${String(title).trim().slice(0, 60)}". Ref: ${ref}. Track it on the NWSC e-Participation portal. Emergencies: 0800200977.`;
+    const short = String(title).trim().slice(0, 60);
+    // Acknowledgement in the citizen's language (Luganda/Lusoga to be reviewed by native speakers).
+    const SMS_TEXT: Record<string, string> = {
+      en: `NWSC: We have received your ${kind} "${short}". Ref: ${ref}. Track it on the NWSC e-Participation portal. Emergencies: 0800200977.`,
+      lg: `NWSC: Tufunye obubaka bwo "${short}". Ennamba: ${ref}. Bugoberere ku mukutu gwa NWSC e-Participation. Embeera ey'amangu: 0800200977.`,
+      xog: `NWSC: Tufunye obubaka bwo "${short}". Ennamba: ${ref}. Bugoberere ku mukutu gwa NWSC e-Participation. Obuzibu obw'amangu: 0800200977.`,
+    };
+    const sms = SMS_TEXT[lang];
     const tasks: Promise<unknown>[] = [];
     if (phone) tasks.push(sendSms(phone, sms, 'acknowledgement', row.id));
     if (email) {

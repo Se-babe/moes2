@@ -8,10 +8,11 @@ import { ORG } from '../config/org';
 import { COLORS, FONT, LAYOUT } from '../theme';
 import { useBreakpoint } from './ui';
 import BrandMark from './BrandMark';
+import { usePreferences } from '../context/PreferencesContext';
 
 const COLUMNS = [
   {
-    title: 'Services',
+    title: 'Services', k: 'footer.services',
     links: [
       ['Report a problem', 'Feedback', { type: 'Complaint' }],
       ['Make an enquiry', 'Feedback', { type: 'Enquiry' }],
@@ -21,7 +22,7 @@ const COLUMNS = [
     ],
   },
   {
-    title: 'Participate',
+    title: 'Participate', k: 'footer.participate',
     links: [
       ['Public consultations', 'Consultations'],
       ['Surveys & polls', 'Surveys'],
@@ -30,7 +31,7 @@ const COLUMNS = [
     ],
   },
   {
-    title: 'About',
+    title: 'About', k: 'footer.about',
     links: [
       ['About NWSC Jinja', 'About'],
       ['News & announcements', 'News'],
@@ -54,6 +55,7 @@ export default function Footer() {
   const { user, signOut } = useAuth();
   const isStaff = user && ['officer', 'supervisor', 'admin'].includes(user.role);
   const { isDesktop, isMobile } = useBreakpoint();
+  const { t } = usePreferences();
   const [socialLinks, setSocialLinks] = useState([]);
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export default function Footer() {
         <View style={[styles.cols, isMobile && { flexDirection: 'column', gap: 28 }]}>
           {COLUMNS.map((col) => (
             <View key={col.title} style={styles.col}>
-              <Text style={styles.colTitle}>{col.title}</Text>
+              <Text style={styles.colTitle}>{t(col.k)}</Text>
               {col.links.map(([label, screen, params]) => (
                 <FooterLink key={label} label={label} onPress={() => goTo(screen, params)} />
               ))}
@@ -121,7 +123,7 @@ export default function Footer() {
         <View style={[styles.inner, styles.bottomRow, isMobile && { flexDirection: 'column', alignItems: 'flex-start' }]}>
           <Text style={styles.copy}>{ORG.copyright}</Text>
           <View style={styles.bottomLinks}>
-            <FooterLink label="Privacy & terms" onPress={() => goTo('Privacy')} />
+            <FooterLink label={t('footer.privacy')} onPress={() => goTo('Privacy')} />
             <FooterLink label="Contact" onPress={() => goTo('Contact')} />
             {isStaff && <FooterLink label="Sign out" onPress={signOut} />}
           </View>

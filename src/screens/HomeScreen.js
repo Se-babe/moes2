@@ -17,21 +17,22 @@ import Footer from '../components/Footer';
 import { Container, Button, Card, Badge, SectionTitle, Grid, useBreakpoint } from '../components/ui';
 import { COLORS, TYPE, SPACE, RADIUS, SHADOW, FONT, gradient } from '../theme';
 import { ORG } from '../config/org';
+import { usePreferences } from '../context/PreferencesContext';
 
 const SERVICES = [
-  { icon: 'water', title: 'Report a problem', desc: 'Leaks, bursts, no water, low pressure or sewer overflows.', screen: 'Feedback', params: { type: 'Complaint' }, tone: '#DC2626' },
-  { icon: 'help-circle', title: 'Make an enquiry', desc: 'Ask about bills, accounts, connections or anything else.', screen: 'Feedback', params: { type: 'Enquiry' }, tone: '#2563EB' },
-  { icon: 'search', title: 'Track my request', desc: 'Follow progress with the reference number we sent you.', screen: 'TrackRequest', tone: '#0891B2' },
-  { icon: 'megaphone', title: 'Service updates', desc: 'Planned interruptions, repairs and restorations near you.', screen: 'Updates', tone: '#7C3AED' },
-  { icon: 'receipt', title: 'Billing & payments', desc: 'Query a bill, report a meter issue or a payment problem.', screen: 'Feedback', params: { type: 'Enquiry', category: 'Billing & Payments' }, tone: '#D97706' },
-  { icon: 'git-branch', title: 'New connection', desc: 'Apply for a new water or sewer connection.', screen: 'Feedback', params: { type: 'Enquiry', category: 'New Connection' }, tone: '#16A34A' },
+  { icon: 'water', k: 'nav.report', dk: 'home.reportDesc', title: 'Report a problem', desc: 'Leaks, bursts, no water, low pressure or sewer overflows.', screen: 'Feedback', params: { type: 'Complaint' }, tone: '#DC2626' },
+  { icon: 'help-circle', k: 'nav.enquiry', dk: 'home.enquiryDesc', title: 'Make an enquiry', desc: 'Ask about bills, accounts, connections or anything else.', screen: 'Feedback', params: { type: 'Enquiry' }, tone: '#2563EB' },
+  { icon: 'search', k: 'nav.track', dk: 'home.trackDesc', title: 'Track my request', desc: 'Follow progress with the reference number we sent you.', screen: 'TrackRequest', tone: '#0891B2' },
+  { icon: 'megaphone', k: 'nav.updates', dk: 'home.updatesDesc', title: 'Service updates', desc: 'Planned interruptions, repairs and restorations near you.', screen: 'Updates', tone: '#7C3AED' },
+  { icon: 'receipt', k: 'home.billing', dk: 'home.billingDesc', title: 'Billing & payments', desc: 'Query a bill, report a meter issue or a payment problem.', screen: 'Feedback', params: { type: 'Enquiry', category: 'Billing & Payments' }, tone: '#D97706' },
+  { icon: 'git-branch', k: 'home.connection', dk: 'home.connectionDesc', title: 'New connection', desc: 'Apply for a new water or sewer connection.', screen: 'Feedback', params: { type: 'Enquiry', category: 'New Connection' }, tone: '#16A34A' },
 ];
 
 const STEPS = [
-  { icon: 'create-outline', title: 'Tell us', desc: 'Describe the issue, where it is, and how to reach you. Add a photo if you can.' },
-  { icon: 'chatbox-ellipses-outline', title: 'Get a reference', desc: 'You instantly receive a reference number by SMS and email.' },
-  { icon: 'people-outline', title: 'We act', desc: 'Your request goes straight to the responsible team, with escalation if it’s delayed.' },
-  { icon: 'checkmark-done-outline', title: 'Stay informed', desc: 'Track progress online and get notified when it’s resolved.' },
+  { icon: 'create-outline', k: 'home.step1', title: 'Tell us', desc: 'Describe the issue, where it is, and how to reach you. Add a photo if you can.' },
+  { icon: 'chatbox-ellipses-outline', k: 'home.step2', title: 'Get a reference', desc: 'You instantly receive a reference number by SMS and email.' },
+  { icon: 'people-outline', k: 'home.step3', title: 'We act', desc: 'Your request goes straight to the responsible team, with escalation if it’s delayed.' },
+  { icon: 'checkmark-done-outline', k: 'home.step4', title: 'Stay informed', desc: 'Track progress online and get notified when it’s resolved.' },
 ];
 
 const PARTICIPATE = [
@@ -43,7 +44,7 @@ const PARTICIPATE = [
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
-function ServiceCard({ item, onPress }) {
+function ServiceCard({ item, onPress, t }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="link" style={{ height: '100%' }}>
       {({ hovered }) => (
@@ -51,10 +52,10 @@ function ServiceCard({ item, onPress }) {
           <View style={[styles.serviceIcon, { backgroundColor: item.tone + '14' }]}>
             <Ionicons name={item.icon} size={24} color={item.tone} />
           </View>
-          <Text style={[TYPE.h3, { marginTop: SPACE.lg }]}>{item.title}</Text>
-          <Text style={[TYPE.body, { color: COLORS.gray500, marginTop: 6, flex: 1 }]}>{item.desc}</Text>
+          <Text style={[TYPE.h3, { marginTop: SPACE.lg }]}>{t(item.k)}</Text>
+          <Text style={[TYPE.body, { color: COLORS.gray500, marginTop: 6, flex: 1 }]}>{t(item.dk)}</Text>
           <View style={styles.cardLink}>
-            <Text style={styles.cardLinkText}>Get started</Text>
+            <Text style={styles.cardLinkText}>{t('home.getStarted')}</Text>
             <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
           </View>
         </View>
@@ -66,6 +67,7 @@ function ServiceCard({ item, onPress }) {
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { isDesktop, isMobile } = useBreakpoint();
+  const { t, lite } = usePreferences();
   const [slides, setSlides] = useState([]);
   const [slideIndex, setSlideIndex] = useState(0);
   const [latestUpdate, setLatestUpdate] = useState(null);
@@ -115,19 +117,18 @@ export default function HomeScreen() {
               <Text style={styles.heroPillText}>{ORG.name} · {ORG.area}</Text>
             </View>
             <Text style={[TYPE.display, styles.heroTitle, isMobile && { fontSize: 32, lineHeight: 40 }]} accessibilityRole="header">
-              Report it. Track it.{'\n'}See it fixed.
+              {t('home.title')}
             </Text>
             <Text style={styles.heroSub}>
-              The official NWSC Jinja platform to report water and sewer problems, ask questions, follow your request
-              and help shape better services in your community.
+              {t('home.sub')}
             </Text>
             <View style={styles.heroCtas}>
-              <Button title="Report a problem" icon="water" size="lg" variant="light" onPress={() => go('Feedback', { type: 'Complaint' })} />
-              <Button title="Make an enquiry" size="lg" variant="outlineLight" onPress={() => go('Feedback', { type: 'Enquiry' })} />
+              <Button title={t('nav.report')} icon="water" size="lg" variant="light" onPress={() => go('Feedback', { type: 'Complaint' })} />
+              <Button title={t('nav.enquiry')} size="lg" variant="outlineLight" onPress={() => go('Feedback', { type: 'Enquiry' })} />
             </View>
 
             <View style={[styles.trackBox, SHADOW.lg]}>
-              <Text style={styles.trackLabel}>Already reported something?</Text>
+              <Text style={styles.trackLabel}>{t('home.trackLabel')}</Text>
               <View style={styles.trackRow}>
                 <View style={styles.trackInputWrap}>
                   <Ionicons name="search" size={18} color={COLORS.gray400} />
@@ -135,7 +136,7 @@ export default function HomeScreen() {
                     style={styles.trackInput}
                     value={ref}
                     onChangeText={setRef}
-                    placeholder={isMobile ? 'Reference number' : 'Enter reference e.g. NW-2611-7KQ4XP'}
+                    placeholder={t('home.trackPlaceholder')}
                     placeholderTextColor={COLORS.gray400}
                     autoCapitalize="characters"
                     onSubmitEditing={track}
@@ -143,12 +144,12 @@ export default function HomeScreen() {
                     accessibilityLabel="Reference number"
                   />
                 </View>
-                <Button title="Track" onPress={track} />
+                <Button title={t('home.track')} onPress={track} />
               </View>
             </View>
           </View>
 
-          {isDesktop && (
+          {isDesktop && !lite && (
             <View style={styles.heroVisual}>
               <View style={[styles.heroImageWrap, SHADOW.lg]}>
                 {slide?.image_url ? (
@@ -186,14 +187,14 @@ export default function HomeScreen() {
                 <Ionicons name="megaphone" size={20} color={COLORS.warning} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.statusOverline}>{latestUpdate ? `${latestUpdate.category} · ${fmtDate(latestUpdate.published_at)}` : 'Latest service update'}</Text>
+                <Text style={styles.statusOverline}>{latestUpdate ? `${latestUpdate.category} · ${fmtDate(latestUpdate.published_at)}` : t('home.latest')}</Text>
                 <Text style={styles.statusText} numberOfLines={2}>
-                  {latestUpdate ? latestUpdate.title : 'No planned interruptions announced at the moment.'}
+                  {latestUpdate ? latestUpdate.title : t('home.noUpdates')}
                 </Text>
               </View>
               {!isMobile && (
                 <View style={[styles.cardLink, { marginTop: 0 }]}>
-                  <Text style={styles.cardLinkText}>All updates</Text>
+                  <Text style={styles.cardLinkText}>{t('home.allUpdates')}</Text>
                   <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
                 </View>
               )}
@@ -204,10 +205,10 @@ export default function HomeScreen() {
 
       {/* ================= SERVICES ================= */}
       <Container style={styles.section}>
-        <SectionTitle overline="Online services" title="How can we help you today?" subtitle="Everything you need from NWSC Jinja, available any time, from any phone or computer." />
+        <SectionTitle overline={t('home.servicesOverline')} title={t('home.servicesTitle')} subtitle={t('home.servicesSub')} />
         <Grid columns={3} minItemWidth={280}>
           {SERVICES.map((s) => (
-            <ServiceCard key={s.title} item={s} onPress={() => go(s.screen, s.params)} />
+            <ServiceCard key={s.title} item={s} t={t} onPress={() => go(s.screen, s.params)} />
           ))}
         </Grid>
       </Container>
@@ -215,7 +216,7 @@ export default function HomeScreen() {
       {/* ================= HOW IT WORKS ================= */}
       <View style={styles.band}>
         <Container style={styles.sectionTight}>
-          <SectionTitle overline="How it works" title="From report to resolution" align="center" />
+          <SectionTitle overline={t('home.howOverline')} title={t('home.howTitle')} align="center" />
           <Grid columns={4} minItemWidth={220}>
             {STEPS.map((s, i) => (
               <View key={s.title} style={styles.step}>
@@ -223,8 +224,8 @@ export default function HomeScreen() {
                   <Ionicons name={s.icon} size={22} color={COLORS.primary} />
                   <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>{i + 1}</Text></View>
                 </View>
-                <Text style={[TYPE.h3, { textAlign: 'center', marginTop: SPACE.md }]}>{s.title}</Text>
-                <Text style={[TYPE.body, { textAlign: 'center', color: COLORS.gray500, marginTop: 4 }]}>{s.desc}</Text>
+                <Text style={[TYPE.h3, { textAlign: 'center', marginTop: SPACE.md }]}>{t(s.k)}</Text>
+                <Text style={[TYPE.body, { textAlign: 'center', color: COLORS.gray500, marginTop: 4 }]}>{t(`${s.k}Desc`)}</Text>
               </View>
             ))}
           </Grid>
@@ -299,7 +300,7 @@ export default function HomeScreen() {
           <Grid columns={3} minItemWidth={280}>
             {news.map((n) => (
               <Card key={n.id} padded={false} style={{ overflow: 'hidden', height: '100%' }}>
-                {n.image_url ? <Image source={{ uri: n.image_url }} style={styles.newsImage} resizeMode="cover" /> : null}
+                {n.image_url && !lite ? <Image source={{ uri: n.image_url }} style={styles.newsImage} resizeMode="cover" /> : null}
                 <View style={{ padding: SPACE.xl }}>
                   <Text style={TYPE.small}>{fmtDate(n.published_date)}</Text>
                   <Text style={[TYPE.h3, { marginTop: 6 }]} numberOfLines={2}>{n.title}</Text>
@@ -318,13 +319,13 @@ export default function HomeScreen() {
             <Ionicons name="alert-circle" size={28} color={COLORS.danger} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={TYPE.h3}>Burst pipe or major leak?</Text>
+            <Text style={TYPE.h3}>{t('home.emergencyTitle')}</Text>
             <Text style={[TYPE.body, { color: COLORS.gray600, marginTop: 4 }]}>
-              Call our toll-free line straight away, then report it online so you can track the repair.
+              {t('home.emergencyText')}
             </Text>
           </View>
           <Button
-            title={`Call ${ORG.phones[0].value}`}
+            title={t('home.call', { phone: ORG.phones[0].value })}
             icon="call"
             variant="danger"
             onPress={() => Linking.openURL(`tel:${ORG.phones[0].value.replace(/\D/g, '')}`)}

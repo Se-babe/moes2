@@ -19,6 +19,10 @@ import { useAuth } from '../context/AuthContext';
 import { showAlert } from '../utils/alert';
 import Footer from '../components/Footer';
 import { PageHeader, Container, Card, Button, TextField, useBreakpoint } from '../components/ui';
+import { usePreferences } from '../context/PreferencesContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const DRAFT_KEY = 'nwsc_feedback_draft';
 import { COLORS, TYPE, SPACE, RADIUS, SHADOW, FONT } from '../theme';
 import { ORG } from '../config/org';
 
@@ -88,6 +92,47 @@ export default function FeedbackScreen() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [referenceNo, setReferenceNo] = useState(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const { t: tr, language } = usePreferences();
+  const draftLoaded = React.useRef(false);
+
+  // Save-and-resume: restore an unfinished report saved on this device…
+  useEffect(() => {
+    AsyncStorage.getItem(DRAFT_KEY).then((raw) => {
+      draftLoaded.current = true;
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (!d.title && !d.description) return;
+        if (d.requestType && !route.params?.type) setRequestType(d.requestType);
+        if (d.category && !route.params?.category) setCategory(d.category);
+        setTitle(d.title || '');
+        setDescription(d.description || '');
+        setLocationText(d.locationText || '');
+        setDraftRestored(true);
+      } catch {}
+    }).catch(() => { draftLoaded.current = true; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // …and keep saving it as the person types (contact details are not stored).
+  useEffect(() => {
+    if (!draftLoaded.current) return undefined;
+    const timer = setTimeout(() => {
+      if (title.trim() || description.trim()) {
+        AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ requestType, category, title, description, locationText, savedAt: Date.now() })).catch(() => {});
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [requestType, category, title, description, locationText]);
+
+  const discardDraft = () => {
+    AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+    setTitle('');
+    setDescription('');
+    setLocationText('');
+    setDraftRestored(false);
+  };
 
   // Pre-select from links such as "Billing & payments" on the home page.
   useEffect(() => {
@@ -151,6 +196,7 @@ export default function FeedbackScreen() {
           contact_name: contactName.trim() || null,
           contact_phone: contactPhone.trim() || null,
           contact_email: contactEmail.trim() || null,
+          language,
         },
       });
       if (error) {
@@ -160,6 +206,8 @@ export default function FeedbackScreen() {
       }
       if (data?.error) throw new Error(data.error);
       setReferenceNo(data?.reference_no || '');
+      AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+      setDraftRestored(false);
     } catch (err) {
       showAlert('We couldn’t submit your request', err.message || 'Please check your connection and try again.');
     } finally {
@@ -186,13 +234,13 @@ export default function FeedbackScreen() {
   const sidePanel = (
     <View style={{ gap: SPACE.lg }}>
       <Card>
-        <Text style={TYPE.h3}>What happens next</Text>
+        <Text style={TYPE.h3}>{tr('form.next')}</Text>
         {NEXT_STEPS.map(([t, d], i) => (
           <View key={t} style={styles.nextRow}>
             <View style={styles.nextNum}><Text style={styles.nextNumText}>{i + 1}</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={TYPE.label}>{t}</Text>
-              <Text style={[TYPE.small, { marginTop: 2 }]}>{d}</Text>
+              <Text style={TYPE.label}>{tr(`form.next${i + 1}`)}</Text>
+              <Text style={[TYPE.small, { marginTop: 2 }]}>{tr(`form.next${i + 1}Desc`)}</Text>
             </View>
           </View>
         ))}
@@ -200,7 +248,7 @@ export default function FeedbackScreen() {
       <View style={styles.emergency}>
         <Ionicons name="alert-circle" size={22} color={COLORS.danger} />
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.label, { color: '#991B1B' }]}>Emergency?</Text>
+          <Text style={[TYPE.label, { color: '#991B1B' }]}>{tr('form.emergency')}</Text>
           <Text style={[TYPE.small, { color: '#7F1D1D', marginTop: 2 }]}>
             For a burst pipe or major leak, call toll-free{' '}
             <Text style={{ fontWeight: '700' }} onPress={() => Linking.openURL(`tel:${ORG.phones[0].value.replace(/\D/g, '')}`)}>
@@ -213,7 +261,7 @@ export default function FeedbackScreen() {
       <View style={styles.privacy}>
         <Ionicons name="lock-closed-outline" size={18} color={COLORS.gray500} />
         <Text style={[TYPE.small, { flex: 1 }]}>
-          Your contact details are only visible to NWSC staff handling your request.{' '}
+          {tr('form.privacy')}{' '}
           <Text style={{ color: COLORS.primary, fontWeight: '600' }} onPress={() => navigation.navigate('Privacy')}>Privacy notice</Text>
         </Text>
       </View>
@@ -225,34 +273,41 @@ export default function FeedbackScreen() {
       <ScrollView style={styles.page} keyboardShouldPersistTaps="handled">
         <PageHeader
           overline="Customer service"
-          title="Enquiries & complaints"
-          subtitle="Report a water or sewer problem, ask a question, or share an idea. You'll get a reference number to track it."
+          title={tr('form.title')}
+          subtitle={tr('form.sub')}
           icon="chatbox-ellipses-outline"
         />
 
         <Container style={[styles.layout, !isDesktop && { flexDirection: 'column' }]}>
           <Card elevated style={[styles.formCard, isDesktop && { flex: 2 }]}>
             {/* Step 1 */}
-            <Text style={styles.stepLabel}>1 · What would you like to do?</Text>
+            {draftRestored && (
+              <View style={styles.draft}>
+                <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+                <Text style={[TYPE.small, { flex: 1, color: COLORS.gray800 }]}>{tr('form.draftRestored')}</Text>
+                <Button title={tr('form.discard')} variant="ghost" size="sm" onPress={discardDraft} />
+              </View>
+            )}
+            <Text style={styles.stepLabel}>{tr('form.step1')}</Text>
             <View style={styles.typeGrid}>
               {REQUEST_TYPES.map((t) => (
-                <Choice key={t.value} active={requestType === t.value} onPress={() => setRequestType(t.value)} icon={t.icon} label={t.value} hint={t.hint} />
+                <Choice key={t.value} active={requestType === t.value} onPress={() => setRequestType(t.value)} icon={t.icon} label={tr(`form.type.${t.value}`)} hint={tr(`form.type.${t.value}Hint`)} />
               ))}
             </View>
 
-            <Text style={[TYPE.label, { marginTop: SPACE.xl, marginBottom: 8 }]}>Category</Text>
+            <Text style={[TYPE.label, { marginTop: SPACE.xl, marginBottom: 8 }]}>{tr('form.category')}</Text>
             <View style={styles.chips}>
               {CATEGORIES.map((c) => (
-                <Choice key={c.label} compact active={category === c.label} onPress={() => setCategory(c.label)} icon={c.icon} label={c.label} />
+                <Choice key={c.label} compact active={category === c.label} onPress={() => setCategory(c.label)} icon={c.icon} label={tr(`cat.${c.label}`)} />
               ))}
             </View>
 
             {/* Step 2 */}
-            <Text style={[styles.stepLabel, styles.stepGap]}>2 · Tell us about it</Text>
+            <Text style={[styles.stepLabel, styles.stepGap]}>{tr('form.step2')}</Text>
             <TextField
-              label="Title"
+              label={tr('form.titleLabel')}
               required
-              placeholder="e.g. Burst pipe on Main Street"
+              placeholder={tr('form.titlePlaceholder')}
               value={title}
               onChangeText={setTitle}
               maxLength={MAX_TITLE}
@@ -260,10 +315,10 @@ export default function FeedbackScreen() {
               hint={`${title.length}/${MAX_TITLE}`}
             />
             <TextField
-              label="Description"
+              label={tr('form.description')}
               required
               multiline
-              placeholder="What happened, exactly where, and since when? For billing, include your account number."
+              placeholder={tr('form.descriptionPlaceholder')}
               value={description}
               onChangeText={setDescription}
               maxLength={MAX_DESC}
@@ -271,8 +326,8 @@ export default function FeedbackScreen() {
               hint={`${description.length}/${MAX_DESC}`}
             />
             <TextField
-              label="Location"
-              placeholder="Area, street or landmark, e.g. Walukuba, near the market"
+              label={tr('form.location')}
+              placeholder={tr('form.locationPlaceholder')}
               value={locationText}
               onChangeText={setLocationText}
               maxLength={200}
@@ -290,21 +345,21 @@ export default function FeedbackScreen() {
             ) : (
               <Pressable onPress={pickImage} style={({ hovered }) => [styles.drop, hovered && { borderColor: COLORS.primaryLight, backgroundColor: COLORS.primarySoft }]}>
                 <Ionicons name="camera-outline" size={24} color={COLORS.primary} />
-                <Text style={[TYPE.label, { color: COLORS.primary }]}>Add a photo</Text>
-                <Text style={TYPE.small}>A picture helps our team find and fix the problem faster.</Text>
+                <Text style={[TYPE.label, { color: COLORS.primary }]}>{tr('form.addPhoto')}</Text>
+                <Text style={TYPE.small}>{tr('form.photoHint')}</Text>
               </Pressable>
             )}
 
             {/* Step 3 */}
-            <Text style={[styles.stepLabel, styles.stepGap]}>3 · How can we reach you?</Text>
+            <Text style={[styles.stepLabel, styles.stepGap]}>{tr('form.step3')}</Text>
             <Text style={[TYPE.small, { marginTop: -8, marginBottom: SPACE.lg }]}>
               We'll send your reference number and updates here. Give at least a phone number or an email.
             </Text>
-            <TextField label="Full name" placeholder="Your name" value={contactName} onChangeText={setContactName} maxLength={120} autoComplete="name" />
+            <TextField label={tr('form.name')} placeholder={tr('form.name')} value={contactName} onChangeText={setContactName} maxLength={120} autoComplete="name" />
             <View style={[styles.row, !isDesktop && { flexDirection: 'column', gap: 0 }]}>
               <TextField
                 style={{ flex: 1 }}
-                label="Phone (for SMS updates)"
+                label={tr('form.phone')}
                 placeholder="0772 123456"
                 value={contactPhone}
                 onChangeText={setContactPhone}
@@ -315,7 +370,7 @@ export default function FeedbackScreen() {
               />
               <TextField
                 style={{ flex: 1 }}
-                label="Email"
+                label={tr('form.email')}
                 placeholder="you@example.com"
                 value={contactEmail}
                 onChangeText={setContactEmail}
@@ -334,8 +389,8 @@ export default function FeedbackScreen() {
             ) : null}
 
             <View style={styles.submitRow}>
-              <Button title={`Submit ${requestType.toLowerCase()}`} icon="send" size="lg" loading={loading} onPress={handleSubmit} />
-              <Button title="Track an existing request" variant="ghost" onPress={() => navigation.navigate('TrackRequest')} />
+              <Button title={tr('form.submit')} icon="send" size="lg" loading={loading} onPress={handleSubmit} />
+              <Button title={tr('form.trackExisting')} variant="ghost" onPress={() => navigation.navigate('TrackRequest')} />
             </View>
           </Card>
 
@@ -352,17 +407,17 @@ export default function FeedbackScreen() {
             <View style={styles.successIcon}>
               <Ionicons name="checkmark" size={36} color="#fff" />
             </View>
-            <Text style={[TYPE.h2, { textAlign: 'center', marginTop: SPACE.lg }]}>Thank you — we've got it</Text>
+            <Text style={[TYPE.h2, { textAlign: 'center', marginTop: SPACE.lg }]}>{tr('form.thanks')}</Text>
             <Text style={[TYPE.body, { textAlign: 'center', color: COLORS.gray500, marginTop: 6 }]}>
-              Your {requestType.toLowerCase()} has been received. Keep this reference number to track it:
+              {tr('form.received')}
             </Text>
             {referenceNo ? (
               <Text style={styles.ref} selectable accessibilityLabel={`Reference number ${referenceNo.split('').join(' ')}`}>{referenceNo}</Text>
             ) : null}
-            <Text style={[TYPE.small, { textAlign: 'center' }]}>We've also sent it to you by SMS/email.</Text>
+            <Text style={[TYPE.small, { textAlign: 'center' }]}>{tr('form.sentToo')}</Text>
             <View style={{ gap: 10, marginTop: SPACE.xl, alignSelf: 'stretch' }}>
-              <Button title="Track this request" icon="search" full onPress={() => finish(true)} />
-              <Button title="Done" variant="secondary" full onPress={() => finish(false)} />
+              <Button title={tr('form.trackThis')} icon="search" full onPress={() => finish(true)} />
+              <Button title={tr('form.done')} variant="secondary" full onPress={() => finish(false)} />
             </View>
           </View>
         </View>
@@ -373,6 +428,7 @@ export default function FeedbackScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.bg },
+  draft: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, paddingLeft: 14, borderRadius: RADIUS.md, backgroundColor: COLORS.primarySoft, marginBottom: SPACE.lg },
   layout: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.xl, marginTop: -24 },
   formCard: { width: '100%' },
   stepLabel: { fontFamily: FONT, fontSize: 17, fontWeight: '800', color: COLORS.primaryDark, marginBottom: SPACE.md },
