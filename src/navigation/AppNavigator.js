@@ -56,6 +56,7 @@ const PrivacyScreen = lazyScreen(() => import('../screens/PrivacyScreen'));
 const SetPasswordScreen = lazyScreen(() => import('../screens/SetPasswordScreen'));
 const StaffPortalScreen = lazyScreen(() => import('../screens/staff/StaffPortalScreen'));
 const StaffRequestScreen = lazyScreen(() => import('../screens/staff/StaffRequestScreen'));
+const StaffSettingsScreen = lazyScreen(() => import('../screens/staff/StaffSettingsScreen'));
 
 const Stack = createStackNavigator();
 const { width, height } = Dimensions.get('window');
@@ -95,6 +96,7 @@ const linking = {
       SetPassword: 'set-password',
       StaffPortal: 'staff',
       StaffRequest: 'staff/requests/:id',
+      StaffSettings: 'staff/settings',
       NotFound: '*',
     },
   },
@@ -130,12 +132,13 @@ const TITLES = {
   SetPassword: 'Set your password',
   StaffPortal: 'Staff portal',
   StaffRequest: 'Request',
+  StaffSettings: 'Settings',
   NotFound: 'Page not found',
 };
 
 // Staff and admin work areas get a focused layout without the public header
 // and assistant button.
-const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'AdminDashboard', 'Login', 'ForgotPassword', 'SetPassword'];
+const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'StaffSettings', 'AdminDashboard', 'Login', 'ForgotPassword', 'SetPassword'];
 
 const AppNavigatorContent = ({ currentRoute }) => {
   const inWorkspace = WORKSPACE_ROUTES.includes(currentRoute);
@@ -184,6 +187,7 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="SetPassword" component={SetPasswordScreen} options={{ title: TITLES.SetPassword }} />
         <Stack.Screen name="StaffPortal" component={StaffPortalScreen} options={{ title: TITLES.StaffPortal }} />
         <Stack.Screen name="StaffRequest" component={StaffRequestScreen} options={{ title: TITLES.StaffRequest }} />
+        <Stack.Screen name="StaffSettings" component={StaffSettingsScreen} options={{ title: TITLES.StaffSettings }} />
         <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ title: TITLES.NotFound }} />
       </Stack.Navigator>
 

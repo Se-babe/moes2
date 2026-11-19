@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Modal, ScrollView, Switch } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase, passwordSetupUrl } from '../../services/supabaseClient';
-import { Card, Button, Badge, Select, TextField, EmptyState, Loading, useBreakpoint } from '../../components/ui';
+import { Card, Button, Badge, Select, TextField, EmptyState, Loading, Avatar, useBreakpoint } from '../../components/ui';
+import { pickAvatar, uploadAvatar, removeOldAvatars } from '../../services/profile';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
 import { fetchDepartments, STAFF_ROLES } from '../../services/staff';
@@ -27,7 +28,34 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
   });
   const [saving, setSaving] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(target.avatar_url || null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const isSelf = target.id === currentUserId;
+
+  // Administrators can set or remove anyone's profile picture (e.g. an
+  // unsuitable photo, or a staff ID photo supplied by HR).
+  const setPhoto = async (remove) => {
+    try {
+      let url = null;
+      if (!remove) {
+        const asset = await pickAvatar();
+        if (!asset) return;
+        setPhotoBusy(true);
+        url = await uploadAvatar(target.id, asset);
+      } else {
+        setPhotoBusy(true);
+      }
+      const { error } = await supabase.from('users').update({ avatar_url: url }).eq('id', target.id);
+      if (error) throw error;
+      if (remove) await removeOldAvatars(target.id);
+      setAvatarUrl(url);
+      onSaved();
+    } catch (e) {
+      showAlert('Photo not saved', e.message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   // For staff whose invitation expired or who forgot their password.
   const sendSetupLink = async () => {
@@ -65,8 +93,19 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
 
   return (
     <View>
-      <Text style={TYPE.h3}>{target.full_name || 'Unnamed user'}</Text>
-      <Text style={[TYPE.small, { marginBottom: SPACE.lg }]}>{target.email}{target.phone ? ` · ${target.phone}` : ''}</Text>
+      <View style={styles.editorHead}>
+        <Avatar name={target.full_name || target.email} url={avatarUrl} size={64} />
+        <View style={{ flex: 1 }}>
+          <Text style={TYPE.h3}>{target.full_name || 'Unnamed user'}</Text>
+          <Text style={TYPE.small}>{target.email}{target.phone ? ` · ${target.phone}` : ''}</Text>
+          {STAFF_ROLES.includes(target.role) && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <Button title={avatarUrl ? 'Change photo' : 'Add photo'} icon="camera-outline" size="sm" variant="secondary" loading={photoBusy} onPress={() => setPhoto(false)} />
+              {avatarUrl && !photoBusy && <Button title="Remove photo" icon="trash-outline" size="sm" variant="ghost" onPress={() => setPhoto(true)} />}
+            </View>
+          )}
+        </View>
+      </View>
       <Select label="Role" value={form.role} options={ROLE_OPTIONS} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
       {isStaff && (
         <>
@@ -167,7 +206,7 @@ export default function AdminUsers({ currentUserId }) {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('users')
-      .select('id, email, full_name, phone, role, department_id, job_title, is_active, created_at')
+      .select('id, email, full_name, phone, role, department_id, job_title, is_active, avatar_url, created_at')
       .order('created_at', { ascending: false });
     if (error) showAlert('Could not load users', error.message);
     setUsers(data || []);
@@ -220,9 +259,7 @@ export default function AdminUsers({ currentUserId }) {
             accessibilityRole="button"
             accessibilityLabel={`Edit ${u.full_name || u.email}`}
           >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{(u.full_name || u.email || '?').split(/[ @]/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()}</Text>
-            </View>
+            <Avatar name={u.full_name || u.email} url={u.avatar_url} size={38} />
             <View style={{ flex: 1 }}>
               <Text style={TYPE.label}>
                 {u.full_name || 'Unnamed'}{u.id === currentUserId ? <Text style={TYPE.small}>  (you)</Text> : null}
@@ -261,6 +298,7 @@ export default function AdminUsers({ currentUserId }) {
 }
 
 const styles = StyleSheet.create({
+  editorHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginBottom: SPACE.lg },
   toolbar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   search: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.white,

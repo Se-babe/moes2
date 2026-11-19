@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import StaffGate from '../components/staff/StaffGate';
 import NotificationBell from '../components/staff/NotificationBell';
-import { Button, useBreakpoint } from '../components/ui';
+import { Button, Avatar, useBreakpoint } from '../components/ui';
 import { COLORS, FONT, RADIUS, SPACE, TYPE } from '../theme';
 import AdminOverview from './admin/AdminOverview';
 import AdminRequests from './admin/AdminRequests';
@@ -129,6 +129,9 @@ function Console() {
         </View>
         <View style={styles.topbarRight}>
           <NotificationBell tone="dark" onOpenRequest={openRequest} />
+          <Pressable onPress={() => navigation.navigate('StaffSettings')} accessibilityRole="link" accessibilityLabel="My profile and settings">
+            <Avatar name={user.full_name || user.email} url={user.avatar_url} size={36} />
+          </Pressable>
           {!isDesktop && <Button title="Sign out" variant="ghost" size="sm" onPress={signOut} />}
         </View>
       </View>

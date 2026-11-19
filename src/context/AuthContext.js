@@ -81,13 +81,23 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Save the signed-in person's own profile fields (name, phone, photo,
+  // preferences) and keep the in-memory profile in step.
+  const updateProfile = async (patch) => {
+    if (!user) throw new Error('Not signed in');
+    const { data, error } = await supabase.from('users').update(patch).eq('id', user.id).select('*').maybeSingle();
+    if (error) throw error;
+    setUser((u) => ({ ...u, ...(data || patch) }));
+    return data;
+  };
+
   const resetPassword = async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: passwordSetupUrl() });
     if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

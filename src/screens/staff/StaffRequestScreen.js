@@ -4,8 +4,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import StaffGate from '../../components/staff/StaffGate';
-import NotificationBell from '../../components/staff/NotificationBell';
-import { Container, Card, Button, Badge, TextField, Select, EmptyState, Loading, STATUS_TONE, useBreakpoint } from '../../components/ui';
+import StaffNavbar from '../../components/staff/StaffNavbar';
+import { Container, Card, Button, Badge, TextField, Select, EmptyState, Loading, STATUS_TONE, Avatar, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
 import {
@@ -182,7 +182,7 @@ function Detail() {
             <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
             <Text style={styles.backText}>Work queue</Text>
           </Pressable>
-          <NotificationBell tone="dark" onOpenRequest={(rid) => navigation.push('StaffRequest', { id: rid })} />
+          <Text style={TYPE.small} selectable>{req.reference_no}</Text>
         </Container>
       </View>
 
@@ -275,13 +275,17 @@ function Detail() {
             <Text style={[TYPE.h3, { marginBottom: SPACE.md }]}>Activity</Text>
             {timeline.slice().reverse().map((u) => (
               <View key={u.id} style={[styles.event, !u.is_public && styles.eventInternal]}>
-                <View style={[styles.eventIcon, !u.is_public && { backgroundColor: COLORS.warningSoft }]}>
-                  <Ionicons
-                    name={!u.is_public ? 'lock-closed' : u.author_id ? 'chatbubble' : 'flash'}
-                    size={13}
-                    color={!u.is_public ? COLORS.warning : COLORS.primary}
+                {u.author_id ? (
+                  <Avatar
+                    name={u.author_id === user.id ? user.full_name : staffById[u.author_id]?.full_name}
+                    url={u.author_id === user.id ? user.avatar_url : staffById[u.author_id]?.avatar_url}
+                    size={28}
                   />
-                </View>
+                ) : (
+                  <View style={[styles.eventIcon, !u.is_public && { backgroundColor: COLORS.warningSoft }]}>
+                    <Ionicons name={!u.is_public ? 'lock-closed' : 'flash'} size={13} color={!u.is_public ? COLORS.warning : COLORS.primary} />
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <View style={styles.eventHead}>
                     <Text style={TYPE.label}>{authorName(u)}</Text>
@@ -356,7 +360,10 @@ function Detail() {
 export default function StaffRequestScreen() {
   return (
     <StaffGate roles={['officer', 'supervisor', 'admin']}>
-      <Detail />
+      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
+        <StaffNavbar active="queue" />
+        <Detail />
+      </View>
     </StaffGate>
   );
 }

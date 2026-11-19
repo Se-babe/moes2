@@ -5,7 +5,7 @@ import { usePreferences } from '../context/PreferencesContext';
 import { LANGUAGES } from '../i18n';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../theme';
 
-function Segment({ options, value, onChange, label }) {
+export function Segment({ options, value, onChange, label }) {
   return (
     <View style={styles.segment} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o) => {

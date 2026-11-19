@@ -61,7 +61,7 @@ export async function fetchDepartments() {
 export async function fetchStaff() {
   const { data, error } = await supabase
     .from('users')
-    .select('id, full_name, email, role, department_id, job_title, is_active')
+    .select('id, full_name, email, role, department_id, job_title, is_active, avatar_url')
     .in('role', STAFF_ROLES)
     .order('full_name', { ascending: true });
   if (error) throw error;

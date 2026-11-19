@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   ScrollView,
+  Image,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -275,6 +276,31 @@ export function Loading({ label = 'Loading…' }) {
   );
 }
 
+const AVATAR_TONES = ['#0A4D8C', '#0E7490', '#7C3AED', '#B45309', '#047857', '#BE185D'];
+export const initialsOf = (name = '') =>
+  String(name).trim().split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('') || '?';
+
+/** Round profile picture, falling back to coloured initials. */
+export function Avatar({ name, url, size = 36, ring = false, style }) {
+  const [failed, setFailed] = useState(false);
+  React.useEffect(() => setFailed(false), [url]);
+  const tone = AVATAR_TONES[[...String(name || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_TONES.length];
+  const box = { width: size, height: size, borderRadius: size / 2 };
+  return (
+    <View
+      style={[box, styles.avatar, { backgroundColor: url && !failed ? COLORS.gray100 : tone }, ring && styles.avatarRing, style]}
+      accessibilityRole="image"
+      accessibilityLabel={name ? `${name}'s profile picture` : 'Profile picture'}
+    >
+      {url && !failed ? (
+        <Image source={{ uri: url }} style={box} onError={() => setFailed(true)} />
+      ) : (
+        <Text style={[styles.avatarText, { fontSize: Math.max(11, size * 0.38) }]}>{initialsOf(name)}</Text>
+      )}
+    </View>
+  );
+}
+
 /** A responsive grid: `columns` on desktop, fewer on smaller screens. */
 export function Grid({ children, columns = 3, gap = SPACE.lg, minItemWidth = 260, style }) {
   const { width } = useWindowDimensions();
@@ -293,6 +319,9 @@ export function Grid({ children, columns = 3, gap = SPACE.lg, minItemWidth = 260
 }
 
 const styles = StyleSheet.create({
+  avatar: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarRing: { borderWidth: 2, borderColor: '#fff' },
+  avatarText: { fontFamily: FONT, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
   container: { width: '100%', maxWidth: LAYOUT.maxWidth, alignSelf: 'center', paddingHorizontal: LAYOUT.gutter },
   pageHeader: { backgroundColor: COLORS.primaryDark, paddingTop: SPACE.xl, paddingBottom: SPACE.xxxl },
   pageHeaderMobile: { paddingTop: SPACE.lg, paddingBottom: SPACE.xxl },

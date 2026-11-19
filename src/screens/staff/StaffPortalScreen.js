@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import StaffGate from '../../components/staff/StaffGate';
 import RequestQueue from '../../components/staff/RequestQueue';
-import NotificationBell from '../../components/staff/NotificationBell';
+import StaffNavbar, { staffSections } from '../../components/staff/StaffNavbar';
 import AnnouncementsManager from '../../components/staff/AnnouncementsManager';
 import ReportsDashboard from '../../components/staff/ReportsDashboard';
-import { Container, Card, Button, Grid, useBreakpoint } from '../../components/ui';
+import { Container, Card, Grid, Avatar, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SPACE, TYPE, gradient } from '../../theme';
 import { fetchDepartments, fetchStaff, fetchWorkload, OPEN_STATUSES } from '../../services/staff';
 
@@ -29,16 +29,19 @@ function Kpi({ icon, label, value, tone = COLORS.primary }) {
 
 function Portal() {
   const navigation = useNavigation();
-  const { user, signOut } = useAuth();
+  const route = useRoute();
+  const { user } = useAuth();
   const { isDesktop } = useBreakpoint();
   const [departments, setDepartments] = useState([]);
   const [staff, setStaff] = useState([]);
   const [workload, setWorkload] = useState([]);
   const [kpis, setKpis] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
-  const [section, setSection] = useState('queue');
-
   const isSupervisor = user.role === 'supervisor' || user.role === 'admin';
+  const prefs = user.preferences || {};
+  const allowed = staffSections(user.role).map((s) => s.key).filter((k) => k !== 'settings');
+  const wanted = route.params?.tab || prefs.start_section;
+  const section = allowed.includes(wanted) ? wanted : 'queue';
   const myDept = departments.find((d) => d.id === user.department_id);
 
   const loadKpis = useCallback(async () => {
@@ -76,26 +79,25 @@ function Portal() {
     ? [{ key: 'department', label: 'My department' }, { key: 'unassigned', label: 'Unassigned' }, { key: 'mine', label: 'Assigned to me' }]
     : [{ key: 'mine', label: 'Assigned to me' }, { key: 'department', label: 'My department' }, { key: 'unassigned', label: 'Unassigned' }];
 
+  const name = user.full_name || user.email;
+  const sectionTitle = { queue: 'Work queue', announcements: 'Announcements', reports: 'Reports' }[section];
+
   return (
-    <ScrollView style={styles.page}>
-      <View style={[styles.band, gradient(COLORS.primaryDarker, COLORS.primary, 120)]}>
+    <View style={styles.page}>
+    <StaffNavbar active={section} />
+    <ScrollView style={{ flex: 1 }}>
+      <View style={[styles.band, gradient(COLORS.primaryDark, COLORS.primary, 120)]}>
         <Container style={styles.bandRow}>
+          <Avatar name={name} url={user.avatar_url} size={isDesktop ? 64 : 48} ring />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.overline, { color: '#7DD3FC' }]}>Staff portal</Text>
-            <Text style={[TYPE.h1, { color: '#fff', fontSize: isDesktop ? 30 : 24 }]}>
-              Welcome, {(user.full_name || user.email).split(' ')[0]}
+            <Text style={[TYPE.overline, { color: '#7DD3FC' }]}>{sectionTitle}</Text>
+            <Text style={[TYPE.h1, { color: '#fff', fontSize: isDesktop ? 28 : 22 }]}>
+              Welcome, {name.split(' ')[0]}
             </Text>
             <Text style={styles.bandSub}>
               {user.job_title ? `${user.job_title} · ` : ''}{user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               {myDept ? ` · ${myDept.name}` : user.role !== 'admin' ? ' · No department assigned' : ''}
             </Text>
-          </View>
-          <View style={styles.bandActions}>
-            <NotificationBell onOpenRequest={openRequest} />
-            {user.role === 'admin' && (
-              <Button title="Admin console" icon="settings-outline" variant="outlineLight" size="sm" onPress={() => navigation.navigate('AdminDashboard')} />
-            )}
-            <Button title="Sign out" icon="log-out-outline" variant="outlineLight" size="sm" onPress={signOut} />
           </View>
         </Container>
       </View>
@@ -116,15 +118,6 @@ function Portal() {
           <Kpi icon="checkmark-done-outline" label="Resolved this week" value={kpis.resolved} tone={COLORS.success} />
         </Grid>
 
-        <View style={styles.sections} accessibilityRole="tablist">
-          {[['queue', 'Work queue', 'file-tray-full-outline'], ['announcements', 'Announcements', 'megaphone-outline'], ...(isSupervisor ? [['reports', 'Reports', 'bar-chart-outline']] : [])].map(([k, label, icon]) => (
-            <Pressable key={k} onPress={() => setSection(k)} style={[styles.section, section === k && styles.sectionOn]} accessibilityRole="tab" accessibilityState={{ selected: section === k }}>
-              <Ionicons name={icon} size={18} color={section === k ? COLORS.primary : COLORS.gray500} />
-              <Text style={[styles.sectionText, section === k && { color: COLORS.primary }]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
         {section === 'announcements' ? (
           <View style={{ marginTop: SPACE.xl }}><AnnouncementsManager user={user} /></View>
         ) : section === 'reports' ? (
@@ -139,6 +132,7 @@ function Portal() {
               departments={departments}
               staff={staff}
               refreshKey={refreshKey}
+              initialScope={scopes.some((x) => x.key === prefs.default_queue) ? prefs.default_queue : undefined}
             />
           </View>
 
@@ -148,9 +142,7 @@ function Portal() {
               <Card padded={false}>
                 {workload.map((w, i) => (
                   <View key={w.user_id} style={[styles.wlRow, i > 0 && { borderTopWidth: 1, borderTopColor: COLORS.gray100 }]}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{(w.full_name || '?').split(' ').map((p) => p[0]).slice(0, 2).join('')}</Text>
-                    </View>
+                    <Avatar name={w.full_name} url={staff.find((s) => s.id === w.user_id)?.avatar_url} size={36} />
                     <View style={{ flex: 1 }}>
                       <Text style={TYPE.label}>{w.full_name || 'Unnamed'}</Text>
                       <Text style={TYPE.small}>{w.role}{w.department ? ` · ${w.department}` : ''}</Text>
@@ -169,6 +161,7 @@ function Portal() {
       </Container>
       <View style={{ height: 64 }} />
     </ScrollView>
+    </View>
   );
 }
 
@@ -182,7 +175,7 @@ export default function StaffPortalScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.bg },
-  band: { paddingTop: SPACE.xxl, paddingBottom: 64 },
+  band: { paddingTop: SPACE.xl, paddingBottom: 60 },
   bandRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, flexWrap: 'wrap' },
   bandSub: { fontFamily: FONT, color: '#CFE6FA', fontSize: 15, marginTop: 6 },
   bandActions: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
@@ -191,13 +184,7 @@ const styles = StyleSheet.create({
   kpiIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   kpiValue: { fontFamily: FONT, fontSize: 26, fontWeight: '800', color: COLORS.gray900 },
   cols: { flexDirection: 'row', gap: SPACE.xl, marginTop: SPACE.xl, alignItems: 'flex-start' },
-  sections: { flexDirection: 'row', gap: 4, marginTop: SPACE.xl, borderBottomWidth: 1, borderBottomColor: COLORS.gray200 },
-  section: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 3, borderBottomColor: 'transparent', marginBottom: -1 },
-  sectionOn: { borderBottomColor: COLORS.primary },
-  sectionText: { fontFamily: FONT, fontSize: 15, fontWeight: '700', color: COLORS.gray500 },
   wlRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: FONT, fontWeight: '800', color: COLORS.primary, fontSize: 13 },
   wlNum: { fontFamily: FONT, fontSize: 18, fontWeight: '800', color: COLORS.gray900 },
   wlOver: { fontFamily: FONT, fontSize: 11.5, fontWeight: '700', color: COLORS.danger },
 });
