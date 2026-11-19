@@ -360,10 +360,9 @@ function Detail() {
 export default function StaffRequestScreen() {
   return (
     <StaffGate roles={['officer', 'supervisor', 'admin']}>
-      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-        <StaffNavbar active="queue" />
+      <StaffNavbar active="queue">
         <Detail />
-      </View>
+      </StaffNavbar>
     </StaffGate>
   );
 }

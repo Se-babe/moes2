@@ -323,10 +323,9 @@ function Settings() {
 export default function StaffSettingsScreen() {
   return (
     <StaffGate roles={['officer', 'supervisor', 'admin']}>
-      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-        <StaffNavbar active="settings" />
+      <StaffNavbar active="settings">
         <Settings />
-      </View>
+      </StaffNavbar>
     </StaffGate>
   );
 }

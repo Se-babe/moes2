@@ -30,10 +30,11 @@ function MenuItem({ icon, label, onPress, danger }) {
 }
 
 /**
- * Top navigation for every staff page: brand, sections, notifications and
- * the signed-in person's menu. `active` is the highlighted section key.
+ * Layout for every staff page: a top bar (brand, notifications, account
+ * menu), the section links in a left sidebar on desktop (a swipeable row on
+ * phones), and the page content beside it. `active` is the current section.
  */
-export default function StaffNavbar({ active }) {
+export default function StaffNavbar({ active, children }) {
   const navigation = useNavigation();
   const { user, signOut } = useAuth();
   const { isDesktop } = useBreakpoint();
@@ -48,13 +49,14 @@ export default function StaffNavbar({ active }) {
   };
   const name = user.full_name || user.email;
 
-  const links = sections.map((s) => {
+  // Phones: pill buttons in a swipeable row under the top bar.
+  const mobileLinks = sections.map((s) => {
     const on = active === s.key;
     return (
       <Pressable
         key={s.key}
         onPress={() => go(s.key)}
-        style={({ hovered }) => [styles.link, !isDesktop && styles.linkMobile, on && styles.linkOn, hovered && !on && styles.linkHover]}
+        style={[styles.link, styles.linkMobile, on && styles.linkOn]}
         accessibilityRole="link"
         accessibilityState={{ selected: on }}
       >
@@ -64,8 +66,37 @@ export default function StaffNavbar({ active }) {
     );
   });
 
+  // Desktop: vertical sidebar.
+  const SideLink = ({ icon, label, on, onPress, danger }) => (
+    <Pressable
+      onPress={onPress}
+      style={({ hovered }) => [styles.side, on && styles.sideOn, hovered && !on && { backgroundColor: COLORS.gray100 }]}
+      accessibilityRole="link"
+      accessibilityState={{ selected: !!on }}
+    >
+      <View style={[styles.sideMark, on && { backgroundColor: COLORS.primary }]} />
+      <Ionicons name={icon} size={19} color={danger ? COLORS.danger : on ? COLORS.primary : COLORS.gray500} />
+      <Text style={[styles.sideText, on && { color: COLORS.primary }, danger && { color: COLORS.danger }]}>{label}</Text>
+    </Pressable>
+  );
+  const sidebar = (
+    <View style={styles.sidebar} accessibilityRole="navigation">
+      <Text style={styles.sideHeading}>Workspace</Text>
+      {sections.map((s) => <SideLink key={s.key} icon={s.icon} label={s.label} on={active === s.key} onPress={() => go(s.key)} />)}
+      <View style={{ flex: 1 }} />
+      <View style={styles.sideFoot}>
+        {user.role === 'admin' && (
+          <SideLink icon="shield-checkmark-outline" label="Admin console" onPress={() => navigation.navigate('AdminDashboard')} />
+        )}
+        <SideLink icon="globe-outline" label="Public website" onPress={() => navigation.navigate('Home')} />
+        <SideLink icon="log-out-outline" label="Sign out" danger onPress={() => { signOut(); navigation.navigate('Login'); }} />
+      </View>
+    </View>
+  );
+
   return (
-    <View style={styles.bar} accessibilityRole="navigation">
+    <View style={styles.shell}>
+    <View style={styles.bar}>
       <View style={styles.row}>
         <Pressable onPress={() => go('queue')} style={styles.brand} accessibilityRole="link" accessibilityLabel="Staff portal home">
           <View style={styles.logo}><Ionicons name="water" size={18} color="#fff" /></View>
@@ -75,15 +106,7 @@ export default function StaffNavbar({ active }) {
           </View>
         </Pressable>
 
-        {isDesktop && <View style={styles.links}>{links}</View>}
-
         <View style={styles.right}>
-          {user.role === 'admin' && isDesktop && (
-            <Pressable onPress={() => navigation.navigate('AdminDashboard')} style={({ hovered }) => [styles.adminBtn, hovered && styles.linkHover]} accessibilityRole="link">
-              <Ionicons name="shield-checkmark-outline" size={16} color="#fff" />
-              <Text style={styles.adminText}>Admin console</Text>
-            </Pressable>
-          )}
           <NotificationBell onOpenRequest={(id) => navigation.navigate('StaffRequest', { id })} />
           <Pressable
             onPress={() => setMenuOpen(true)}
@@ -105,9 +128,15 @@ export default function StaffNavbar({ active }) {
 
       {!isDesktop && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mobileLinks}>
-          {links}
+          {mobileLinks}
         </ScrollView>
       )}
+    </View>
+
+    <View style={styles.body}>
+      {isDesktop && sidebar}
+      <View style={{ flex: 1 }}>{children}</View>
+    </View>
 
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)} accessibilityLabel="Close menu">
@@ -140,10 +169,16 @@ export default function StaffNavbar({ active }) {
 
 const styles = StyleSheet.create({
   bar: { backgroundColor: COLORS.primaryDarker, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', zIndex: 20 },
-  row: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, height: 64,
-    width: '100%', maxWidth: LAYOUT.maxWidth + 80, alignSelf: 'center', paddingHorizontal: LAYOUT.gutter,
-  },
+  shell: { flex: 1, backgroundColor: COLORS.bg },
+  body: { flex: 1, flexDirection: 'row' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, height: 64, width: '100%', paddingHorizontal: LAYOUT.gutter },
+  sidebar: { width: 248, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200, paddingVertical: SPACE.lg, paddingHorizontal: 12 },
+  sideHeading: { fontFamily: FONT, fontSize: 11.5, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: COLORS.gray400, paddingHorizontal: 12, marginBottom: 8 },
+  side: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingRight: 12, borderRadius: RADIUS.md, marginBottom: 2 },
+  sideOn: { backgroundColor: COLORS.primarySoft },
+  sideMark: { width: 3, height: 20, borderRadius: 2, backgroundColor: 'transparent' },
+  sideText: { fontFamily: FONT, fontSize: 14.5, fontWeight: '600', color: COLORS.gray700 },
+  sideFoot: { borderTopWidth: 1, borderTopColor: COLORS.gray100, paddingTop: SPACE.md },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center' },
   brandName: { fontFamily: FONT, color: '#fff', fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },

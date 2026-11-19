@@ -83,8 +83,7 @@ function Portal() {
   const sectionTitle = { queue: 'Work queue', announcements: 'Announcements', reports: 'Reports' }[section];
 
   return (
-    <View style={styles.page}>
-    <StaffNavbar active={section} />
+    <StaffNavbar active={section}>
     <ScrollView style={{ flex: 1 }}>
       <View style={[styles.band, gradient(COLORS.primaryDark, COLORS.primary, 120)]}>
         <Container style={styles.bandRow}>
@@ -161,7 +160,7 @@ function Portal() {
       </Container>
       <View style={{ height: 64 }} />
     </ScrollView>
-    </View>
+    </StaffNavbar>
   );
 }
 
