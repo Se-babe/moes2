@@ -251,12 +251,7 @@ export default function ConsultationsScreen() {
       .eq('consultation_id', consultationId)
       .maybeSingle();
     if (existing) {
-      const optionId = existing.poll_option_id;
       await supabase.from('poll_votes').delete().eq('id', existing.id);
-      const { data: option } = await supabase.from('poll_options').select('vote_count').eq('id', optionId).single();
-      await supabase.from('poll_options').update({ vote_count: (option.vote_count || 0) - 1 }).eq('id', optionId);
-      const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
-      await supabase.from('consultations').update({ poll_votes_count: (cons.poll_votes_count || 0) - 1 }).eq('id', consultationId);
       showAlert('Vote Removed', 'Your poll vote has been removed.');
     } else {
       await supabase.from('poll_votes').insert([{
@@ -264,10 +259,6 @@ export default function ConsultationsScreen() {
         poll_option_id: pollOptionId,
         consultation_id: consultationId,
       }]);
-      const { data: option } = await supabase.from('poll_options').select('vote_count').eq('id', pollOptionId).single();
-      await supabase.from('poll_options').update({ vote_count: (option.vote_count || 0) + 1 }).eq('id', pollOptionId);
-      const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
-      await supabase.from('consultations').update({ poll_votes_count: (cons.poll_votes_count || 0) + 1 }).eq('id', consultationId);
       showAlert('Vote Recorded', 'Thank you for voting!');
     }
     fetchData();

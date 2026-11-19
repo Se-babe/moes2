@@ -159,8 +159,10 @@ function Detail() {
 
   const due = dueInfo(req.due_at, req.status);
   const isOpen = OPEN_STATUSES.includes(req.status);
+  // Officers can hand a request to a teammate; only supervisors and admins
+  // can leave it unassigned (the database enforces the same rule).
   const assigneeOptions = [
-    { value: null, label: 'Unassigned' },
+    ...(canMoveDepartment || !req?.assigned_to ? [{ value: null, label: 'Unassigned' }] : []),
     ...staff
       .filter((s) => s.is_active !== false && s.role !== 'admin' && (!assign.department_id || s.department_id === assign.department_id))
       .map((s) => ({ value: s.id, label: s.full_name || s.email, hint: `${s.role}${s.job_title ? ` · ${s.job_title}` : ''}` })),

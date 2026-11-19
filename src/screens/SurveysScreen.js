@@ -85,23 +85,15 @@ export default function SurveysScreen() {
           .eq('consultation_id', consultationId)
           .maybeSingle();
         if (existingRow) await supabase.from('poll_votes').delete().eq('id', existingRow.id);
-        const { data: oldOption } = await supabase.from('poll_options').select('vote_count').eq('id', existingOptionId).single();
-        await supabase.from('poll_options').update({ vote_count: Math.max((oldOption?.vote_count || 1) - 1, 0) }).eq('id', existingOptionId);
       }
 
       if (isUnvote) {
-        const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
-        await supabase.from('consultations').update({ poll_votes_count: Math.max((cons?.poll_votes_count || 1) - 1, 0) }).eq('id', consultationId);
         setUserVotes((prev) => { const next = { ...prev }; delete next[consultationId]; return next; });
         showAlert('Vote Removed', 'Your vote has been removed.');
       } else {
-        await supabase.from('poll_votes').insert([{ user_id: user.id, poll_option_id: pollOptionId, consultation_id: consultationId }]);
-        const { data: newOption } = await supabase.from('poll_options').select('vote_count').eq('id', pollOptionId).single();
-        await supabase.from('poll_options').update({ vote_count: (newOption?.vote_count || 0) + 1 }).eq('id', pollOptionId);
-        if (!existingOptionId) {
-          const { data: cons } = await supabase.from('consultations').select('poll_votes_count').eq('id', consultationId).single();
-          await supabase.from('consultations').update({ poll_votes_count: (cons?.poll_votes_count || 0) + 1 }).eq('id', consultationId);
-        }
+        // Vote counts are updated by the database.
+        const { error: voteError } = await supabase.from('poll_votes').insert([{ user_id: user.id, poll_option_id: pollOptionId, consultation_id: consultationId }]);
+        if (voteError) throw voteError;
         setUserVotes((prev) => ({ ...prev, [consultationId]: pollOptionId }));
         showAlert('Thank You!', 'Your vote has been recorded.');
       }

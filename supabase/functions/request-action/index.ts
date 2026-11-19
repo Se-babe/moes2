@@ -75,6 +75,16 @@ Deno.serve(async (req) => {
     // above (supervisor/admin who can read the request), so that one case is
     // written with the service role; everything else runs as the caller.
     const movingDepartment = patch.department_id !== undefined;
+    // The service-role write skips the database's assignment check, so make
+    // the same check here: the new officer must be active staff in that team.
+    if (movingDepartment && patch.assigned_to) {
+      const chk = await fetch(
+        `${url}/rest/v1/users?id=eq.${encodeURIComponent(String(patch.assigned_to))}&department_id=eq.${encodeURIComponent(String(patch.department_id))}&is_active=is.true&role=in.(officer,supervisor)&select=id`,
+        { headers: asCaller },
+      );
+      const ok = chk.ok ? ((await chk.json()) as unknown[]).length > 0 : false;
+      if (!ok) return json({ error: 'A request can only be assigned to active staff in its own department.' }, 400);
+    }
     const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const writeHeaders = movingDepartment
       ? { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' }
@@ -88,8 +98,13 @@ Deno.serve(async (req) => {
       });
       const changed = Number((upd.headers.get('content-range') || '').split('/')[1] || 0);
       if (!upd.ok || changed === 0) {
-        console.error('[request-action] update failed', upd.status, upd.ok ? 'no rows' : await upd.text());
-        return json({ error: 'Could not update this request. You may not have permission.' }, 403);
+        const detail = upd.ok ? '' : await upd.text();
+        console.error('[request-action] update failed', upd.status, detail || 'no rows');
+        // Pass on the database's own explanation (e.g. "Only supervisors and
+        // administrators can move a request to another department").
+        let reason = '';
+        try { reason = (JSON.parse(detail) as { message?: string }).message || ''; } catch { /* not JSON */ }
+        return json({ error: reason || 'Could not update this request. You may not have permission.' }, 403);
       }
     }
 
