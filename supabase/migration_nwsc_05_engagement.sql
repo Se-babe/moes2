@@ -13,6 +13,39 @@
 begin;
 
 -- ---------- 1. Surveys ----------
+-- The old MoES app left survey_questions / survey_responses tables with a
+-- different shape (and publicly readable responses). Keep their data under a
+-- *_legacy name, closed to the public, and create the new tables below.
+do $$
+begin
+  if to_regclass('public.survey_questions') is not null and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'survey_questions' and column_name = 'position'
+  ) then
+    alter table public.survey_questions rename to survey_questions_legacy;
+  end if;
+  if to_regclass('public.survey_responses') is not null and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'survey_responses' and column_name = 'respondent_key'
+  ) then
+    alter table public.survey_responses rename to survey_responses_legacy;
+  end if;
+end;
+$$;
+do $$
+declare t text;
+begin
+  foreach t in array array['survey_questions_legacy', 'survey_responses_legacy'] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('alter table public.%I enable row level security', t);
+      execute format('drop policy if exists "public read" on public.%I', t);
+      execute format('drop policy if exists "admin reads legacy" on public.%I', t);
+      execute format('create policy "admin reads legacy" on public.%I for select using (public.is_admin())', t);
+    end if;
+  end loop;
+end;
+$$;
+
 alter table public.surveys add column if not exists thank_you text;
 
 create table if not exists public.survey_questions (
