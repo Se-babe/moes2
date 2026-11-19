@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState } from '../components/ui';
 import Footer from '../components/Footer';
+import { useGuestIdentity, communityAction } from '../services/community';
 
 
 const CATEGORIES = ['General', 'Water Supply', 'Billing', 'Water Quality', 'Sewerage', 'Conservation'];
@@ -52,17 +53,31 @@ export default function ForumScreen() {
     }
   };
 
-  const openNewTopic = () => {
-    if (!user) {
-      showAlert('Staff only', 'Anyone can read discussions. Starting one is for NWSC staff.');
-      return;
-    }
-    setModalVisible(true);
-  };
+  const guest = useGuestIdentity();
+  const openNewTopic = () => setModalVisible(true);
 
   const submitTopic = async () => {
     if (!newTitle.trim()) {
       showAlert('Error', 'Please enter a title for your topic.');
+      return;
+    }
+    if (!user) {
+      // Citizens post with a name + phone through the community-action function.
+      guest.run(async (id) => {
+        setPosting(true);
+        try {
+          await communityAction({ action: 'forum_topic', ...id, title: newTitle.trim(), description: newDescription.trim(), category: newCategory });
+          setNewTitle('');
+          setNewDescription('');
+          setModalVisible(false);
+          showAlert('Thank you!', 'Your discussion topic has been posted.');
+          fetchTopics();
+        } catch (e) {
+          showAlert('Could not post', e.message);
+        } finally {
+          setPosting(false);
+        }
+      });
       return;
     }
     setPosting(true);
@@ -180,6 +195,7 @@ export default function ForumScreen() {
           </View>
         </View>
       </Modal>
+      {guest.modal}
     </View>
   );
 }

@@ -20,6 +20,7 @@ import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState, useBreakpoint } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
+import { useGuestIdentity, communityAction } from '../services/community';
 
 
 const REACTIONS = [
@@ -74,8 +75,7 @@ export default function ConsultationsScreen() {
           ),
           likes (reaction_type, user_id),
           comments (
-            id, text, image_url, user_id, created_at,
-            users (full_name),
+            id, text, image_url, user_id, created_at, author_name,
             comment_likes (user_id)
           )
         `)
@@ -149,11 +149,8 @@ export default function ConsultationsScreen() {
   };
 
   // ----- Comment -----
+  const guest = useGuestIdentity();
   const openCommentModal = (consultation) => {
-    if (!user) {
-      showAlert('View only', 'You can read comments here. Adding one is for NWSC staff.');
-      return;
-    }
     setActiveConsultation(consultation);
     setCommentText('');
     setCommentImage(null);
@@ -178,6 +175,25 @@ export default function ConsultationsScreen() {
   };
 
   const submitComment = async () => {
+    if (!user) {
+      // Citizens comment with a name + phone (text only).
+      if (!commentText.trim()) {
+        showAlert('Comment needed', 'Please write your comment.');
+        return;
+      }
+      guest.run(async (id) => {
+        try {
+          await communityAction({ action: 'comment', ...id, consultation_id: activeConsultation.id, text: commentText.trim() });
+          await createNotification(null, 'New Comment', `Comment on: ${activeConsultation.title}`, 'info', 'Consultations', activeConsultation.id);
+          setCommentModalVisible(false);
+          showAlert('Thank you!', 'Your comment has been posted.');
+          fetchData();
+        } catch (e) {
+          showAlert('Could not post', e.message);
+        }
+      });
+      return;
+    }
     if (!commentText.trim() && !commentImage) {
       showAlert('Error', 'Please enter text or select an image.');
       return;
@@ -217,7 +233,15 @@ export default function ConsultationsScreen() {
   // ----- Poll Vote -----
   const handlePollVote = async (pollOptionId, consultationId) => {
     if (!user) {
-      showAlert('View only', 'You can read this consultation here. Voting is for NWSC staff.');
+      guest.run(async (id) => {
+        try {
+          await communityAction({ action: 'poll_vote', ...id, poll_option_id: pollOptionId });
+          showAlert('Vote recorded', 'Thank you for voting!');
+          fetchData();
+        } catch (e) {
+          showAlert('Vote not recorded', e.message);
+        }
+      });
       return;
     }
     const { data: existing } = await supabase
@@ -348,7 +372,7 @@ export default function ConsultationsScreen() {
         <View style={styles.commentsContainer}>
           {item.comments.slice(0, 3).map((comment) => (
             <View key={comment.id} style={styles.commentItem}>
-              <Text style={styles.commentUser}>{comment.users?.full_name || 'User'}</Text>
+              <Text style={styles.commentUser}>{comment.author_name || 'Community member'}</Text>
               <Text style={styles.commentText}>{comment.text}</Text>
               {comment.image_url && <Image source={{ uri: comment.image_url }} style={styles.commentImage} />}
               <View style={styles.commentActions}>
@@ -522,6 +546,7 @@ export default function ConsultationsScreen() {
           </View>
         </View>
       </Modal>
+      {guest.modal}
     </View>
   );
 }

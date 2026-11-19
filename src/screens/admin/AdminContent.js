@@ -11,7 +11,6 @@ const SUB_TABS = [
   { key: 'slides', label: 'Slides' },
   { key: 'media_gallery', label: 'Media Gallery' },
   { key: 'service_areas', label: 'Service areas' },
-  { key: 'surveys', label: 'Surveys' },
   { key: 'town_halls', label: 'Town Halls' },
   { key: 'news', label: 'News' },
   { key: 'faqs', label: 'FAQs' },
@@ -43,21 +42,6 @@ export default function AdminContent() {
               { key: 'name', label: 'Area name (used for alerts and announcements)', type: 'text', required: true },
               { key: 'display_order', label: 'Display Order', type: 'number' },
               { key: 'is_active', label: 'Active', type: 'boolean' },
-            ]}
-          />
-        );
-      case 'surveys':
-        return (
-          <AdminSimpleList
-            table="surveys"
-            title="Surveys"
-            titleField="title"
-            subtitleField="description"
-            fields={[
-              { key: 'title', label: 'Title', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'end_date', label: 'End Date', type: 'date' },
-              { key: 'is_active', label: 'Active (visible to citizens)', type: 'boolean' },
             ]}
           />
         );

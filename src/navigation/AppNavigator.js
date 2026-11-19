@@ -40,6 +40,7 @@ import MediaGalleryScreen from '../screens/MediaGalleryScreen';
 import UpdatesScreen from '../screens/UpdatesScreen';
 import UpdateDetailScreen from '../screens/UpdateDetailScreen';
 import AlertsScreen from '../screens/AlertsScreen';
+import SurveyDetailScreen from '../screens/SurveyDetailScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import TownHallsScreen from '../screens/TownHallsScreen';
 import ContactScreen from '../screens/ContactScreen';
@@ -79,6 +80,7 @@ const linking = {
       Updates: 'updates',
       UpdateDetail: 'updates/:id',
       Alerts: 'alerts',
+      SurveyDetail: 'surveys/:id',
       SearchResults: 'search',
       TownHalls: 'town-halls',
       Contact: 'contact',
@@ -112,6 +114,7 @@ const TITLES = {
   Updates: 'Service updates',
   UpdateDetail: 'Service update',
   Alerts: 'Service alerts',
+  SurveyDetail: 'Survey',
   SearchResults: 'Search',
   TownHalls: 'Community meetings',
   Contact: 'Contact us',
@@ -168,6 +171,7 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="Updates" component={UpdatesScreen} options={{ title: TITLES.Updates }} />
         <Stack.Screen name="UpdateDetail" component={UpdateDetailScreen} options={{ title: TITLES.UpdateDetail }} />
         <Stack.Screen name="Alerts" component={AlertsScreen} options={{ title: TITLES.Alerts }} />
+        <Stack.Screen name="SurveyDetail" component={SurveyDetailScreen} options={{ title: TITLES.SurveyDetail }} />
         <Stack.Screen name="SearchResults" component={SearchResultsScreen} options={{ title: TITLES.SearchResults }} />
         <Stack.Screen name="TownHalls" component={TownHallsScreen} options={{ title: TITLES.TownHalls }} />
         <Stack.Screen name="Contact" component={ContactScreen} options={{ title: TITLES.Contact }} />

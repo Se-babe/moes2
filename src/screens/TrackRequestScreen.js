@@ -6,6 +6,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +14,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
-import { PageHeader, Container, Button, Badge, STATUS_TONE } from '../components/ui';
+import { PageHeader, Container, Button, Badge, STATUS_TONE, TextField } from '../components/ui';
+import { showAlert } from '../utils/alert';
 import { COLORS, FONT, SHADOW } from '../theme';
 
 
@@ -38,6 +40,63 @@ const fmt = (d) => (d ? new Date(d).toLocaleString(undefined, { dateStyle: 'medi
 
 function StatusBadge({ status }) {
   return <Badge label={status} tone={STATUS_TONE[status] || 'neutral'} />;
+}
+
+const LEVELS = [
+  { min: 10, title: 'Water Guardian', icon: 'shield-checkmark', color: '#7C3AED' },
+  { min: 3, title: 'Community Champion', icon: 'ribbon', color: '#D97706' },
+  { min: 1, title: 'Community Reporter', icon: 'star', color: '#0891B2' },
+];
+
+function ParticipationBadge({ count }) {
+  const level = LEVELS.find((l) => count >= l.min);
+  if (!level) return null;
+  const next = [...LEVELS].reverse().find((l) => l.min > count);
+  return (
+    <View style={styles.badgeBox} accessibilityLabel={`${level.title}: ${count} reports`}>
+      <View style={[styles.badgeIcon, { backgroundColor: level.color }]}>
+        <Ionicons name={level.icon} size={20} color="#fff" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.badgeTitle}>{level.title}</Text>
+        <Text style={styles.badgeText}>
+          Thank you — you've helped improve water services {count} time{count === 1 ? '' : 's'}.
+          {next ? ` ${next.min - count} more to become a ${next.title}.` : ''}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function RateService({ reference, onRated }) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const labels = ['Very poor', 'Poor', 'Okay', 'Good', 'Excellent'];
+  const submit = async () => {
+    if (!rating) return showAlert('Choose a rating', 'Tap a star from 1 to 5.');
+    setBusy(true);
+    const { error } = await supabase.rpc('rate_request', { p_reference: reference, p_rating: rating, p_comment: comment.trim() || null });
+    setBusy(false);
+    if (error) showAlert('Could not save your rating', error.message);
+    else onRated();
+  };
+  return (
+    <View style={styles.rateBox}>
+      <Text style={styles.sectionTitle}>How did we do?</Text>
+      <Text style={styles.helper}>Your rating helps us improve. It takes 10 seconds.</Text>
+      <View style={styles.stars} accessibilityRole="radiogroup">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="radio" accessibilityState={{ checked: rating === n }} accessibilityLabel={`${n} — ${labels[n - 1]}`} style={styles.star}>
+            <Ionicons name={n <= rating ? 'star' : 'star-outline'} size={34} color={n <= rating ? '#F59E0B' : COLORS.gray300} />
+          </Pressable>
+        ))}
+        {rating ? <Text style={[styles.helper, { marginLeft: 8, marginBottom: 0 }]}>{labels[rating - 1]}</Text> : null}
+      </View>
+      <TextField multiline value={comment} onChangeText={setComment} maxLength={1000} placeholder="Anything you'd like to add? (optional)" inputStyle={{ minHeight: 80 }} />
+      <Button title="Send rating" icon="send" loading={busy} onPress={submit} />
+    </View>
+  );
 }
 
 export default function TrackRequestScreen() {
@@ -158,6 +217,17 @@ export default function TrackRequestScreen() {
               })}
             </View>
 
+            {result.can_rate ? (
+              <RateService reference={result.reference_no} onRated={() => lookup(result.reference_no)} />
+            ) : result.satisfaction_rating ? (
+              <View style={styles.rated}>
+                <Ionicons name="heart" size={16} color={COLORS.danger} />
+                <Text style={styles.helper}>You rated this service {result.satisfaction_rating}/5. Thank you!</Text>
+              </View>
+            ) : null}
+
+            {result.participation > 0 && <ParticipationBadge count={result.participation} />}
+
             <Text style={styles.sectionTitle}>Updates</Text>
             {(result.timeline || []).slice().reverse().map((u, i) => (
               <View key={i} style={styles.update}>
@@ -238,6 +308,14 @@ const styles = StyleSheet.create({
   stepLabelDone: { color: COLORS.gray800, fontWeight: '700' },
   stepLine: { position: 'absolute', top: 12, left: '50%', right: '-50%', height: 2, backgroundColor: COLORS.gray200 },
   stepLineDone: { backgroundColor: '#22C55E' },
+  rateBox: { marginTop: 18, padding: 16, borderRadius: 14, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  stars: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  star: { padding: 2 },
+  rated: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
+  badgeBox: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, padding: 14, borderRadius: 14, backgroundColor: COLORS.primarySoft },
+  badgeIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  badgeTitle: { fontFamily: FONT, fontSize: 15, fontWeight: '800', color: COLORS.gray900 },
+  badgeText: { fontFamily: FONT, fontSize: 13, color: COLORS.gray600, marginTop: 2 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.gray800, marginTop: 18, marginBottom: 10 },
   update: { flexDirection: 'row', gap: 12, paddingVertical: 8 },
   updateRail: { width: 12, alignItems: 'center', paddingTop: 5 },

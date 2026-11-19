@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container } from '../components/ui';
 import Footer from '../components/Footer';
+import { useGuestIdentity, communityAction } from '../services/community';
 
 
 export default function ForumThreadScreen() {
@@ -51,12 +52,24 @@ export default function ForumThreadScreen() {
     }
   };
 
+  const guest = useGuestIdentity();
   const sendReply = async () => {
+    if (!replyText.trim()) return;
     if (!user) {
-      showAlert('Staff only', 'Anyone can read this discussion. Replies are for NWSC staff.');
+      guest.run(async (id) => {
+        setSending(true);
+        try {
+          await communityAction({ action: 'forum_reply', ...id, topic_id: topicId, text: replyText.trim() });
+          setReplyText('');
+          fetchPosts();
+        } catch (e) {
+          showAlert('Could not post', e.message);
+        } finally {
+          setSending(false);
+        }
+      });
       return;
     }
-    if (!replyText.trim()) return;
     setSending(true);
     try {
       const { error } = await supabase.from('forum_posts').insert([
@@ -115,6 +128,7 @@ export default function ForumThreadScreen() {
           {sending ? <ActivityIndicator size="small" color={COLORS.primary} /> : <Ionicons name="send" size={22} color={COLORS.primary} />}
         </TouchableOpacity>
       </View>
+      {guest.modal}
     </KeyboardAvoidingView>
   );
 }

@@ -112,7 +112,9 @@ Deno.serve(async (req) => {
     if (reply || statusWorthTelling) {
       const ref = current.reference_no;
       const text = reply || `Your request is now ${newStatus.toLowerCase()}.`;
-      const sms = `NWSC ${ref}: ${text.slice(0, 280)}${newStatus === 'Resolved' ? ' (Resolved)' : ''}`;
+      const site = (Deno.env.get('SITE_URL') || '').replace(/\/$/, '');
+      const rateLink = site && (newStatus === 'Resolved' || newStatus === 'Closed') ? `${site}/track?ref=${ref}` : '';
+      const sms = `NWSC ${ref}: ${text.slice(0, 240)}${newStatus === 'Resolved' ? ' (Resolved)' : ''}${rateLink ? ` Rate us: ${rateLink}` : ''}`;
       const results = await Promise.allSettled([
         current.contact_phone ? sendSms(current.contact_phone, sms, 'status_update', current.id) : Promise.resolve(false),
         current.contact_email
@@ -125,6 +127,7 @@ Deno.serve(async (req) => {
                <p style="padding:12px 16px;background:#F1F5F9;border-radius:8px">${escapeHtml(text)}</p>
                <p>Current status: <strong>${newStatus}</strong>. You can follow progress any time on the
                <em>Track My Request</em> page using your reference number.</p>
+               ${rateLink ? `<p><a href="${rateLink}">Tell us how we did — rate our service</a></p>` : ''}
                <p>— NWSC Jinja Customer Care</p>`,
               'status_update',
               current.id,

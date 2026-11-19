@@ -8,6 +8,7 @@ import StaffGate from '../../components/staff/StaffGate';
 import RequestQueue from '../../components/staff/RequestQueue';
 import NotificationBell from '../../components/staff/NotificationBell';
 import AnnouncementsManager from '../../components/staff/AnnouncementsManager';
+import ReportsDashboard from '../../components/staff/ReportsDashboard';
 import { Container, Card, Button, Grid, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SPACE, TYPE, gradient } from '../../theme';
 import { fetchDepartments, fetchStaff, fetchWorkload, OPEN_STATUSES } from '../../services/staff';
@@ -116,7 +117,7 @@ function Portal() {
         </Grid>
 
         <View style={styles.sections} accessibilityRole="tablist">
-          {[['queue', 'Work queue', 'file-tray-full-outline'], ['announcements', 'Announcements', 'megaphone-outline']].map(([k, label, icon]) => (
+          {[['queue', 'Work queue', 'file-tray-full-outline'], ['announcements', 'Announcements', 'megaphone-outline'], ...(isSupervisor ? [['reports', 'Reports', 'bar-chart-outline']] : [])].map(([k, label, icon]) => (
             <Pressable key={k} onPress={() => setSection(k)} style={[styles.section, section === k && styles.sectionOn]} accessibilityRole="tab" accessibilityState={{ selected: section === k }}>
               <Ionicons name={icon} size={18} color={section === k ? COLORS.primary : COLORS.gray500} />
               <Text style={[styles.sectionText, section === k && { color: COLORS.primary }]}>{label}</Text>
@@ -126,6 +127,8 @@ function Portal() {
 
         {section === 'announcements' ? (
           <View style={{ marginTop: SPACE.xl }}><AnnouncementsManager user={user} /></View>
+        ) : section === 'reports' ? (
+          <View style={{ marginTop: SPACE.xl }}><ReportsDashboard user={user} /></View>
         ) : (
         <View style={[styles.cols, !isDesktop && { flexDirection: 'column' }]}>
           <View style={{ flex: 3 }}>

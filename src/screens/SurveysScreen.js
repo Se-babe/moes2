@@ -5,9 +5,13 @@ import { supabase } from '../services/supabaseClient';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState } from '../components/ui';
 import Footer from '../components/Footer';
+import { useGuestIdentity, communityAction } from '../services/community';
+import { useNavigation } from '@react-navigation/native';
+import { Button } from '../components/ui';
 
 
 export default function SurveysScreen() {
+  const navigation = useNavigation();
   const [surveys, setSurveys] = useState([]);
   const [polls, setPolls] = useState([]);
   const [userVotes, setUserVotes] = useState({}); // consultationId -> poll_option_id
@@ -25,7 +29,8 @@ export default function SurveysScreen() {
 
   const fetchData = async (currentUser) => {
     setLoading(true);
-    const { data: surveyData } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: surveyData } = await supabase.from('surveys').select('*, survey_questions(count)').eq('is_active', true).or(`end_date.is.null,end_date.gte.${today}`).order('created_at', { ascending: false });
     if (surveyData) setSurveys(surveyData);
 
     const { data: consData } = await supabase
@@ -49,9 +54,22 @@ export default function SurveysScreen() {
     setLoading(false);
   };
 
+  const guest = useGuestIdentity();
   const vote = async (consultationId, pollOptionId) => {
     if (!user) {
-      showAlert('View only', 'Poll results are public. Casting a vote uses an NWSC staff account.');
+      guest.run(async (id) => {
+        setVotingId(pollOptionId);
+        try {
+          await communityAction({ action: 'poll_vote', ...id, poll_option_id: pollOptionId });
+          setUserVotes((prev) => ({ ...prev, [consultationId]: pollOptionId }));
+          showAlert('Thank you!', 'Your vote has been recorded.');
+          await fetchData(null);
+        } catch (e) {
+          showAlert('Vote not recorded', e.message);
+        } finally {
+          setVotingId(null);
+        }
+      });
       return;
     }
     setVotingId(pollOptionId);
@@ -156,13 +174,18 @@ export default function SurveysScreen() {
         surveys.map((item) => (
           <View key={item.id} style={styles.card}>
             <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardDesc}>{item.description}</Text>
-            {item.end_date && <Text style={styles.cardStatus}>Ends: {new Date(item.end_date).toDateString()}</Text>}
+            {item.description ? <Text style={styles.cardDesc}>{item.description}</Text> : null}
+            <Text style={styles.cardStatus}>
+              {item.survey_questions?.[0]?.count || 0} question{item.survey_questions?.[0]?.count === 1 ? '' : 's'}
+              {item.end_date ? ` · Closes ${new Date(item.end_date).toDateString()}` : ''}
+            </Text>
+            <Button title="Take the survey" icon="arrow-forward" size="sm" style={{ marginTop: 12 }} onPress={() => navigation.navigate('SurveyDetail', { id: item.id })} />
           </View>
         ))
       )}
       </Container>
       <Footer />
+      {guest.modal}
     </ScrollView>
   );
 }

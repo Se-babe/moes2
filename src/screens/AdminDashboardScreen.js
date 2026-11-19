@@ -16,12 +16,15 @@ import AdminContent from './admin/AdminContent';
 import AdminForum from './admin/AdminForum';
 import AdminNotifications from './admin/AdminNotifications';
 import AnnouncementsManager from '../components/staff/AnnouncementsManager';
+import ReportsDashboard from '../components/staff/ReportsDashboard';
+import AdminSurveys from './admin/AdminSurveys';
 
 const SECTIONS = [
   { group: 'Operations', items: [
     { key: 'overview', label: 'Overview', icon: 'grid-outline' },
     { key: 'requests', label: 'All requests', icon: 'file-tray-full-outline' },
     { key: 'announcements', label: 'Announcements', icon: 'megaphone-outline' },
+    { key: 'reports', label: 'Reports', icon: 'bar-chart-outline' },
   ] },
   { group: 'Organisation', items: [
     { key: 'users', label: 'Staff & users', icon: 'people-outline' },
@@ -29,6 +32,7 @@ const SECTIONS = [
   ] },
   { group: 'Engagement', items: [
     { key: 'consultations', label: 'Consultations', icon: 'document-text-outline' },
+    { key: 'surveys', label: 'Surveys', icon: 'clipboard-outline' },
     { key: 'forum', label: 'Forum moderation', icon: 'chatbubbles-outline' },
   ] },
   { group: 'Website', items: [
@@ -60,6 +64,8 @@ function Console() {
       case 'overview': return <AdminOverview onNavigateTab={go} onOpenRequest={openRequest} />;
       case 'requests': return <AdminRequests onOpenRequest={openRequest} />;
       case 'announcements': return <AnnouncementsManager user={user} />;
+      case 'reports': return <ReportsDashboard user={user} />;
+      case 'surveys': return <AdminSurveys />;
       case 'users': return <AdminUsers currentUserId={user.id} />;
       case 'departments': return <AdminDepartments />;
       case 'consultations': return <AdminConsultations />;
