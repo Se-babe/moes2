@@ -27,6 +27,7 @@ export const NAV = [
       { label: 'Make an enquiry', desc: 'Billing, connections, questions', icon: 'help-circle-outline', screen: 'Feedback', params: { type: 'Enquiry' } },
       { label: 'Track my request', desc: 'Check progress with your reference', icon: 'search-outline', screen: 'TrackRequest' },
       { label: 'Service updates', desc: 'Interruptions and restorations', icon: 'megaphone-outline', screen: 'Updates' },
+      { label: 'Get SMS & email alerts', desc: 'Notices for your area', icon: 'notifications-outline', screen: 'Alerts' },
     ],
   },
   {

@@ -17,6 +17,7 @@ const COLUMNS = [
       ['Make an enquiry', 'Feedback', { type: 'Enquiry' }],
       ['Track my request', 'TrackRequest'],
       ['Service updates', 'Updates'],
+      ['SMS & email alerts', 'Alerts'],
     ],
   },
   {

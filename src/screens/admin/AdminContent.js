@@ -10,7 +10,7 @@ import { ADMIN_COLORS as COLORS } from './adminTheme';
 const SUB_TABS = [
   { key: 'slides', label: 'Slides' },
   { key: 'media_gallery', label: 'Media Gallery' },
-  { key: 'updates', label: 'Updates' },
+  { key: 'service_areas', label: 'Service areas' },
   { key: 'surveys', label: 'Surveys' },
   { key: 'town_halls', label: 'Town Halls' },
   { key: 'news', label: 'News' },
@@ -31,17 +31,18 @@ export default function AdminContent() {
         return <AdminSlides />;
       case 'media_gallery':
         return <AdminMediaGallery />;
-      case 'updates':
+      case 'service_areas':
         return (
           <AdminSimpleList
-            table="updates"
-            title="Platform Updates"
-            titleField="title"
-            subtitleField="description"
+            table="service_areas"
+            title="Service areas"
+            titleField="name"
+            orderBy="display_order"
+            ascending
             fields={[
-              { key: 'title', label: 'Title', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'multiline' },
-              { key: 'category', label: 'Category', type: 'select', options: ['Announcement', 'Feature', 'Policy', 'Maintenance'] },
+              { key: 'name', label: 'Area name (used for alerts and announcements)', type: 'text', required: true },
+              { key: 'display_order', label: 'Display Order', type: 'number' },
+              { key: 'is_active', label: 'Active', type: 'boolean' },
             ]}
           />
         );

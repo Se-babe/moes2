@@ -77,7 +77,7 @@ export default function HomeScreen() {
   const load = useCallback(async () => {
     const [slidesRes, updateRes, consRes, newsRes, statsRes, consCount] = await Promise.all([
       supabase.from('slides').select('*').eq('active', true).order('display_order', { ascending: true }),
-      supabase.from('updates').select('*').order('created_at', { ascending: false }).limit(1),
+      supabase.from('announcements').select('id, title, category, published_at').eq('status', 'published').order('published_at', { ascending: false }).limit(1),
       supabase.from('consultations').select('*').eq('is_active', true).order('closing_date', { ascending: true }).limit(3),
       supabase.from('news').select('*').eq('is_active', true).order('published_date', { ascending: false }).limit(3),
       supabase.rpc('public_request_stats'),
@@ -179,14 +179,14 @@ export default function HomeScreen() {
 
       {/* ================= SERVICE STATUS ================= */}
       <Container style={{ marginTop: -28 }}>
-        <Pressable onPress={() => go('Updates')} accessibilityRole="link">
+        <Pressable onPress={() => go(latestUpdate ? 'UpdateDetail' : 'Updates', latestUpdate ? { id: latestUpdate.id } : undefined)} accessibilityRole="link">
           {({ hovered }) => (
             <View style={[styles.statusBar, SHADOW.md, hovered && { borderColor: COLORS.primaryLight }]}>
               <View style={styles.statusIcon}>
                 <Ionicons name="megaphone" size={20} color={COLORS.warning} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.statusOverline}>Latest service update{latestUpdate ? ` · ${fmtDate(latestUpdate.created_at)}` : ''}</Text>
+                <Text style={styles.statusOverline}>{latestUpdate ? `${latestUpdate.category} · ${fmtDate(latestUpdate.published_at)}` : 'Latest service update'}</Text>
                 <Text style={styles.statusText} numberOfLines={2}>
                   {latestUpdate ? latestUpdate.title : 'No planned interruptions announced at the moment.'}
                 </Text>

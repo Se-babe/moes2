@@ -38,6 +38,8 @@ import ForumScreen from '../screens/ForumScreen';
 import ForumThreadScreen from '../screens/ForumThreadScreen';
 import MediaGalleryScreen from '../screens/MediaGalleryScreen';
 import UpdatesScreen from '../screens/UpdatesScreen';
+import UpdateDetailScreen from '../screens/UpdateDetailScreen';
+import AlertsScreen from '../screens/AlertsScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import TownHallsScreen from '../screens/TownHallsScreen';
 import ContactScreen from '../screens/ContactScreen';
@@ -75,6 +77,8 @@ const linking = {
       ForumThread: 'forum/:topicId',
       MediaGallery: 'gallery',
       Updates: 'updates',
+      UpdateDetail: 'updates/:id',
+      Alerts: 'alerts',
       SearchResults: 'search',
       TownHalls: 'town-halls',
       Contact: 'contact',
@@ -106,6 +110,8 @@ const TITLES = {
   Forum: 'Discussion forums',
   MediaGallery: 'Media gallery',
   Updates: 'Service updates',
+  UpdateDetail: 'Service update',
+  Alerts: 'Service alerts',
   SearchResults: 'Search',
   TownHalls: 'Community meetings',
   Contact: 'Contact us',
@@ -160,6 +166,8 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="Forum" component={ForumScreen} options={{ title: TITLES.Forum }} />
         <Stack.Screen name="MediaGallery" component={MediaGalleryScreen} options={{ title: TITLES.MediaGallery }} />
         <Stack.Screen name="Updates" component={UpdatesScreen} options={{ title: TITLES.Updates }} />
+        <Stack.Screen name="UpdateDetail" component={UpdateDetailScreen} options={{ title: TITLES.UpdateDetail }} />
+        <Stack.Screen name="Alerts" component={AlertsScreen} options={{ title: TITLES.Alerts }} />
         <Stack.Screen name="SearchResults" component={SearchResultsScreen} options={{ title: TITLES.SearchResults }} />
         <Stack.Screen name="TownHalls" component={TownHallsScreen} options={{ title: TITLES.TownHalls }} />
         <Stack.Screen name="Contact" component={ContactScreen} options={{ title: TITLES.Contact }} />

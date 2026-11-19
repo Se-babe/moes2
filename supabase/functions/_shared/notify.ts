@@ -10,6 +10,7 @@ type Purpose = 'acknowledgement' | 'status_update' | 'announcement' | 'reminder'
 
 interface LogEntry {
   request_id?: string | null;
+  announcement_id?: string | null;
   channel: 'sms' | 'email';
   recipient: string;
   purpose: Purpose;
@@ -48,16 +49,16 @@ export function normalizeUgPhone(raw: string | null | undefined): string | null 
   return null;
 }
 
-export async function sendSms(rawTo: string, message: string, purpose: Purpose, requestId?: string | null) {
+export async function sendSms(rawTo: string, message: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null) {
   const to = normalizeUgPhone(rawTo);
   if (!to) {
-    await logNotification({ request_id: requestId, channel: 'sms', recipient: String(rawTo), purpose, status: 'failed', detail: 'invalid phone number' });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: String(rawTo), purpose, status: 'failed', detail: 'invalid phone number' });
     return false;
   }
   const apiKey = Deno.env.get('UGSMS_API_KEY');
   if (!apiKey) {
     console.log(`[notify] SMS skipped (UGSMS_API_KEY not set) to ${to}: ${message}`);
-    await logNotification({ request_id: requestId, channel: 'sms', recipient: to, purpose, status: 'skipped', detail: 'UGSMS_API_KEY not set' });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: to, purpose, status: 'skipped', detail: 'UGSMS_API_KEY not set' });
     return false;
   }
   const senderId = Deno.env.get('UGSMS_SENDER_ID') || undefined;
@@ -82,18 +83,18 @@ export async function sendSms(rawTo: string, message: string, purpose: Purpose, 
       const data = JSON.parse(text);
       if (data?.success === false || data?.error) ok = false;
     } catch { /* non-JSON body: rely on HTTP status */ }
-    await logNotification({ request_id: requestId, channel: 'sms', recipient: to, purpose, status: ok ? 'sent' : 'failed', detail: text });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: to, purpose, status: ok ? 'sent' : 'failed', detail: text });
     return ok;
   } catch (e) {
-    await logNotification({ request_id: requestId, channel: 'sms', recipient: to, purpose, status: 'failed', detail: String(e) });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: to, purpose, status: 'failed', detail: String(e) });
     return false;
   }
 }
 
-export async function sendEmail(to: string, subject: string, html: string, purpose: Purpose, requestId?: string | null) {
+export async function sendEmail(to: string, subject: string, html: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   if (!apiKey) {
-    await logNotification({ request_id: requestId, channel: 'email', recipient: to, purpose, status: 'skipped', detail: 'RESEND_API_KEY not set' });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'email', recipient: to, purpose, status: 'skipped', detail: 'RESEND_API_KEY not set' });
     return false;
   }
   const from = Deno.env.get('RESEND_FROM') || 'NWSC e-Participation <onboarding@resend.dev>';
@@ -104,10 +105,10 @@ export async function sendEmail(to: string, subject: string, html: string, purpo
       body: JSON.stringify({ from, to: [to], subject, html }),
     });
     const text = await res.text();
-    await logNotification({ request_id: requestId, channel: 'email', recipient: to, purpose, status: res.ok ? 'sent' : 'failed', detail: text });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'email', recipient: to, purpose, status: res.ok ? 'sent' : 'failed', detail: text });
     return res.ok;
   } catch (e) {
-    await logNotification({ request_id: requestId, channel: 'email', recipient: to, purpose, status: 'failed', detail: String(e) });
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'email', recipient: to, purpose, status: 'failed', detail: String(e) });
     return false;
   }
 }

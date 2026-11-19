@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../services/supabaseClient';
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import StaffGate from '../../components/staff/StaffGate';
 import RequestQueue from '../../components/staff/RequestQueue';
 import NotificationBell from '../../components/staff/NotificationBell';
+import AnnouncementsManager from '../../components/staff/AnnouncementsManager';
 import { Container, Card, Button, Grid, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SPACE, TYPE, gradient } from '../../theme';
 import { fetchDepartments, fetchStaff, fetchWorkload, OPEN_STATUSES } from '../../services/staff';
@@ -34,6 +35,7 @@ function Portal() {
   const [workload, setWorkload] = useState([]);
   const [kpis, setKpis] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [section, setSection] = useState('queue');
 
   const isSupervisor = user.role === 'supervisor' || user.role === 'admin';
   const myDept = departments.find((d) => d.id === user.department_id);
@@ -113,9 +115,20 @@ function Portal() {
           <Kpi icon="checkmark-done-outline" label="Resolved this week" value={kpis.resolved} tone={COLORS.success} />
         </Grid>
 
+        <View style={styles.sections} accessibilityRole="tablist">
+          {[['queue', 'Work queue', 'file-tray-full-outline'], ['announcements', 'Announcements', 'megaphone-outline']].map(([k, label, icon]) => (
+            <Pressable key={k} onPress={() => setSection(k)} style={[styles.section, section === k && styles.sectionOn]} accessibilityRole="tab" accessibilityState={{ selected: section === k }}>
+              <Ionicons name={icon} size={18} color={section === k ? COLORS.primary : COLORS.gray500} />
+              <Text style={[styles.sectionText, section === k && { color: COLORS.primary }]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {section === 'announcements' ? (
+          <View style={{ marginTop: SPACE.xl }}><AnnouncementsManager user={user} /></View>
+        ) : (
         <View style={[styles.cols, !isDesktop && { flexDirection: 'column' }]}>
           <View style={{ flex: 3 }}>
-            <Text style={[TYPE.h2, { marginBottom: SPACE.lg }]}>Work queue</Text>
             <RequestQueue
               user={user}
               scopes={scopes}
@@ -149,6 +162,7 @@ function Portal() {
             </View>
           )}
         </View>
+        )}
       </Container>
       <View style={{ height: 64 }} />
     </ScrollView>
@@ -174,6 +188,10 @@ const styles = StyleSheet.create({
   kpiIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   kpiValue: { fontFamily: FONT, fontSize: 26, fontWeight: '800', color: COLORS.gray900 },
   cols: { flexDirection: 'row', gap: SPACE.xl, marginTop: SPACE.xl, alignItems: 'flex-start' },
+  sections: { flexDirection: 'row', gap: 4, marginTop: SPACE.xl, borderBottomWidth: 1, borderBottomColor: COLORS.gray200 },
+  section: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 3, borderBottomColor: 'transparent', marginBottom: -1 },
+  sectionOn: { borderBottomColor: COLORS.primary },
+  sectionText: { fontFamily: FONT, fontSize: 15, fontWeight: '700', color: COLORS.gray500 },
   wlRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: FONT, fontWeight: '800', color: COLORS.primary, fontSize: 13 },

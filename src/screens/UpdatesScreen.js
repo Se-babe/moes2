@@ -1,85 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../services/supabaseClient';
-import { COLORS, FONT } from '../theme';
-import { PageHeader, Container, EmptyState } from '../components/ui';
+import { useNavigation } from '@react-navigation/native';
+import { PageHeader, Container, Card, Button, EmptyState, Loading, useBreakpoint } from '../components/ui';
 import Footer from '../components/Footer';
+import AnnouncementCard from '../components/AnnouncementCard';
+import { COLORS, FONT, RADIUS, SPACE, TYPE } from '../theme';
+import { fetchPublished, fetchAreas, ANNOUNCEMENT_CATEGORIES } from '../services/announcements';
 
-
-const CATEGORY_STYLE = {
-  Announcement: { color: '#0B5FA5', bg: '#EEF2FF', icon: 'megaphone-outline' },
-  Feature: { color: '#0F766E', bg: '#ECFDF5', icon: 'sparkles-outline' },
-  Policy: { color: '#B45309', bg: '#FFFBEB', icon: 'document-text-outline' },
-  Maintenance: { color: '#B91C1C', bg: '#FEF2F2', icon: 'construct-outline' },
-};
-
-const timeAgo = (dateStr) => {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days === 0) return 'Today';
-  if (days === 1) return '1 day ago';
-  if (days < 30) return `${days} days ago`;
-  return new Date(dateStr).toDateString();
-};
+function Chip({ label, active, onPress }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]} accessibilityRole="button" accessibilityState={{ selected: active }}>
+      <Text style={[styles.chipText, active && { color: '#fff' }]}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export default function UpdatesScreen() {
-  const [updates, setUpdates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+  const { isDesktop } = useBreakpoint();
+  const [items, setItems] = useState(null);
+  const [areas, setAreas] = useState([]);
+  const [area, setArea] = useState(null);
+  const [category, setCategory] = useState(null);
 
-  useEffect(() => {
-    fetchUpdates();
-  }, []);
+  const load = useCallback(() => {
+    setItems(null);
+    fetchPublished({ area, category }).then(setItems).catch(() => setItems([]));
+  }, [area, category]);
 
-  const fetchUpdates = async () => {
-    setLoading(true);
-    const { data } = await supabase.from('updates').select('*').order('created_at', { ascending: false });
-    if (data) setUpdates(data);
-    setLoading(false);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading updates...</Text>
-      </View>
-    );
-  }
+  useEffect(() => { fetchAreas().then(setAreas); }, []);
+  useEffect(() => { load(); }, [load]);
 
   return (
-    <ScrollView style={styles.container}>
-      <PageHeader title="Service updates" subtitle="Official NWSC service updates, planned interruptions and restorations. Each update shows when it was posted." icon="megaphone-outline" overline="Services" />
-      <Container style={styles.content}>
+    <ScrollView style={styles.page}>
+      <PageHeader
+        overline="Services"
+        title="Service updates"
+        subtitle="Official NWSC Jinja announcements: planned interruptions, emergencies, restorations and service notices."
+        icon="megaphone-outline"
+      />
+      <Container style={[styles.layout, !isDesktop && { flexDirection: 'column' }]}>
+        <View style={{ flex: 2, width: '100%', gap: SPACE.lg }}>
+          <Card style={{ gap: SPACE.md }}>
+            <Text style={TYPE.label}>Area</Text>
+            <View style={styles.chips}>
+              <Chip label="All areas" active={!area} onPress={() => setArea(null)} />
+              {areas.map((a) => <Chip key={a} label={a} active={area === a} onPress={() => setArea(a)} />)}
+            </View>
+            <Text style={TYPE.label}>Topic</Text>
+            <View style={styles.chips}>
+              <Chip label="All topics" active={!category} onPress={() => setCategory(null)} />
+              {ANNOUNCEMENT_CATEGORIES.map((c) => (
+                <Chip key={c.value} label={c.value} active={category === c.value} onPress={() => setCategory(c.value)} />
+              ))}
+            </View>
+          </Card>
 
-      {updates.length === 0 ? (
-        <EmptyState icon="megaphone-outline" title="No service updates right now" message="Planned interruptions, repairs and restorations will be posted here. For an urgent problem call 0800-200-977." />
-      ) : (
-        <View style={styles.timeline}>
-          {updates.map((item, index) => {
-            const style = CATEGORY_STYLE[item.category] || CATEGORY_STYLE.Announcement;
-            return (
-              <View key={item.id} style={styles.entry}>
-                <View style={styles.dotColumn}>
-                  <View style={[styles.dot, { backgroundColor: style.color }]} />
-                  {index < updates.length - 1 && <View style={styles.line} />}
-                </View>
-                <View style={styles.entryCard}>
-                  <View style={styles.entryHeader}>
-                    <View style={[styles.categoryBadge, { backgroundColor: style.bg }]}>
-                      <Ionicons name={style.icon} size={12} color={style.color} />
-                      <Text style={[styles.categoryText, { color: style.color }]}>{item.category || 'Announcement'}</Text>
-                    </View>
-                    <Text style={styles.entryDate}>{timeAgo(item.created_at)}</Text>
-                  </View>
-                  <Text style={styles.entryTitle}>{item.title}</Text>
-                  {item.description ? <Text style={styles.entryDesc}>{item.description}</Text> : null}
-                </View>
-              </View>
-            );
-          })}
+          {items === null ? (
+            <Loading label="Loading updates…" />
+          ) : items.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon="megaphone-outline"
+                title="No updates right now"
+                message="There are no announcements for this selection. For an urgent problem call 0800-200-977."
+              />
+            </Card>
+          ) : (
+            items.map((item) => (
+              <AnnouncementCard key={item.id} item={item} onOpen={(id) => navigation.navigate('UpdateDetail', { id })} />
+            ))
+          )}
         </View>
-      )}
+
+        <View style={{ flex: 1, width: '100%' }}>
+          <Card style={styles.alertCard}>
+            <View style={styles.alertIcon}><Ionicons name="notifications" size={22} color="#fff" /></View>
+            <Text style={[TYPE.h3, { marginTop: SPACE.md }]}>Get alerts for your area</Text>
+            <Text style={[TYPE.body, { color: COLORS.gray600, marginTop: 4 }]}>
+              Receive interruptions, emergencies and restoration notices by SMS or email — only for the areas you choose.
+            </Text>
+            <Button title="Subscribe to alerts" icon="add-circle-outline" style={{ marginTop: SPACE.lg }} onPress={() => navigation.navigate('Alerts')} />
+          </Card>
+        </View>
       </Container>
       <Footer />
     </ScrollView>
@@ -87,23 +91,12 @@ export default function UpdatesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  content: { padding: 20 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, color: COLORS.gray500 },
-  title: { fontSize: 28, fontWeight: 'bold', color: COLORS.primary },
-  sub: { fontSize: 16, color: COLORS.gray500, marginTop: 10, marginBottom: 20 },
-  emptyText: { color: COLORS.gray500, fontSize: 14, paddingVertical: 8 },
-  timeline: { marginTop: 4 },
-  entry: { flexDirection: 'row' },
-  dotColumn: { width: 20, alignItems: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6, marginTop: 6 },
-  line: { flex: 1, width: 2, backgroundColor: COLORS.gray200, marginTop: 2, marginBottom: -8 },
-  entryCard: { flex: 1, paddingBottom: 24, paddingLeft: 12 },
-  entryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  categoryBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  categoryText: { fontSize: 11, fontWeight: '700' },
-  entryDate: { fontSize: 12, color: COLORS.gray500 },
-  entryTitle: { fontSize: 16, fontWeight: '700', color: COLORS.gray800 },
-  entryDesc: { fontSize: 14, color: COLORS.gray500, marginTop: 4 },
+  page: { flex: 1, backgroundColor: COLORS.bg },
+  layout: { flexDirection: 'row', gap: SPACE.xl, alignItems: 'flex-start', marginTop: -24 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.gray200, backgroundColor: COLORS.white },
+  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  chipText: { fontFamily: FONT, fontSize: 13, fontWeight: '600', color: COLORS.gray700 },
+  alertCard: { backgroundColor: COLORS.primarySoft, borderColor: '#BFDBFE' },
+  alertIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
 });

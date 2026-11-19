@@ -11,23 +11,23 @@ export default function DateTimeField({ mode = 'date', value, onChangeText, plac
   const displayValue = mode === 'time' && value ? value.slice(0, 5) : value || '';
   return (
     <input
-      type={mode === 'time' ? 'time' : 'date'}
+      type={mode === 'time' ? 'time' : mode === 'datetime' ? 'datetime-local' : 'date'}
       value={displayValue}
       onChange={(e) => onChangeText && onChangeText(e.target.value)}
       style={{
         borderWidth: 1,
         borderStyle: 'solid',
-        borderColor: flatStyle.borderColor || '#26314A',
+        borderColor: flatStyle.borderColor || '#E2E8F0',
         borderRadius: flatStyle.borderRadius ?? 8,
         padding: 12,
         marginBottom: flatStyle.marginBottom ?? 12,
         fontSize: flatStyle.fontSize ?? 16,
-        color: flatStyle.color || '#E2E8F0',
-        backgroundColor: flatStyle.backgroundColor || '#1B2438',
+        color: flatStyle.color || '#0F172A',
+        backgroundColor: flatStyle.backgroundColor || '#FFFFFF',
         fontFamily: 'inherit',
         width: '100%',
         boxSizing: 'border-box',
-        colorScheme: 'dark',
+        colorScheme: 'light',
       }}
       {...rest}
     />

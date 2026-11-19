@@ -45,6 +45,7 @@ const SECTIONS = [
       { label: 'FAQs', screen: 'FAQs' },
       { label: 'Media Gallery', screen: 'MediaGallery' },
       { label: 'Service Updates', screen: 'Updates' },
+      { label: 'SMS & Email Alerts', screen: 'Alerts' },
     ],
   },
   {

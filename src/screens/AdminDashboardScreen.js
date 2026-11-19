@@ -15,11 +15,13 @@ import AdminConsultations from './admin/AdminConsultations';
 import AdminContent from './admin/AdminContent';
 import AdminForum from './admin/AdminForum';
 import AdminNotifications from './admin/AdminNotifications';
+import AnnouncementsManager from '../components/staff/AnnouncementsManager';
 
 const SECTIONS = [
   { group: 'Operations', items: [
     { key: 'overview', label: 'Overview', icon: 'grid-outline' },
     { key: 'requests', label: 'All requests', icon: 'file-tray-full-outline' },
+    { key: 'announcements', label: 'Announcements', icon: 'megaphone-outline' },
   ] },
   { group: 'Organisation', items: [
     { key: 'users', label: 'Staff & users', icon: 'people-outline' },
@@ -57,6 +59,7 @@ function Console() {
     switch (active) {
       case 'overview': return <AdminOverview onNavigateTab={go} onOpenRequest={openRequest} />;
       case 'requests': return <AdminRequests onOpenRequest={openRequest} />;
+      case 'announcements': return <AnnouncementsManager user={user} />;
       case 'users': return <AdminUsers currentUserId={user.id} />;
       case 'departments': return <AdminDepartments />;
       case 'consultations': return <AdminConsultations />;

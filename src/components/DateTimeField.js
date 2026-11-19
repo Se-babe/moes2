@@ -10,7 +10,7 @@ export default function DateTimeField({ mode = 'date', value, onChangeText, styl
       style={style}
       value={value || ''}
       onChangeText={onChangeText}
-      placeholder={mode === 'time' ? 'HH:MM' : 'YYYY-MM-DD'}
+      placeholder={mode === 'time' ? 'HH:MM' : mode === 'datetime' ? 'YYYY-MM-DDTHH:MM' : 'YYYY-MM-DD'}
       {...rest}
     />
   );
