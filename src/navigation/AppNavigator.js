@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -9,49 +9,53 @@ import {
   Platform,
   StatusBar,
   Text,
-  ActivityIndicator,
 } from 'react-native';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Linking from 'expo-linking';
 
-import { AuthProvider, useAuth } from '../context/AuthContext';
+import { AuthProvider } from '../context/AuthContext';
 import { PreferencesProvider } from '../context/PreferencesContext';
 import Header from '../components/Header';
 import ChatButton from '../components/ChatButton';
 
 import HomeScreen from '../screens/HomeScreen';
-import ConsultationsScreen from '../screens/ConsultationsScreen';
-import SurveysScreen from '../screens/SurveysScreen';
-import FeedbackScreen from '../screens/FeedbackScreen';
-import TrackRequestScreen from '../screens/TrackRequestScreen';
-import ProposeConsultationScreen from '../screens/ProposeConsultationScreen';
-import FAQScreen from '../screens/FAQScreen';
-import ChatBotScreen from '../screens/ChatBotScreen';
-import LoginScreen from '../screens/LoginScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import AdminDashboardScreen from '../screens/AdminDashboardScreen';
-import AboutScreen from '../screens/AboutScreen';
-import NewsScreen from '../screens/NewsScreen';
-import ForumScreen from '../screens/ForumScreen';
-import ForumThreadScreen from '../screens/ForumThreadScreen';
-import MediaGalleryScreen from '../screens/MediaGalleryScreen';
-import UpdatesScreen from '../screens/UpdatesScreen';
-import UpdateDetailScreen from '../screens/UpdateDetailScreen';
-import AlertsScreen from '../screens/AlertsScreen';
-import SurveyDetailScreen from '../screens/SurveyDetailScreen';
-import SearchResultsScreen from '../screens/SearchResultsScreen';
-import TownHallsScreen from '../screens/TownHallsScreen';
-import ContactScreen from '../screens/ContactScreen';
-import SitemapScreen from '../screens/SitemapScreen';
-import PrivacyScreen from '../screens/PrivacyScreen';
-import SetPasswordScreen from '../screens/SetPasswordScreen';
-import StaffPortalScreen from '../screens/staff/StaffPortalScreen';
-import StaffRequestScreen from '../screens/staff/StaffRequestScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
 import { COLORS, FONT } from '../theme';
+import { lazyScreen, preloadScreens } from './lazyScreen';
+
+// Every other page is downloaded the first time it is opened, so the first
+// visit only loads the home page. The common public pages are fetched in the
+// background once the home page is showing (see preloadScreens below).
+const ConsultationsScreen = lazyScreen(() => import('../screens/ConsultationsScreen'));
+const SurveysScreen = lazyScreen(() => import('../screens/SurveysScreen'));
+const FeedbackScreen = lazyScreen(() => import('../screens/FeedbackScreen'));
+const TrackRequestScreen = lazyScreen(() => import('../screens/TrackRequestScreen'));
+const ProposeConsultationScreen = lazyScreen(() => import('../screens/ProposeConsultationScreen'));
+const FAQScreen = lazyScreen(() => import('../screens/FAQScreen'));
+const ChatBotScreen = lazyScreen(() => import('../screens/ChatBotScreen'));
+const LoginScreen = lazyScreen(() => import('../screens/LoginScreen'));
+const ForgotPasswordScreen = lazyScreen(() => import('../screens/ForgotPasswordScreen'));
+const AdminDashboardScreen = lazyScreen(() => import('../screens/AdminDashboardScreen'));
+const AboutScreen = lazyScreen(() => import('../screens/AboutScreen'));
+const NewsScreen = lazyScreen(() => import('../screens/NewsScreen'));
+const ForumScreen = lazyScreen(() => import('../screens/ForumScreen'));
+const ForumThreadScreen = lazyScreen(() => import('../screens/ForumThreadScreen'));
+const MediaGalleryScreen = lazyScreen(() => import('../screens/MediaGalleryScreen'));
+const UpdatesScreen = lazyScreen(() => import('../screens/UpdatesScreen'));
+const UpdateDetailScreen = lazyScreen(() => import('../screens/UpdateDetailScreen'));
+const AlertsScreen = lazyScreen(() => import('../screens/AlertsScreen'));
+const SurveyDetailScreen = lazyScreen(() => import('../screens/SurveyDetailScreen'));
+const SearchResultsScreen = lazyScreen(() => import('../screens/SearchResultsScreen'));
+const TownHallsScreen = lazyScreen(() => import('../screens/TownHallsScreen'));
+const ContactScreen = lazyScreen(() => import('../screens/ContactScreen'));
+const SitemapScreen = lazyScreen(() => import('../screens/SitemapScreen'));
+const PrivacyScreen = lazyScreen(() => import('../screens/PrivacyScreen'));
+const SetPasswordScreen = lazyScreen(() => import('../screens/SetPasswordScreen'));
+const StaffPortalScreen = lazyScreen(() => import('../screens/staff/StaffPortalScreen'));
+const StaffRequestScreen = lazyScreen(() => import('../screens/staff/StaffRequestScreen'));
 
 const Stack = createStackNavigator();
 const { width, height } = Dimensions.get('window');
@@ -134,17 +138,14 @@ const TITLES = {
 const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'AdminDashboard', 'Login', 'ForgotPassword', 'SetPassword'];
 
 const AppNavigatorContent = ({ currentRoute }) => {
-  const { user, loading } = useAuth();
   const inWorkspace = WORKSPACE_ROUTES.includes(currentRoute);
   const [chatVisible, setChatVisible] = useState(false);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
+  // Public pages show straight away; staff pages wait for sign-in themselves
+  // (StaffGate). Fetch the pages citizens open most once the first page is up.
+  useEffect(() => {
+    preloadScreens([FeedbackScreen, TrackRequestScreen, UpdatesScreen, SurveysScreen, ConsultationsScreen, ForumScreen, AboutScreen, ContactScreen, FAQScreen]);
+  }, []);
 
   return (
     <View style={{ flex: 1 }}>
@@ -207,7 +208,7 @@ const AppNavigatorContent = ({ currentRoute }) => {
                   <Ionicons name="close" size={26} color={COLORS.white} />
                 </TouchableOpacity>
               </View>
-              <ChatBotScreen onClose={() => setChatVisible(false)} />
+              {chatVisible && <ChatBotScreen onClose={() => setChatVisible(false)} />}
             </View>
           </View>
         </View>
@@ -241,12 +242,6 @@ export default function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(4,31,58,0.45)',

@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { showAlert } from '../utils/alert';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { Picker } from '@react-native-picker/picker';

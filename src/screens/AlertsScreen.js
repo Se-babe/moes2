@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRoute } from '@react-navigation/native';
 import { PageHeader, Container, Card, Button, TextField, EmptyState, useBreakpoint } from '../components/ui';
 import Footer from '../components/Footer';

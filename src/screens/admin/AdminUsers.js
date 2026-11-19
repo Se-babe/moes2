@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Modal, ScrollView, Switch } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase, passwordSetupUrl } from '../../services/supabaseClient';
 import { Card, Button, Badge, Select, TextField, EmptyState, Loading, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';

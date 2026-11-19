@@ -14,7 +14,8 @@
     <meta name="twitter:card" content="summary" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
       html,
@@ -46,6 +47,18 @@
       input:focus, textarea:focus {
         outline: none;
       }
+      /* Shown instantly while the app script downloads; React replaces it. */
+      #boot {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 18px; color: #0A4D8C; font: 600 15px 'Inter', system-ui, sans-serif;
+      }
+      #boot .drop {
+        width: 44px; height: 44px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+        background: #0A4D8C; animation: boot-pulse 1.1s ease-in-out infinite;
+      }
+      #boot small { font-weight: 400; color: #475569; }
+      @keyframes boot-pulse { 50% { opacity: .45; } }
+      @media (prefers-reduced-motion: reduce) { #boot .drop { animation: none; } }
     </style>
   </head>
 
@@ -53,6 +66,6 @@
     <noscript>
       You need to enable JavaScript to use NWSC e-Participation. For help call toll-free 0800-200-977.
     </noscript>
-    <div id="root"></div>
+    <div id="root"><div id="boot" role="status" aria-live="polite"><div class="drop"></div><div>NWSC Jinja e-Participation</div><small>Loading…</small></div></div>
   </body>
 </html>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Card, Badge } from './ui';
 import ShareBar from './ShareBar';
 import { COLORS, FONT, SPACE, TYPE } from '../theme';

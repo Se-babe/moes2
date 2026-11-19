@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
 import { showAlert } from '../utils/alert';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase } from '../services/supabaseClient';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState } from '../components/ui';

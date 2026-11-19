@@ -8,3 +8,15 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    headers:
+      # File names under these paths change with every build, so browsers can
+      # keep them for a year and skip re-downloading on repeat visits.
+      - path: /_expo/static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache

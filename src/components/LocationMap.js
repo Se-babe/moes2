@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, Linking } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 // Native fallback: this app is currently deployed as a web build only (see
 // LocationMap.web.js for the real embedded map used there). Opens the

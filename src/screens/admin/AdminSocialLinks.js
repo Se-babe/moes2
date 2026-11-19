@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Switch, ActivityIndicator } from 'react-native';
 import { showAlert } from '../../utils/alert';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase } from '../../services/supabaseClient';
 import { ADMIN_COLORS as COLORS } from './adminTheme';
 

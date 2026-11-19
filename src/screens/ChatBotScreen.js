@@ -16,7 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { showAlert } from '../utils/alert';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabaseClient';
 import {

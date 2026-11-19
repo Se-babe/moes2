@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Linking, Platform, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { COLORS, FONT, RADIUS } from '../theme';
 
 /** Share an official update on WhatsApp, Facebook, X, or copy the link. */

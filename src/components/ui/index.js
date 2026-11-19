@@ -11,7 +11,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, TYPE, SPACE, RADIUS, SHADOW, LAYOUT, FONT, gradient } from '../../theme';
 import { usePreferences } from '../../context/PreferencesContext';

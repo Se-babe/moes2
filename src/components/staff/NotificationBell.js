@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { COLORS, FONT, RADIUS, SHADOW, TYPE } from '../../theme';
 import { EmptyState } from '../ui';
 import { fetchMyNotifications, markNotificationsRead, fmtDateTime } from '../../services/staff';

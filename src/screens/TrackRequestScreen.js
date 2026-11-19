@@ -9,7 +9,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';

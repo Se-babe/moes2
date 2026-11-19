@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { COLORS, FONT, RADIUS, SPACE, TYPE } from '../../theme';
 import { Badge, EmptyState, STATUS_TONE, useBreakpoint } from '../ui';
 import { fetchQueue, ALL_STATUSES, PRIORITY_TONE, dueInfo, fmtDateTime } from '../../services/staff';

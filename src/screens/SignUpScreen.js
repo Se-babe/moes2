@@ -13,7 +13,7 @@ import {
   FlatList,
 } from 'react-native';
 import { showAlert } from '../utils/alert';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container } from '../components/ui';

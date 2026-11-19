@@ -8,7 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase } from '../services/supabaseClient';
 import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState } from '../components/ui';

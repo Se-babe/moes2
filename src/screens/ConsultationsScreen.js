@@ -12,7 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import { showAlert } from '../utils/alert';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';

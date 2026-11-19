@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase } from '../../services/supabaseClient';
 import { Card, Button, Select, Grid, Loading, EmptyState, useBreakpoint } from '../ui';
 import BarList, { SERIES } from '../BarList';

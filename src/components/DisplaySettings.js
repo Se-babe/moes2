@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet, Switch } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePreferences } from '../context/PreferencesContext';
 import { LANGUAGES } from '../i18n';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../theme';

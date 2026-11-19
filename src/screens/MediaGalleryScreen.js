@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '../services/supabaseClient';
 import { COLORS, FONT } from '../theme';
