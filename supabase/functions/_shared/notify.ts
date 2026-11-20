@@ -5,36 +5,55 @@
 //   RESEND_API_KEY, RESEND_FROM                        — email
 //   UGSMS_API_KEY, UGSMS_SENDER_ID, UGSMS_DEFAULT_COUNTRY — SMS
 // A missing secret never throws: the attempt is logged as 'skipped'.
+//
+// A message that fails at the provider is put on the delivery queue
+// (public.notification_outbox) and retried by announcement-dispatch.
 
-type Purpose = 'acknowledgement' | 'status_update' | 'announcement' | 'reminder' | 'escalation';
+export type Purpose = 'acknowledgement' | 'status_update' | 'announcement' | 'reminder' | 'escalation' | 'review' | 'test';
+export type Channel = 'sms' | 'email' | 'whatsapp' | 'telegram' | 'facebook' | 'x';
+export type Outcome = { status: 'sent' | 'failed' | 'skipped'; detail: string; final?: boolean };
 
 interface LogEntry {
   request_id?: string | null;
   announcement_id?: string | null;
-  channel: 'sms' | 'email';
+  channel: Channel;
   recipient: string;
   purpose: Purpose;
   status: 'sent' | 'failed' | 'skipped';
   detail?: string;
 }
 
-export async function logNotification(entry: LogEntry) {
-  const url = Deno.env.get('SUPABASE_URL');
+function serviceHeaders() {
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !key) return;
+  return key ? { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' } : null;
+}
+
+export async function logNotification(entry: LogEntry | LogEntry[]) {
+  const url = Deno.env.get('SUPABASE_URL');
+  const headers = serviceHeaders();
+  if (!url || !headers) return;
+  const rows = (Array.isArray(entry) ? entry : [entry]).map((e) => ({ ...e, detail: e.detail?.slice(0, 500) ?? null }));
+  if (!rows.length) return;
   try {
-    await fetch(`${url}/rest/v1/notification_log`, {
-      method: 'POST',
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({ ...entry, detail: entry.detail?.slice(0, 500) ?? null }),
-    });
+    await fetch(`${url}/rest/v1/notification_log`, { method: 'POST', headers, body: JSON.stringify(rows) });
   } catch (e) {
     console.error('[notify] could not write notification_log', e);
+  }
+}
+
+/** Put a failed direct message on the delivery queue for another try. */
+async function queueRetry(row: Record<string, unknown>) {
+  const url = Deno.env.get('SUPABASE_URL');
+  const headers = serviceHeaders();
+  if (!url || !headers) return;
+  try {
+    await fetch(`${url}/rest/v1/notification_outbox`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...row, attempts: 1, not_before: new Date(Date.now() + 5 * 60_000).toISOString() }),
+    });
+  } catch (e) {
+    console.error('[notify] could not queue retry', e);
   }
 }
 
@@ -49,17 +68,17 @@ export function normalizeUgPhone(raw: string | null | undefined): string | null 
   return null;
 }
 
-export async function sendSms(rawTo: string, message: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null) {
-  const to = normalizeUgPhone(rawTo);
-  if (!to) {
-    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: String(rawTo), purpose, status: 'failed', detail: 'invalid phone number' });
-    return false;
-  }
+/**
+ * One UgSMS call for one or many numbers (already normalised). Logs one
+ * row per number.
+ */
+export async function deliverSms(numbers: string[], message: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null): Promise<Outcome> {
+  const log = (status: Outcome['status'], detail: string) =>
+    logNotification(numbers.map((to) => ({ request_id: requestId, announcement_id: announcementId, channel: 'sms' as const, recipient: to, purpose, status, detail })));
   const apiKey = Deno.env.get('UGSMS_API_KEY');
   if (!apiKey) {
-    console.log(`[notify] SMS skipped (UGSMS_API_KEY not set) to ${to}: ${message}`);
-    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: to, purpose, status: 'skipped', detail: 'UGSMS_API_KEY not set' });
-    return false;
+    await log('skipped', 'UGSMS_API_KEY not set');
+    return { status: 'skipped', detail: 'UGSMS_API_KEY not set' };
   }
   const senderId = Deno.env.get('UGSMS_SENDER_ID') || undefined;
   try {
@@ -71,7 +90,7 @@ export async function sendSms(rawTo: string, message: string, purpose: Purpose, 
       method: 'POST',
       headers: { 'X-API-Key': apiKey, Accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        numbers: to,
+        numbers: numbers.join(','),
         message_body: message,
         message,
         ...(senderId ? { sender_id: senderId, sender: senderId } : {}),
@@ -83,19 +102,37 @@ export async function sendSms(rawTo: string, message: string, purpose: Purpose, 
       const data = JSON.parse(text);
       if (data?.success === false || data?.error) ok = false;
     } catch { /* non-JSON body: rely on HTTP status */ }
-    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: to, purpose, status: ok ? 'sent' : 'failed', detail: text });
-    return ok;
+    await log(ok ? 'sent' : 'failed', text);
+    return { status: ok ? 'sent' : 'failed', detail: text };
   } catch (e) {
-    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: to, purpose, status: 'failed', detail: String(e) });
-    return false;
+    await log('failed', String(e));
+    return { status: 'failed', detail: String(e) };
   }
 }
 
-export async function sendEmail(to: string, subject: string, html: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null) {
+export async function smsOutcome(rawTo: string, message: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null): Promise<Outcome> {
+  const to = normalizeUgPhone(rawTo);
+  if (!to) {
+    await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'sms', recipient: String(rawTo), purpose, status: 'failed', detail: 'invalid phone number' });
+    return { status: 'failed', detail: 'invalid phone number', final: true };
+  }
+  return deliverSms([to], message, purpose, requestId, announcementId);
+}
+
+/** Send one SMS now; if the provider fails, it is retried from the queue. */
+export async function sendSms(rawTo: string, message: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null) {
+  const r = await smsOutcome(rawTo, message, purpose, requestId, announcementId);
+  if (r.status === 'failed' && !r.final) {
+    await queueRetry({ channel: 'sms', recipient: normalizeUgPhone(rawTo), purpose, request_id: requestId ?? null, body: message, priority: 2 });
+  }
+  return r.status === 'sent';
+}
+
+export async function emailOutcome(to: string, subject: string, html: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null): Promise<Outcome> {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   if (!apiKey) {
     await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'email', recipient: to, purpose, status: 'skipped', detail: 'RESEND_API_KEY not set' });
-    return false;
+    return { status: 'skipped', detail: 'RESEND_API_KEY not set' };
   }
   const from = Deno.env.get('RESEND_FROM') || 'NWSC e-Participation <onboarding@resend.dev>';
   try {
@@ -106,11 +143,21 @@ export async function sendEmail(to: string, subject: string, html: string, purpo
     });
     const text = await res.text();
     await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'email', recipient: to, purpose, status: res.ok ? 'sent' : 'failed', detail: text });
-    return res.ok;
+    // 4xx other than rate limiting means the address or message is the problem.
+    return { status: res.ok ? 'sent' : 'failed', detail: text, final: !res.ok && res.status >= 400 && res.status < 500 && res.status !== 429 };
   } catch (e) {
     await logNotification({ request_id: requestId, announcement_id: announcementId, channel: 'email', recipient: to, purpose, status: 'failed', detail: String(e) });
-    return false;
+    return { status: 'failed', detail: String(e) };
   }
+}
+
+/** Send one email now; if the provider fails, it is retried from the queue. */
+export async function sendEmail(to: string, subject: string, html: string, purpose: Purpose, requestId?: string | null, announcementId?: string | null) {
+  const r = await emailOutcome(to, subject, html, purpose, requestId, announcementId);
+  if (r.status === 'failed' && !r.final) {
+    await queueRetry({ channel: 'email', recipient: to, purpose, request_id: requestId ?? null, subject, html, priority: 2 });
+  }
+  return r.status === 'sent';
 }
 
 export function escapeHtml(s: string) {

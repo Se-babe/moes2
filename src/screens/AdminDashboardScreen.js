@@ -18,12 +18,14 @@ import AdminNotifications from './admin/AdminNotifications';
 import AnnouncementsManager from '../components/staff/AnnouncementsManager';
 import ReportsDashboard from '../components/staff/ReportsDashboard';
 import AdminSurveys from './admin/AdminSurveys';
+import AdminAlerts from './admin/AdminAlerts';
 
 const SECTIONS = [
   { group: 'Operations', items: [
     { key: 'overview', label: 'Overview', icon: 'grid-outline' },
     { key: 'requests', label: 'All requests', icon: 'file-tray-full-outline' },
     { key: 'announcements', label: 'Announcements', icon: 'megaphone-outline' },
+    { key: 'alerts', label: 'Citizen alerts', icon: 'notifications-outline' },
     { key: 'reports', label: 'Reports', icon: 'bar-chart-outline' },
   ] },
   { group: 'Organisation', items: [
@@ -64,6 +66,7 @@ function Console() {
       case 'overview': return <AdminOverview onNavigateTab={go} onOpenRequest={openRequest} />;
       case 'requests': return <AdminRequests onOpenRequest={openRequest} />;
       case 'announcements': return <AnnouncementsManager user={user} />;
+      case 'alerts': return <AdminAlerts />;
       case 'reports': return <ReportsDashboard user={user} />;
       case 'surveys': return <AdminSurveys />;
       case 'users': return <AdminUsers currentUserId={user.id} />;

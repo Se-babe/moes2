@@ -7,7 +7,7 @@ import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
 import {
   ANNOUNCEMENT_CATEGORIES, STATUS_META, categoryMeta, fetchAreas, fetchStaffAnnouncements,
-  saveAnnouncement, reviewAnnouncement, fmtDate,
+  saveAnnouncement, reviewAnnouncement, fmtDate, fetchDelivery, CHANNELS,
 } from '../../services/announcements';
 import { supabase } from '../../services/supabaseClient';
 
@@ -20,7 +20,42 @@ const toLocalInput = (iso) => {
 };
 const fromLocalInput = (v) => (v ? new Date(v).toISOString() : null);
 
-const EMPTY = { title: '', body: '', category: 'Service notice', areas: [], publish_at: '', expires_at: '', notify_sms: false, notify_email: true };
+const EMPTY = {
+  title: '', body: '', category: 'Service notice', areas: [], publish_at: '', expires_at: '', starts_at: '',
+  notify_sms: false, notify_whatsapp: false, notify_email: true, notify_social: true,
+};
+
+function ChannelSwitch({ icon, label, hint, value, onChange, locked }) {
+  return (
+    <View style={styles.switchRow}>
+      <Ionicons name={icon} size={18} color={value ? COLORS.primary : COLORS.gray400} />
+      <View style={{ flex: 1 }}>
+        <Text style={TYPE.label}>{label}</Text>
+        {hint ? <Text style={TYPE.small}>{hint}</Text> : null}
+      </View>
+      <Switch value={value} onValueChange={onChange} disabled={locked} accessibilityLabel={label} />
+    </View>
+  );
+}
+
+// "SMS 120 · Email 40 · Telegram posted · 35 waiting until 07:00 · 2 failed"
+function deliveryLine(rows) {
+  if (!rows?.length) return '';
+  const main = rows.filter((r) => r.purpose === 'announcement');
+  const sent = {};
+  let waiting = 0; let failed = 0; let next = null;
+  for (const r of rows.filter((x) => x.purpose !== 'review')) {
+    if (r.purpose === 'announcement') sent[r.channel] = (sent[r.channel] || 0) + r.sent;
+    waiting += r.queued; failed += r.failed;
+    if (r.next_at && (!next || r.next_at < next)) next = r.next_at;
+  }
+  const bits = main
+    .filter((r, i, all) => all.findIndex((x) => x.channel === r.channel) === i && sent[r.channel])
+    .map((r) => (['telegram', 'facebook', 'x'].includes(r.channel) ? `${CHANNELS[r.channel].label} posted` : `${CHANNELS[r.channel].label} ${sent[r.channel]}`));
+  if (waiting) bits.push(`${waiting} waiting${next && new Date(next) > new Date() ? ` until ${fmtDate(next)}` : ''}`);
+  if (failed) bits.push(`${failed} failed`);
+  return bits.join(' · ');
+}
 
 function Editor({ initial, areas, user, onClose, onSaved }) {
   const isReviewer = user.role === 'supervisor' || user.role === 'admin';
@@ -29,11 +64,14 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
     ...initial,
     publish_at: toLocalInput(initial?.publish_at),
     expires_at: toLocalInput(initial?.expires_at),
+    starts_at: toLocalInput(initial?.starts_at),
   });
   const [busy, setBusy] = useState(null);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const toggleArea = (a) => setForm((f) => ({ ...f, areas: f.areas.includes(a) ? f.areas.filter((x) => x !== a) : [...f.areas, a] }));
   const scheduled = form.publish_at && new Date(form.publish_at) > new Date();
+  const emergency = form.category === 'Emergency';
+  const planned = form.category === 'Planned interruption';
 
   const persist = async (status, then) => {
     if (form.title.trim().length < 3) return showAlert('Title needed', 'Give the announcement a clear title.');
@@ -48,6 +86,9 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
         status,
         publish_at: fromLocalInput(form.publish_at),
         expires_at: fromLocalInput(form.expires_at),
+        starts_at: planned ? fromLocalInput(form.starts_at) : null,
+        notify_sms: emergency || form.notify_sms,
+        notify_social: emergency || form.notify_social,
       }, user.id);
       if (then) await then(id);
       onSaved();
@@ -93,17 +134,30 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
           <DateTimeField mode="datetime" value={form.expires_at} onChangeText={set('expires_at')} />
         </View>
       </View>
-      <View style={styles.switchRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={TYPE.label}>Send SMS to subscribers</Text>
-          <Text style={TYPE.small}>Uses SMS credit — best for emergencies and interruptions.</Text>
+      {planned && (
+        <View style={{ marginTop: SPACE.lg }}>
+          <Text style={[TYPE.label, { marginBottom: 6 }]}>Interruption starts <Text style={TYPE.small}>(optional)</Text></Text>
+          <DateTimeField mode="datetime" value={form.starts_at} onChangeText={set('starts_at')} />
+          <Text style={[TYPE.small, { marginTop: 4 }]}>Subscribers also get a reminder about 2 hours before (or at 8 pm the evening before for early starts).</Text>
         </View>
-        <Switch value={form.notify_sms} onValueChange={set('notify_sms')} />
-      </View>
-      <View style={styles.switchRow}>
-        <Text style={[TYPE.label, { flex: 1 }]}>Send email to subscribers</Text>
-        <Switch value={form.notify_email} onValueChange={set('notify_email')} />
-      </View>
+      )}
+
+      <Text style={[TYPE.label, { marginTop: SPACE.xl, marginBottom: 2 }]}>Notify customers automatically when it goes live</Text>
+      {emergency && (
+        <Text style={[TYPE.small, { color: COLORS.danger }]}>Emergencies always go out by SMS and on social media, straight away — even at night.</Text>
+      )}
+      <ChannelSwitch icon={CHANNELS.sms.icon} label="SMS to subscribers" hint="Uses SMS credit — best for emergencies and interruptions."
+        value={emergency || form.notify_sms} onChange={set('notify_sms')} locked={emergency} />
+      <ChannelSwitch icon={CHANNELS.whatsapp.icon} label="WhatsApp to subscribers who chose it" hint="If WhatsApp can't reach someone, they get an SMS instead (when SMS is on)."
+        value={form.notify_whatsapp} onChange={set('notify_whatsapp')} />
+      <ChannelSwitch icon={CHANNELS.email.icon} label="Email to subscribers" value={form.notify_email} onChange={set('notify_email')} />
+      <ChannelSwitch icon="share-social-outline" label="Post on NWSC social media" hint="Telegram channel, Facebook page and X."
+        value={emergency || form.notify_social} onChange={set('notify_social')} locked={emergency} />
+      {!emergency && (form.notify_sms || form.notify_whatsapp) && (
+        <Text style={[TYPE.small, { marginTop: 2 }]}>
+          <Ionicons name="moon-outline" size={12} /> Texts that would arrive between 9 pm and 7 am wait until 7 am. Email and social posts go straight away.
+        </Text>
+      )}
 
       <View style={styles.actions}>
         <Button title="Cancel" variant="ghost" onPress={onClose} />
@@ -138,10 +192,16 @@ export default function AnnouncementsManager({ user }) {
   const [areas, setAreas] = useState([]);
   const [editing, setEditing] = useState(null);
   const [subscribers, setSubscribers] = useState(null);
+  const [delivery, setDelivery] = useState({});
 
   const load = useCallback(() => {
     setItems(null);
-    fetchStaffAnnouncements(filter, user.id).then(setItems).catch((e) => { setItems([]); showAlert('Could not load', e.message); });
+    fetchStaffAnnouncements(filter, user.id)
+      .then((rows) => {
+        setItems(rows);
+        fetchDelivery(rows.filter((a) => a.notified_at).map((a) => a.id)).then(setDelivery);
+      })
+      .catch((e) => { setItems([]); showAlert('Could not load', e.message); });
   }, [filter, user.id]);
 
   useEffect(() => { load(); }, [load]);
@@ -161,8 +221,8 @@ export default function AnnouncementsManager({ user }) {
       return;
     }
     const verb = decision === 'approve' ? (a.publish_at && new Date(a.publish_at) > new Date() ? 'Schedule' : 'Publish') : 'Archive';
-    showAlert(`${verb} "${a.title}"?`, decision === 'approve' && (a.notify_sms || a.notify_email)
-      ? 'Subscribers in the selected areas will be alerted when it goes live.' : undefined, [
+    showAlert(`${verb} "${a.title}"?`, decision === 'approve' && (a.notify_sms || a.notify_email || a.notify_whatsapp || a.notify_social)
+      ? 'Subscribers in the selected areas are alerted, and social posts go out, as soon as it goes live.' : undefined, [
       { text: 'Cancel', style: 'cancel' },
       { text: verb, onPress: () => reviewAnnouncement(a.id, decision).then(load).catch((e) => showAlert('Could not update', e.message)) },
     ]);
@@ -205,8 +265,10 @@ export default function AnnouncementsManager({ user }) {
               <View style={styles.badges}>
                 <Badge label={st.label} tone={st.tone} />
                 <Badge label={a.category} tone={meta.tone} icon={meta.icon} />
-                {a.notify_sms && <Badge label="SMS" icon="chatbubble-outline" />}
-                {a.notify_email && <Badge label="Email" icon="mail-outline" />}
+                {a.notify_sms && <Badge label="SMS" icon={CHANNELS.sms.icon} />}
+                {a.notify_whatsapp && <Badge label="WhatsApp" icon={CHANNELS.whatsapp.icon} />}
+                {a.notify_email && <Badge label="Email" icon={CHANNELS.email.icon} />}
+                {a.notify_social && <Badge label="Social" icon="share-social-outline" />}
               </View>
               <Text style={TYPE.small}>by {a.author_name || 'NWSC staff'}</Text>
             </View>
@@ -216,9 +278,15 @@ export default function AnnouncementsManager({ user }) {
               {a.areas?.length ? a.areas.join(', ') : 'All areas'}
               {a.status === 'scheduled' ? ` · Goes live ${fmtDate(a.publish_at)}` : ''}
               {a.status === 'published' ? ` · Published ${fmtDate(a.published_at)}` : ''}
-              {a.notified_at ? ` · Alerts sent to ${a.notify_count}` : ''}
+              {a.starts_at ? ` · Starts ${fmtDate(a.starts_at)}` : ''}
+              {a.notified_at ? ` · Alerts reached ${a.notify_count} subscriber${a.notify_count === 1 ? '' : 's'}` : ''}
               {a.expires_at ? ` · Removed after ${fmtDate(a.expires_at)}` : ''}
             </Text>
+            {deliveryLine(delivery[a.id]) ? (
+              <Text style={[TYPE.small, { color: COLORS.gray600 }]}>
+                <Ionicons name="paper-plane-outline" size={12} /> {deliveryLine(delivery[a.id])}
+              </Text>
+            ) : null}
             {a.status === 'rejected' && a.review_note ? <Text style={[TYPE.small, { color: COLORS.danger }]}>Reviewer: {a.review_note}</Text> : null}
             <View style={styles.actionsRow}>
               {canReview && <Button title={a.publish_at && new Date(a.publish_at) > new Date() ? 'Approve & schedule' : 'Approve & publish'} icon="checkmark" size="sm" onPress={() => review(a, 'approve')} />}
@@ -253,7 +321,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { fontFamily: FONT, fontSize: 13, fontWeight: '600', color: COLORS.gray600 },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  badges: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  badges: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', flexShrink: 1 },
   actionsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: SPACE.sm },
   reject: { flexDirection: 'row', gap: 8, padding: 10, borderRadius: RADIUS.md, backgroundColor: COLORS.dangerSoft, marginBottom: SPACE.lg },
   areas: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACE.lg },

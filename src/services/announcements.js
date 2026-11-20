@@ -65,6 +65,9 @@ export async function saveAnnouncement(row, userId) {
     expires_at: row.expires_at || null,
     notify_sms: !!row.notify_sms,
     notify_email: !!row.notify_email,
+    notify_whatsapp: !!row.notify_whatsapp,
+    notify_social: !!row.notify_social,
+    starts_at: row.category === 'Planned interruption' ? row.starts_at || null : null,
     status: row.status,
   };
   const res = row.id
@@ -86,10 +89,11 @@ export function dispatchAlerts() {
   supabase.functions.invoke('announcement-dispatch', { body: {} }).catch(() => {});
 }
 
-export async function subscribeAlerts({ name, phone, email, areas, categories, language }) {
+export async function subscribeAlerts({ name, phone, email, areas, categories, language, whatsapp }) {
   const { data, error } = await supabase.rpc('subscribe_alerts', {
     p_name: name || null, p_phone: phone || null, p_email: email || null,
     p_areas: areas || [], p_categories: categories || [], p_language: language || 'en',
+    p_whatsapp: !!whatsapp && !!phone,
   });
   if (error) throw error;
   return data;
@@ -99,6 +103,64 @@ export async function unsubscribeAlerts(token) {
   const { data, error } = await supabase.rpc('unsubscribe_alerts', { p_token: token });
   if (error) throw error;
   return !!data;
+}
+
+export const CHANNELS = {
+  sms: { label: 'SMS', icon: 'chatbubble-outline' },
+  whatsapp: { label: 'WhatsApp', icon: 'logo-whatsapp' },
+  email: { label: 'Email', icon: 'mail-outline' },
+  telegram: { label: 'Telegram', icon: 'paper-plane-outline' },
+  facebook: { label: 'Facebook', icon: 'logo-facebook' },
+  x: { label: 'X', icon: 'logo-x' },
+};
+
+/** Delivery counts per announcement: { [id]: [{ channel, purpose, queued, sent, failed, skipped, next_at }] } */
+export async function fetchDelivery(ids) {
+  if (!ids.length) return {};
+  const { data, error } = await supabase.rpc('announcement_delivery', { p_ids: ids });
+  if (error) return {};
+  const out = {};
+  for (const r of data || []) (out[r.announcement_id] ||= []).push(r);
+  return out;
+}
+
+// ---------- Admin: citizen alert channels ----------
+export async function fetchNotificationSummary(days = 7) {
+  const { data, error } = await supabase.rpc('notification_summary', { p_days: days });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchChannelStatus() {
+  const { data, error } = await supabase.functions.invoke('announcement-dispatch', { body: { action: 'status' } });
+  if (error) throw error;
+  return data;
+}
+
+export async function sendTestAlert(channel) {
+  const { data, error } = await supabase.functions.invoke('announcement-dispatch', { body: { action: 'test', channel } });
+  if (error) {
+    const msg = await error.context?.json?.().then((b) => b?.error).catch(() => null);
+    throw new Error(msg || error.message);
+  }
+  return data;
+}
+
+export async function retryFailedAlerts() {
+  const { data, error } = await supabase.rpc('retry_failed_notifications');
+  if (error) throw error;
+  dispatchAlerts();
+  return data;
+}
+
+export async function fetchRecentProblems(limit = 20) {
+  const { data, error } = await supabase.from('notification_outbox')
+    .select('id, channel, purpose, recipient, status, attempts, last_error, updated_at, announcement_id')
+    .in('status', ['failed', 'skipped'])
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
 }
 
 export const fmtDate = (d) =>
