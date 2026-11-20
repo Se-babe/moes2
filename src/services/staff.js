@@ -12,7 +12,7 @@ export const PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'];
 
 const REQUEST_COLUMNS =
   'id, reference_no, request_type, category, title, status, priority, created_at, updated_at, due_at, ' +
-  'escalation_level, department_id, assigned_to, first_response_at, resolved_at';
+  'escalation_level, department_id, assigned_to, first_response_at, resolved_at, source';
 
 /**
  * scope: 'mine' | 'department' | 'all'   status: 'open' | a status | 'all'

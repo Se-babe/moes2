@@ -83,6 +83,7 @@ export default function StaffNavbar({ active, children }) {
     <View style={styles.sidebar} accessibilityRole="navigation">
       <Text style={styles.sideHeading}>Workspace</Text>
       {sections.map((s) => <SideLink key={s.key} icon={s.icon} label={s.label} on={active === s.key} onPress={() => go(s.key)} />)}
+      <SideLink icon="call-outline" label="Log a call or walk-in" onPress={() => navigation.navigate('Feedback')} />
       <View style={{ flex: 1 }} />
       <View style={styles.sideFoot}>
         {user.role === 'admin' && (
@@ -151,6 +152,7 @@ export default function StaffNavbar({ active, children }) {
                 </Text>
               </View>
             </View>
+            <MenuItem icon="call-outline" label="Log a call or walk-in" onPress={() => { setMenuOpen(false); navigation.navigate('Feedback'); }} />
             <MenuItem icon="person-circle-outline" label="My profile" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'profile' }); }} />
             <MenuItem icon="lock-closed-outline" label="Password & security" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'security' }); }} />
             <MenuItem icon="options-outline" label="Preferences" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'preferences' }); }} />

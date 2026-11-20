@@ -8,6 +8,40 @@ import { ADMIN_COLORS as COLORS } from './adminTheme';
 
 const emptyPollForm = () => ({ consultationId: null, question: '', options: ['', ''] });
 
+// "You said, we did": tell the public what was done with their views.
+function OutcomeEditor({ item, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(item.outcome || '');
+  if (!open) {
+    return (
+      <TouchableOpacity style={styles.addPollBtn} onPress={() => setOpen(true)}>
+        <Ionicons name={item.outcome ? 'create-outline' : 'megaphone-outline'} size={16} color={COLORS.primary} />
+        <Text style={styles.addPollBtnText}>{item.outcome ? 'Edit outcome (you said, we did)' : 'Publish outcome (you said, we did)'}</Text>
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <View style={{ marginTop: 10, gap: 8 }}>
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        multiline
+        maxLength={4000}
+        placeholder="What did NWSC decide or change because of the public's views?"
+        style={{ minHeight: 90, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, color: COLORS.text, textAlignVertical: 'top' }}
+      />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => { onSave(item.id, text); setOpen(false); }}>
+          <Text style={styles.actionBtnText}>Save outcome</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.textMuted }]} onPress={() => setOpen(false)}>
+          <Text style={styles.actionBtnText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export default function AdminConsultations() {
   const [pending, setPending] = useState([]);
   const [active, setActive] = useState([]);
@@ -147,12 +181,19 @@ export default function AdminConsultations() {
     ]);
   };
 
+  const saveOutcome = async (id, outcome) => {
+    const { error } = await supabase.from('consultations').update({ outcome }).eq('id', id);
+    if (error) showAlert('Could not save', error.message);
+    else { showAlert(outcome.trim() ? 'Outcome published' : 'Outcome removed', outcome.trim() ? 'It now shows under "You said, we did" on the consultations page.' : undefined); fetchData(); }
+  };
+
   const renderPending = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.title}>{item.title}</Text>
       {item.description ? <Text style={styles.desc}>{item.description}</Text> : null}
       <Text style={styles.meta}>Proposed by: {item.proposer_email || 'Unknown'} {item.proposer_phone ? `· ${item.proposer_phone}` : ''}</Text>
       {item.closing_date && <Text style={styles.meta}>Closing date: {item.closing_date}</Text>}
+      {item.closing_date && new Date(item.closing_date) < new Date() || item.outcome ? <OutcomeEditor item={item} onSave={saveOutcome} /> : null}
       <View style={styles.actionRow}>
         <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => approve(item)}>
           <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
@@ -197,6 +238,7 @@ export default function AdminConsultations() {
           </TouchableOpacity>
         )}
 
+        <OutcomeEditor item={item} onSave={saveOutcome} />
         <TouchableOpacity style={[styles.actionBtn, styles.deactivateBtn]} onPress={() => deactivate(item.id)}>
           <Ionicons name="pause-circle-outline" size={16} color="#fff" />
           <Text style={styles.actionBtnText}>Deactivate</Text>

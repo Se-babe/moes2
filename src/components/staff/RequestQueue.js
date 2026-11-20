@@ -123,7 +123,7 @@ export default function RequestQueue({ user, scopes, initialScope, onOpen, depar
                     <View style={{ flex: 3, paddingRight: 12 }}>
                       <Text style={styles.title} numberOfLines={1}>{r.title}</Text>
                       <Text style={TYPE.small} numberOfLines={1}>
-                        {r.request_type} · {r.category} · {deptName[r.department_id] || 'No department'}
+                        {r.request_type}{r.source && r.source !== 'Online' ? ` (${r.source})` : ''} · {r.category} · {deptName[r.department_id] || 'No department'}
                       </Text>
                     </View>
                     <View style={{ flex: 1.1 }}><Badge label={r.priority} tone={PRIORITY_TONE[r.priority]} /></View>

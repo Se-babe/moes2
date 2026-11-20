@@ -12,6 +12,9 @@ import { isRateLimited } from '../_shared/ratelimit.ts';
 import { sendSms, sendEmail, escapeHtml, normalizeUgPhone } from '../_shared/notify.ts';
 
 const REQUEST_TYPES = ['Enquiry', 'Complaint', 'Suggestion', 'Compliment'];
+// How the request reached NWSC. Anything but 'Online' is logged by staff on
+// behalf of a customer (phone call, walk-in, community meeting…).
+const SOURCES = ['Online', 'Phone call', 'Walk-in', 'Community meeting', 'Field visit', 'Letter', 'Social media'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // If the caller is signed in, link the request to their account so it shows
@@ -36,7 +39,9 @@ Deno.serve(async (req) => {
     const {
       request_type = 'Complaint', title, description, category, image_url,
       latitude, longitude, location_text, contact_name, contact_phone, contact_email, language,
+      source = 'Online',
     } = await req.json();
+    if (!SOURCES.includes(source)) return json({ error: 'Invalid source.' }, 400);
     const lang = ['en', 'lg', 'xog'].includes(language) ? language : 'en';
 
     if (!title || !String(title).trim()) return json({ error: 'Title is required.' }, 400);
@@ -55,6 +60,20 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const userId = await getCallerId(req, supabaseUrl, serviceRoleKey);
+
+    // Only active staff may log a request received offline.
+    let loggedBy: string | null = null;
+    if (source !== 'Online') {
+      const p = userId
+        ? await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${userId}&select=role,is_active`, {
+          headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+        }).then((r) => (r.ok ? r.json() : []))
+        : [];
+      if (!p[0] || !['officer', 'supervisor', 'admin'].includes(p[0].role) || p[0].is_active === false) {
+        return json({ error: 'Only NWSC staff can log requests received by phone or in person.' }, 403);
+      }
+      loggedBy = userId;
+    }
 
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/feedback?select=id,reference_no`, {
       method: 'POST',
@@ -77,8 +96,11 @@ Deno.serve(async (req) => {
         contact_phone: phone || null,
         contact_email: email || null,
         status: 'Submitted',
-        user_id: userId ?? 'anonymous',
+        // A request logged by staff belongs to the customer, not the officer.
+        user_id: loggedBy ? 'anonymous' : userId ?? 'anonymous',
         language: lang,
+        source,
+        logged_by: loggedBy,
       }),
     });
 

@@ -20,6 +20,7 @@ import { COLORS, FONT } from '../theme';
 import { PageHeader, Container, EmptyState, useBreakpoint } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
+import Outcomes from '../components/Outcomes';
 import { useGuestIdentity, communityAction } from '../services/community';
 
 
@@ -501,6 +502,7 @@ export default function ConsultationsScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListFooterComponent={<Outcomes style={{ marginTop: 24 }} />}
             ListEmptyComponent={
               <EmptyState
                 icon="document-text-outline"

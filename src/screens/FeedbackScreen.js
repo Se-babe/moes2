@@ -25,6 +25,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DRAFT_KEY = 'nwsc_feedback_draft';
 import { COLORS, TYPE, SPACE, RADIUS, SHADOW, FONT } from '../theme';
 import { ORG } from '../config/org';
+import DictateButton from '../components/DictateButton';
+
+// How a request reached NWSC; staff pick one when logging for a customer.
+const OFFLINE_SOURCES = ['Phone call', 'Walk-in', 'Community meeting', 'Field visit', 'Letter', 'Social media'];
 
 const REQUEST_TYPES = [
   { value: 'Complaint', icon: 'alert-circle-outline', hint: 'Something is wrong with a service' },
@@ -65,7 +69,7 @@ function Choice({ active, onPress, icon, label, hint, compact }) {
         active && (compact ? styles.chipActive : styles.typeCardActive),
       ]}
     >
-      <Ionicons name={icon} size={compact ? 16 : 22} color={active ? (compact ? COLORS.primary : '#fff') : COLORS.primary} />
+      {icon ? <Ionicons name={icon} size={compact ? 16 : 22} color={active ? (compact ? COLORS.primary : '#fff') : COLORS.primary} /> : null}
       <View style={compact ? null : { marginTop: 8 }}>
         <Text style={[compact ? styles.chipText : styles.typeTitle, active && (compact ? { color: COLORS.primary } : { color: '#fff' })]}>{label}</Text>
         {hint && !compact ? <Text style={[styles.typeHint, active && { color: '#DBEAFE' }]}>{hint}</Text> : null}
@@ -78,6 +82,7 @@ export default function FeedbackScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
+  const isStaff = ['officer', 'supervisor', 'admin'].includes(user?.role);
   const { isDesktop } = useBreakpoint();
 
   const [requestType, setRequestType] = useState('Complaint');
@@ -93,6 +98,7 @@ export default function FeedbackScreen() {
   const [loading, setLoading] = useState(false);
   const [referenceNo, setReferenceNo] = useState(null);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [source, setSource] = useState('Phone call');
   const { t: tr, language } = usePreferences();
   const draftLoaded = React.useRef(false);
 
@@ -197,6 +203,7 @@ export default function FeedbackScreen() {
           contact_phone: contactPhone.trim() || null,
           contact_email: contactEmail.trim() || null,
           language,
+          source: isStaff ? source : 'Online',
         },
       });
       if (error) {
@@ -280,6 +287,21 @@ export default function FeedbackScreen() {
 
         <Container style={[styles.layout, !isDesktop && { flexDirection: 'column' }]}>
           <Card elevated style={[styles.formCard, isDesktop && { flex: 2 }]}>
+            {isStaff && (
+              <View style={styles.staffLog}>
+                <Text style={[TYPE.label, { color: COLORS.primary }]}>
+                  <Ionicons name="id-card-outline" size={14} /> Logging a request for a customer
+                </Text>
+                <Text style={[TYPE.small, { marginBottom: 8 }]}>
+                  Enter the customer’s own contact details — they get the reference number and updates. How did it reach us?
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {OFFLINE_SOURCES.map((s) => (
+                    <Choice key={s} compact active={source === s} onPress={() => setSource(s)} label={s} />
+                  ))}
+                </View>
+              </View>
+            )}
             {/* Step 1 */}
             {draftRestored && (
               <View style={styles.draft}>
@@ -325,6 +347,7 @@ export default function FeedbackScreen() {
               error={errors.description}
               hint={`${description.length}/${MAX_DESC}`}
             />
+            <DictateButton language={language} onText={(t) => setDescription((d) => `${d ? `${d} ` : ''}${t}`.slice(0, MAX_DESC))} />
             <TextField
               label={tr('form.location')}
               placeholder={tr('form.locationPlaceholder')}
@@ -465,6 +488,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.dangerSoft, borderWidth: 1, borderColor: '#FECACA',
   },
   privacy: { flexDirection: 'row', gap: 10, paddingHorizontal: 4 },
+  staffLog: { padding: 12, borderRadius: RADIUS.md, backgroundColor: COLORS.primarySoft, marginBottom: SPACE.lg, gap: 2 },
   overlay: { flex: 1, backgroundColor: 'rgba(4,31,58,0.55)', alignItems: 'center', justifyContent: 'center', padding: SPACE.lg },
   success: { width: '100%', maxWidth: 440, backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACE.xxl, alignItems: 'center' },
   successIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.success, alignItems: 'center', justifyContent: 'center' },

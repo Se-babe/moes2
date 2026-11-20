@@ -106,8 +106,16 @@ export default function ForumThreadScreen() {
             </View>
           ) : (
             posts.map((post) => (
-              <View key={post.id} style={styles.postCard}>
-                <Text style={styles.postAuthor}>{post.author_name || 'Community member'}</Text>
+              <View key={post.id} style={[styles.postCard, post.is_official && styles.officialCard]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <Text style={styles.postAuthor}>{post.author_name || (post.is_official ? 'NWSC Jinja' : 'Community member')}</Text>
+                  {post.is_official && (
+                    <View style={styles.officialBadge} accessibilityLabel="Official answer from NWSC staff">
+                      <Ionicons name="shield-checkmark" size={12} color={COLORS.success} />
+                      <Text style={styles.officialText}>Official NWSC answer</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.postText}>{post.text}</Text>
                 <Text style={styles.postTime}>{new Date(post.created_at).toLocaleString()}</Text>
               </View>
@@ -157,6 +165,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.gray200,
   },
+  officialCard: { borderColor: COLORS.success, borderLeftWidth: 4 },
+  officialBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: COLORS.successSoft, marginBottom: 4 },
+  officialText: { fontFamily: FONT, fontSize: 11, fontWeight: '700', color: COLORS.success },
   postAuthor: { fontSize: 13, fontWeight: '700', color: COLORS.primary, marginBottom: 4 },
   postText: { fontSize: 15, color: COLORS.gray800, marginBottom: 6 },
   postTime: { fontSize: 11, color: COLORS.gray500 },

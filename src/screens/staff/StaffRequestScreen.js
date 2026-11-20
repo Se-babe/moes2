@@ -201,7 +201,7 @@ function Detail() {
             </View>
             <Text style={[TYPE.h2, { marginTop: SPACE.md }]}>{req.title}</Text>
             <Text style={[TYPE.small, { marginTop: 4 }]}>
-              {req.request_type} · {req.category} · Submitted {fmtDateTime(req.created_at)}
+              {req.request_type} · {req.category} · {req.source && req.source !== 'Online' ? `Received by ${req.source.toLowerCase()}` : 'Submitted online'} {fmtDateTime(req.created_at)}
             </Text>
             {req.description ? <Text style={[TYPE.body, { marginTop: SPACE.lg, color: COLORS.gray800 }]}>{req.description}</Text> : null}
             {req.location_text ? (

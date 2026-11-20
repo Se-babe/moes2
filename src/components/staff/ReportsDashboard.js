@@ -117,7 +117,7 @@ export default function ReportsDashboard({ user }) {
     setRows(null);
     const from = new Date(Date.now() - range.days * 86_400_000).toISOString();
     let q = supabase.from('feedback')
-      .select('reference_no, request_type, category, department_id, status, priority, created_at, first_response_at, resolved_at, escalation_level, satisfaction_rating')
+      .select('reference_no, request_type, category, department_id, status, priority, created_at, first_response_at, resolved_at, escalation_level, satisfaction_rating, source')
       .gte('created_at', from).order('created_at', { ascending: true }).limit(10000);
     if (dept) q = q.eq('department_id', dept);
     q.then(({ data }) => setRows(data || []));
@@ -175,6 +175,7 @@ export default function ReportsDashboard({ user }) {
       buckets,
       byType: group((x) => x.request_type),
       byCategory: group((x) => x.category),
+      bySource: group((x) => x.source || 'Online'),
       byDept: group((x) => deptName[x.department_id]),
     };
   }, [rows, range, deptName]);
@@ -185,6 +186,7 @@ export default function ReportsDashboard({ user }) {
     { label: 'Reference', key: 'reference_no' },
     { label: 'Type', key: 'request_type' },
     { label: 'Category', key: 'category' },
+    { label: 'Received via', value: (x) => x.source || 'Online' },
     { label: 'Department', value: (x) => deptName[x.department_id] || '' },
     { label: 'Priority', key: 'priority' },
     { label: 'Status', key: 'status' },
@@ -206,7 +208,7 @@ export default function ReportsDashboard({ user }) {
       <div class="kpis">${kpi('Requests received', r.total)}${kpi('Resolved', `${r.resolved} (${pct(r.resolved, r.total)})`)}${kpi('Median first response', fmtH(r.medFirst))}${kpi('Median time to resolve', fmtH(r.medResolve))}
       ${kpi('Resolved within target', pct(r.onTime, r.resolved))}${kpi('Escalated', r.escalated)}${kpi('Customer satisfaction', r.avgSat ? r.avgSat.toFixed(1) + ' / 5' : '—')}${kpi('Ratings received', r.rated)}</div>
       <h2>Trend</h2><table><tr><th>Period</th><th class="num">Received</th><th class="num">Resolved</th></tr>${r.buckets.map((b) => `<tr><td>${escapeHtml(b.label)}</td><td class="num">${b.received}</td><td class="num">${b.resolved}</td></tr>`).join('')}</table>
-      ${table('By type', r.byType)}${table('By category', r.byCategory)}${isAdmin && !dept ? table('By department', r.byDept) : ''}`);
+      ${table('By type', r.byType)}${table('By category', r.byCategory)}${table('How requests reached us', r.bySource)}${isAdmin && !dept ? table('By department', r.byDept) : ''}`);
     if (!ok) exportCsv();
   };
 
@@ -276,6 +278,12 @@ export default function ReportsDashboard({ user }) {
           <Card>
             <Text style={[TYPE.h3, { marginBottom: SPACE.md }]}>By category</Text>
             <BarList rows={r.byCategory.map((g) => ({ label: g.label, value: g.value, note: `· ${pct(g.resolved, g.value)} resolved` }))} />
+          </Card>
+
+          <Card>
+            <Text style={[TYPE.h3, { marginBottom: 2 }]}>How requests reached us</Text>
+            <Text style={[TYPE.small, { marginBottom: SPACE.md }]}>Online submissions and those logged by staff from calls, walk-ins and community meetings.</Text>
+            <BarList rows={r.bySource.map((g) => ({ label: g.label, value: g.value, note: `· ${pct(g.resolved, g.value)} resolved` }))} />
           </Card>
 
           {isAdmin && !dept && (
