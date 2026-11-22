@@ -7,10 +7,16 @@ import { Avatar, useBreakpoint } from '../ui';
 import NotificationBell from './NotificationBell';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE, LAYOUT } from '../../theme';
 
-const ROLE_LABEL = { officer: 'Officer', supervisor: 'Supervisor', admin: 'Administrator' };
+const ROLE_LABEL = { officer: 'Officer', supervisor: 'Supervisor', admin: 'Administrator', hr: 'Human Resources' };
 
 /** The sections of the staff workspace, filtered by role. */
 export function staffSections(role) {
+  if (role === 'hr') {
+    return [
+      { key: 'hr', label: 'HR dashboard', icon: 'people-circle-outline' },
+      { key: 'settings', label: 'Settings', icon: 'settings-outline' },
+    ];
+  }
   const supervisor = role === 'supervisor' || role === 'admin';
   return [
     { key: 'queue', label: 'Work queue', icon: 'file-tray-full-outline' },
@@ -45,6 +51,7 @@ export default function StaffNavbar({ active, children }) {
   const go = (key) => {
     setMenuOpen(false);
     if (key === 'settings') navigation.navigate('StaffSettings');
+    else if (key === 'hr') navigation.navigate('HRDashboard');
     else navigation.navigate('StaffPortal', { tab: key });
   };
   const name = user.full_name || user.email;
@@ -83,7 +90,7 @@ export default function StaffNavbar({ active, children }) {
     <View style={styles.sidebar} accessibilityRole="navigation">
       <Text style={styles.sideHeading}>Workspace</Text>
       {sections.map((s) => <SideLink key={s.key} icon={s.icon} label={s.label} on={active === s.key} onPress={() => go(s.key)} />)}
-      <SideLink icon="call-outline" label="Log a call or walk-in" onPress={() => navigation.navigate('Feedback')} />
+      {user.role !== 'hr' && <SideLink icon="call-outline" label="Log a call or walk-in" onPress={() => navigation.navigate('Feedback')} />}
       <View style={{ flex: 1 }} />
       <View style={styles.sideFoot}>
         {user.role === 'admin' && (
@@ -152,7 +159,7 @@ export default function StaffNavbar({ active, children }) {
                 </Text>
               </View>
             </View>
-            <MenuItem icon="call-outline" label="Log a call or walk-in" onPress={() => { setMenuOpen(false); navigation.navigate('Feedback'); }} />
+            {user.role !== 'hr' && <MenuItem icon="call-outline" label="Log a call or walk-in" onPress={() => { setMenuOpen(false); navigation.navigate('Feedback'); }} />}
             <MenuItem icon="person-circle-outline" label="My profile" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'profile' }); }} />
             <MenuItem icon="lock-closed-outline" label="Password & security" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'security' }); }} />
             <MenuItem icon="options-outline" label="Preferences" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'preferences' }); }} />

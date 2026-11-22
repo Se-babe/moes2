@@ -40,6 +40,7 @@ const ChatBotScreen = lazyScreen(() => import('../screens/ChatBotScreen'));
 const LoginScreen = lazyScreen(() => import('../screens/LoginScreen'));
 const ForgotPasswordScreen = lazyScreen(() => import('../screens/ForgotPasswordScreen'));
 const AdminDashboardScreen = lazyScreen(() => import('../screens/AdminDashboardScreen'));
+const HRDashboardScreen = lazyScreen(() => import('../screens/HRDashboardScreen'));
 const AboutScreen = lazyScreen(() => import('../screens/AboutScreen'));
 const NewsScreen = lazyScreen(() => import('../screens/NewsScreen'));
 const ForumScreen = lazyScreen(() => import('../screens/ForumScreen'));
@@ -107,6 +108,7 @@ const linking = {
       Contact: 'contact',
       Sitemap: 'sitemap',
       AdminDashboard: 'admin',
+      HRDashboard: 'hr',
       Privacy: 'privacy',
       SetPassword: 'set-password',
       StaffPortal: 'staff',
@@ -143,6 +145,7 @@ const TITLES = {
   Sitemap: 'Sitemap',
   ForumThread: 'Discussion',
   AdminDashboard: 'Admin console',
+  HRDashboard: 'HR dashboard',
   Privacy: 'Privacy & terms',
   SetPassword: 'Set your password',
   StaffPortal: 'Staff portal',
@@ -153,7 +156,7 @@ const TITLES = {
 
 // Staff and admin work areas get a focused layout without the public header
 // and assistant button.
-const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'StaffSettings', 'AdminDashboard', 'Login', 'ForgotPassword', 'SetPassword'];
+const WORKSPACE_ROUTES = ['StaffPortal', 'StaffRequest', 'StaffSettings', 'AdminDashboard', 'HRDashboard', 'Login', 'ForgotPassword', 'SetPassword'];
 
 const AppNavigatorContent = ({ currentRoute }) => {
   const inWorkspace = WORKSPACE_ROUTES.includes(currentRoute);
@@ -198,6 +201,7 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="Sitemap" component={SitemapScreen} options={{ title: TITLES.Sitemap }} />
         <Stack.Screen name="ForumThread" component={ForumThreadScreen} options={{ title: TITLES.ForumThread }} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: TITLES.AdminDashboard }} />
+        <Stack.Screen name="HRDashboard" component={HRDashboardScreen} options={{ title: TITLES.HRDashboard }} />
         <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: TITLES.Privacy }} />
         <Stack.Screen name="SetPassword" component={SetPasswordScreen} options={{ title: TITLES.SetPassword }} />
         <Stack.Screen name="StaffPortal" component={StaffPortalScreen} options={{ title: TITLES.StaffPortal }} />

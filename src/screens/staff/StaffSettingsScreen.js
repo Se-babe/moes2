@@ -242,6 +242,7 @@ function PreferencesTab() {
 
   return (
     <View style={{ gap: SPACE.xl }}>
+      {user.role !== 'hr' && (
       <Card>
         <Text style={TYPE.h3}>Workspace</Text>
         <Text style={[TYPE.small, { marginTop: 4 }]}>Saved to your account, so they follow you to any device.</Text>
@@ -250,6 +251,7 @@ function PreferencesTab() {
         <Text style={styles.label}>Work queue shows first</Text>
         <Segment label="Default queue" value={prefs.default_queue || queueOptions[0].value} onChange={(v) => save({ default_queue: v })} options={queueOptions} />
       </Card>
+      )}
 
       <Card>
         <Text style={TYPE.h3}>Display</Text>
@@ -322,7 +324,7 @@ function Settings() {
 
 export default function StaffSettingsScreen() {
   return (
-    <StaffGate roles={['officer', 'supervisor', 'admin']}>
+    <StaffGate roles={['officer', 'supervisor', 'admin', 'hr']}>
       <StaffNavbar active="settings">
         <Settings />
       </StaffNavbar>

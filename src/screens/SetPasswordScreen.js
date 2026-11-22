@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { homeForRole } from '../services/staff';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase, authLinkError, authLinkType } from '../services/supabaseClient';
@@ -37,9 +38,7 @@ export default function SetPasswordScreen() {
     }
     showAlert('Password saved', 'You can now sign in with your email and this password.');
     const role = user?.role;
-    if (role === 'admin') navigation.navigate('AdminDashboard');
-    else if (role === 'officer' || role === 'supervisor') navigation.navigate('StaffPortal');
-    else navigation.navigate('Home');
+    navigation.navigate(homeForRole(role) || 'Home');
   };
 
   let body;

@@ -114,6 +114,7 @@ function Console() {
       {isDesktop && (
         <View style={styles.sideFoot}>
           <Button title="Staff portal" icon="briefcase-outline" variant="secondary" size="sm" full onPress={() => navigation.navigate('StaffPortal')} />
+          <Button title="HR dashboard" icon="people-circle-outline" variant="secondary" size="sm" full onPress={() => navigation.navigate('HRDashboard')} style={{ marginTop: 8 }} />
           <Button title="Sign out" icon="log-out-outline" variant="ghost" size="sm" full onPress={signOut} />
         </View>
       )}

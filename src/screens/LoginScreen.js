@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { homeForRole } from '../services/staff';
 import {
   View,
   Text,
@@ -33,8 +34,7 @@ export default function LoginScreen({ navigation }) {
     try {
       const { profile } = await signIn(email, password);
       const role = profile?.role;
-      if (role === 'admin') navigation.navigate('AdminDashboard');
-      else if (role === 'officer' || role === 'supervisor') navigation.navigate('StaffPortal');
+      if (homeForRole(role)) navigation.navigate(homeForRole(role));
       else {
         await signOut();
         showAlert('Staff only', 'This sign-in is for NWSC staff and administrators.');

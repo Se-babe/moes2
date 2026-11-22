@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { homeForRole } from '../services/staff';
 import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -53,7 +54,7 @@ function FooterLink({ label, onPress }) {
 export default function Footer() {
   const navigation = useNavigation();
   const { user, signOut } = useAuth();
-  const isStaff = user && ['officer', 'supervisor', 'admin'].includes(user.role);
+  const isStaff = user && !!homeForRole(user.role);
   const { isDesktop, isMobile } = useBreakpoint();
   const { t } = usePreferences();
   const [socialLinks, setSocialLinks] = useState([]);

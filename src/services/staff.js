@@ -6,6 +6,13 @@ import { supabase } from './supabaseClient';
 
 export const STAFF_ROLES = ['officer', 'supervisor', 'admin'];
 export const isStaffRole = (role) => STAFF_ROLES.includes(role);
+/** Everyone who signs in: request-handling staff plus HR. */
+export const WORKFORCE_ROLES = [...STAFF_ROLES, 'hr'];
+/** Each role's own workspace (null for public users). */
+export const homeForRole = (role) =>
+  role === 'admin' ? 'AdminDashboard' : role === 'hr' ? 'HRDashboard' : role === 'officer' || role === 'supervisor' ? 'StaffPortal' : null;
+export const homeLabelForRole = (role) =>
+  role === 'admin' ? 'Admin console' : role === 'hr' ? 'HR dashboard' : 'Staff portal';
 export const OPEN_STATUSES = ['Submitted', 'Assigned', 'In Progress', 'Escalated'];
 export const ALL_STATUSES = [...OPEN_STATUSES, 'Resolved', 'Closed'];
 export const PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'];

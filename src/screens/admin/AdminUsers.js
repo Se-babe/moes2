@@ -6,7 +6,7 @@ import { Card, Button, Badge, Select, TextField, EmptyState, Loading, Avatar, us
 import { pickAvatar, uploadAvatar, removeOldAvatars } from '../../services/profile';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
-import { fetchDepartments, STAFF_ROLES } from '../../services/staff';
+import { fetchDepartments, WORKFORCE_ROLES as STAFF_ROLES } from '../../services/staff';
 
 const ROLE_OPTIONS = [
   { value: 'citizen', label: 'Citizen', hint: 'Public user' },
@@ -14,12 +14,19 @@ const ROLE_OPTIONS = [
   { value: 'community_leader', label: 'Community leader', hint: 'Public user' },
   { value: 'officer', label: 'Officer', hint: 'Handles requests in their department' },
   { value: 'supervisor', label: 'Supervisor', hint: 'Oversees a department, receives escalations' },
+  { value: 'hr', label: 'Human Resources', hint: 'Manages staff accounts, departments and team performance' },
   { value: 'admin', label: 'Administrator', hint: 'Full control of the system' },
 ];
-const ROLE_TONE = { admin: 'danger', supervisor: 'warning', officer: 'brand' };
-const FILTERS = [['staff', 'Staff'], ['citizens', 'Public users'], ['inactive', 'Deactivated'], ['all', 'Everyone']];
+const ROLE_TONE = { admin: 'danger', supervisor: 'warning', officer: 'brand', hr: 'info' };
+// HR manages the workforce below administrators; administrators manage everyone.
+const HR_ROLES = ['officer', 'supervisor', 'hr'];
+const roleOptionsFor = (mode) => ROLE_OPTIONS.filter((r) => (mode === 'hr' ? HR_ROLES.includes(r.value) : true));
+const filtersFor = (mode) => (mode === 'hr'
+  ? [['staff', 'Active staff'], ['inactive', 'Deactivated'], ['all', 'All staff']]
+  : [['staff', 'Staff'], ['citizens', 'Public users'], ['inactive', 'Deactivated'], ['all', 'Everyone']]);
+const deptOptional = (role) => role === 'admin' || role === 'hr';
 
-function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
+function UserEditor({ target, departments, currentUserId, mode, onClose, onSaved }) {
   const [form, setForm] = useState({
     role: target.role || 'citizen',
     department_id: target.department_id || null,
@@ -68,8 +75,8 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
   const isStaff = STAFF_ROLES.includes(form.role);
 
   const save = async () => {
-    if (isSelf && (form.role !== 'admin' || !form.is_active)) {
-      showAlert('Not allowed', 'You cannot remove your own administrator access. Ask another administrator.');
+    if (isSelf && (form.role !== target.role || !form.is_active)) {
+      showAlert('Not allowed', 'You cannot change your own role or deactivate your own account. Ask another administrator.');
       return;
     }
     if (['officer', 'supervisor'].includes(form.role) && !form.department_id) {
@@ -106,11 +113,11 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
           )}
         </View>
       </View>
-      <Select label="Role" value={form.role} options={ROLE_OPTIONS} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
+      <Select label="Role" value={form.role} options={roleOptionsFor(mode)} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
       {isStaff && (
         <>
           <Select
-            label={form.role === 'admin' ? 'Department (optional)' : 'Department'}
+            label={deptOptional(form.role) ? 'Department (optional)' : 'Department'}
             value={form.department_id}
             options={[{ value: null, label: 'No department' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
             onChange={(v) => setForm((f) => ({ ...f, department_id: v }))}
@@ -144,7 +151,7 @@ function UserEditor({ target, departments, currentUserId, onClose, onSaved }) {
   );
 }
 
-function InviteForm({ departments, onClose, onSaved }) {
+function InviteForm({ departments, mode, onClose, onSaved }) {
   const [form, setForm] = useState({ email: '', full_name: '', role: 'officer', department_id: null, job_title: '' });
   const [saving, setSaving] = useState(false);
 
@@ -177,9 +184,9 @@ function InviteForm({ departments, onClose, onSaved }) {
       </Text>
       <TextField label="Work email" required value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" placeholder="name@nwsc.co.ug" />
       <TextField label="Full name" value={form.full_name} onChangeText={(v) => setForm((f) => ({ ...f, full_name: v }))} placeholder="e.g. Grace Namutebi" />
-      <Select label="Role" value={form.role} options={ROLE_OPTIONS.filter((r) => STAFF_ROLES.includes(r.value))} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
+      <Select label="Role" value={form.role} options={roleOptionsFor(mode).filter((r) => STAFF_ROLES.includes(r.value))} onChange={(v) => setForm((f) => ({ ...f, role: v }))} />
       <Select
-        label={form.role === 'admin' ? 'Department (optional)' : 'Department'}
+        label={deptOptional(form.role) ? 'Department (optional)' : 'Department'}
         value={form.department_id}
         options={[{ value: null, label: 'Choose a department' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
         onChange={(v) => setForm((f) => ({ ...f, department_id: v }))}
@@ -193,7 +200,7 @@ function InviteForm({ departments, onClose, onSaved }) {
   );
 }
 
-export default function AdminUsers({ currentUserId }) {
+export default function AdminUsers({ currentUserId, mode = 'admin' }) {
   const { isDesktop } = useBreakpoint();
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -220,7 +227,16 @@ export default function AdminUsers({ currentUserId }) {
 
   const deptName = useMemo(() => Object.fromEntries(departments.map((d) => [d.id, d.name])), [departments]);
 
+  const FILTERS = filtersFor(mode);
+  const open = (u) => {
+    if (mode === 'hr' && !HR_ROLES.includes(u.role)) {
+      showAlert('Managed by administrators', 'Administrator accounts can only be changed by another administrator.');
+      return;
+    }
+    setEditing(u);
+  };
   const shown = users.filter((u) => {
+    if (mode === 'hr' && !STAFF_ROLES.includes(u.role)) return false;
     const staff = STAFF_ROLES.includes(u.role);
     if (filter === 'staff' && (!staff || u.is_active === false)) return false;
     if (filter === 'citizens' && staff) return false;
@@ -254,7 +270,7 @@ export default function AdminUsers({ currentUserId }) {
         ) : shown.map((u, i) => (
           <Pressable
             key={u.id}
-            onPress={() => setEditing(u)}
+            onPress={() => open(u)}
             style={({ hovered }) => [styles.row, i > 0 && styles.rowBorder, hovered && { backgroundColor: COLORS.gray50 }, u.is_active === false && { opacity: 0.6 }]}
             accessibilityRole="button"
             accessibilityLabel={`Edit ${u.full_name || u.email}`}
@@ -275,7 +291,7 @@ export default function AdminUsers({ currentUserId }) {
               <Badge label={(ROLE_OPTIONS.find((r) => r.value === u.role) || { label: u.role || 'citizen' }).label} tone={ROLE_TONE[u.role] || 'neutral'} />
               {u.is_active === false && <Badge label="Deactivated" tone="neutral" />}
             </View>
-            <Ionicons name="create-outline" size={18} color={COLORS.gray400} />
+            <Ionicons name={mode === 'hr' && !HR_ROLES.includes(u.role) ? 'lock-closed-outline' : 'create-outline'} size={18} color={COLORS.gray400} />
           </Pressable>
         ))}
       </Card>
@@ -286,9 +302,9 @@ export default function AdminUsers({ currentUserId }) {
           <ScrollView contentContainerStyle={styles.overlayInner}>
             <View style={[styles.modal, SHADOW.lg]}>
               {editing && (
-                <UserEditor target={editing} departments={departments} currentUserId={currentUserId} onClose={() => setEditing(null)} onSaved={load} />
+                <UserEditor target={editing} departments={departments} currentUserId={currentUserId} mode={mode} onClose={() => setEditing(null)} onSaved={load} />
               )}
-              {inviting && <InviteForm departments={departments} onClose={() => setInviting(false)} onSaved={load} />}
+              {inviting && <InviteForm departments={departments} mode={mode} onClose={() => setInviting(false)} onSaved={load} />}
             </View>
           </ScrollView>
         </View>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { homeForRole, homeLabelForRole } from '../services/staff';
 import {
   View,
   Text,
@@ -126,7 +127,7 @@ export default function Header() {
     navigation.navigate('SearchResults', { query: q });
   };
 
-  const isStaff = user && ['officer', 'supervisor', 'admin'].includes(user.role);
+  const isStaff = user && !!homeForRole(user.role);
   const tollFree = ORG.phones[0];
   const { t } = usePreferences();
   // Menu labels in the visitor's chosen language.
@@ -199,11 +200,11 @@ export default function Header() {
             )}
             {!compact && isStaff && (
               <Button
-                title={user.role === 'admin' ? 'Admin console' : 'Staff portal'}
+                title={homeLabelForRole(user.role)}
                 variant="secondary"
                 size="sm"
                 icon="briefcase-outline"
-                onPress={() => go(user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal')}
+                onPress={() => go(homeForRole(user.role))}
               />
             )}
             {width >= 420 && (
@@ -258,7 +259,7 @@ export default function Header() {
               {isStaff && (
                 <View style={{ marginTop: 24 }}>
                   <Text style={styles.drawerSection}>Staff</Text>
-                  <Pressable style={styles.drawerLink} onPress={() => go(user.role === 'admin' ? 'AdminDashboard' : 'StaffPortal')}>
+                  <Pressable style={styles.drawerLink} onPress={() => go(homeForRole(user.role))}>
                     <Ionicons name="briefcase-outline" size={18} color={COLORS.primary} />
                     <Text style={styles.drawerLinkText}>Staff area</Text>
                   </Pressable>
