@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import GuideSteps from '../components/GuideSteps';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { showAlert } from '../utils/alert';
 import { supabase } from '../services/supabaseClient';
@@ -118,6 +119,14 @@ export default function SurveysScreen() {
     <ScrollView style={styles.container}>
       <PageHeader title="Surveys & polls" subtitle="Rate our services and vote on the issues that matter most to you." icon="stats-chart-outline" overline="Participate" />
       <Container style={styles.content}>
+        <GuideSteps
+          title="How to take part"
+          steps={[
+            'Choose a survey or poll below.',
+            'Answer the questions — most take a few minutes. Your answers are saved on this phone if you stop half-way.',
+            'Press Submit. You get a thank-you, and results help decide what we improve.',
+          ]}
+        />
 
       <Text style={styles.sectionHeading}>🗳️ Live Polls</Text>
       {polls.length === 0 ? (

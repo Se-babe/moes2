@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import GuideSteps from '../components/GuideSteps';
 import {
   View,
   Text,
@@ -487,6 +488,16 @@ export default function ConsultationsScreen() {
       <View style={styles.mainRow}>
         <View style={styles.mainContent}>
 
+          <GuideSteps
+            title="How to take part"
+            practice="consult"
+            steps={[
+              'Read the proposal and any picture or document with it.',
+              'Vote in the poll if there is one — one vote per person.',
+              'Leave a comment explaining your view. No account needed.',
+              'When it closes, see "You said, we did" below for what changed.',
+            ]}
+          />
           {/* ✅ "PROPOSE A CONSULTATION" BUTTON */}
           <TouchableOpacity
             style={styles.proposeBtn}

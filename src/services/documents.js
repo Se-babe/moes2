@@ -15,7 +15,7 @@ export const EXTERNAL_REPOSITORIES = [
 /** Published documents matching a search and filters. */
 export async function fetchDocuments({ q, category, institution, subject, from, to } = {}) {
   let query = supabase.from('documents')
-    .select('id, title, category, institution, subject, summary, document_date, current_version, is_published, updated_at, document_versions(version, file_url, file_name, file_size, notes, created_at, uploaded_by_name)')
+    .select('id, title, category, institution, subject, summary, document_date, current_version, is_published, updated_at, topic, audiences, notify_subscribers, document_versions(version, file_url, file_name, file_size, notes, created_at, uploaded_by_name)')
     .order('document_date', { ascending: false, nullsFirst: false })
     .order('updated_at', { ascending: false })
     .limit(300);
@@ -38,6 +38,7 @@ export async function saveDocument(doc, userId) {
     title: doc.title.trim(), category: doc.category, institution: doc.institution?.trim() || 'NWSC Jinja',
     subject: doc.subject?.trim() || null, summary: doc.summary?.trim() || null,
     document_date: doc.document_date || null, is_published: doc.is_published !== false, updated_at: new Date().toISOString(),
+    topic: doc.topic || null, audiences: doc.audiences || [], notify_subscribers: doc.notify_subscribers !== false,
   };
   const res = doc.id
     ? await supabase.from('documents').update(row).eq('id', doc.id).select('id').single()

@@ -51,7 +51,7 @@ export default function ProfileFields({ value, onChange, areas, hasPhone }) {
       </Section>
       <View style={{ marginBottom: SPACE.lg, gap: 8 }}>
         <Toggle
-          label="Invite me to new consultations and surveys on my topics"
+          label="Invite me to new consultations and surveys, and tell me about new policies, on my topics"
           on={value.notify_participation !== false}
           onPress={() => set({ notify_participation: value.notify_participation === false })}
         />

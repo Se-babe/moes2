@@ -5,13 +5,15 @@ import { Card, Button, Badge, Select, TextField, Loading, EmptyState } from '../
 import { COLORS, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
 import { useAuth } from '../../context/AuthContext';
+import { STAKEHOLDER_GROUPS, INTERESTS } from '../../services/announcements';
 import {
   DOC_CATEGORIES, fetchDocuments, saveDocument, pickDocumentFile, addVersionFromFile, addVersionFromLink, fmtSize,
 } from '../../services/documents';
 
 function Editor({ initial, onClose, onSaved }) {
   const { user } = useAuth();
-  const [d, setD] = useState({ category: 'Policy', institution: 'NWSC Jinja', is_published: true, ...initial });
+  const [d, setD] = useState({ category: 'Policy', institution: 'NWSC Jinja', is_published: true, audiences: [], notify_subscribers: true, ...initial });
+  const toggleAudience = (g) => setD((x) => ({ ...x, audiences: (x.audiences || []).includes(g) ? x.audiences.filter((y) => y !== g) : [...(x.audiences || []), g] }));
   const [file, setFile] = useState(null);
   const [link, setLink] = useState('');
   const [notes, setNotes] = useState('');
@@ -49,6 +51,30 @@ function Editor({ initial, onClose, onSaved }) {
         <TextField style={{ flex: 1 }} label="Document date" value={d.document_date || ''} onChangeText={set('document_date')} placeholder="YYYY-MM-DD" />
       </View>
       <TextField label="Summary" multiline value={d.summary || ''} onChangeText={set('summary')} placeholder="What it is and who it affects, in plain language." />
+
+      <View style={styles.box}>
+        <Text style={TYPE.label}>Who should hear about it</Text>
+        <Select label="Topic" value={d.topic || null} onChange={set('topic')}
+          options={[{ value: null, label: 'Any topic (everyone who wants policy updates)' }, ...INTERESTS.map((i) => ({ value: i, label: i }))]} />
+        <Text style={[TYPE.small, { marginBottom: 6 }]}>Customer groups (none selected = all)</Text>
+        <View style={styles.row}>
+          {STAKEHOLDER_GROUPS.map((g) => {
+            const on = (d.audiences || []).includes(g.value);
+            return (
+              <Pressable key={g.value} onPress={() => toggleAudience(g.value)} style={[styles.pill, on && styles.pillOn]} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+                <Text style={[TYPE.small, { fontWeight: '600', color: on ? COLORS.primary : COLORS.gray700 }]}>{g.value}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.switchRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={TYPE.label}>Notify matching subscribers</Text>
+            <Text style={TYPE.small}>By SMS and email when it is published, and again for each new version.</Text>
+          </View>
+          <Switch value={d.notify_subscribers !== false} onValueChange={set('notify_subscribers')} />
+        </View>
+      </View>
 
       <View style={styles.box}>
         <Text style={TYPE.label}>{initial?.id ? `Upload a new version (now version ${initial.current_version || 0})` : 'File'}</Text>
@@ -127,6 +153,8 @@ export default function AdminDocuments() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: SPACE.md, flexWrap: 'wrap' },
+  pill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: COLORS.gray200, backgroundColor: COLORS.white },
+  pillOn: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
   rowBetween: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' },
   box: { padding: SPACE.md, borderRadius: RADIUS.md, backgroundColor: COLORS.gray50, gap: 8, marginBottom: SPACE.md },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: SPACE.sm },

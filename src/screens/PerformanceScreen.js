@@ -29,7 +29,7 @@ function Tile({ icon, label, value, hint }) {
 /** Received vs resolved per month: grouped bars, shared axis, legend, hover values. */
 function MonthChart({ data }) {
   const [hover, setHover] = useState(null);
-  const max = Math.max(1, ...data.flatMap((d) => [d.received, d.resolved]));
+  const max = Math.max(1, ...(data || []).flatMap((d) => [d.received, d.resolved]));
   const H = 180;
   return (
     <View>
@@ -121,18 +121,18 @@ export default function PerformanceScreen() {
 
   useEffect(() => {
     setData(null);
-    supabase.rpc('public_performance', { p_months: months }).then(({ data: d }) => setData(d || {}));
+    supabase.rpc('public_performance', { p_months: months }).then(({ data: d }) => setData(d && !Array.isArray(d) ? d : {}));
   }, [months]);
 
   const t = data?.totals || {};
   const rate = t.received ? Math.round((100 * t.resolved) / t.received) : null;
 
   const download = () => downloadZip(`nwsc-jinja-performance-${months}m.zip`, {
-    'monthly.csv': csvText(data.by_month, [{ label: 'Month', key: 'month' }, { label: 'Received', key: 'received' }, { label: 'Resolved', key: 'resolved' }]),
-    'by-type.csv': csvText(data.by_type, [{ label: 'Type', key: 'label' }, { label: 'Requests', key: 'value' }]),
-    'by-category.csv': csvText(data.by_category, [{ label: 'Category', key: 'label' }, { label: 'Requests', key: 'value' }, { label: 'Resolved', key: 'resolved' }]),
-    'by-channel.csv': csvText(data.by_channel, [{ label: 'Channel', key: 'label' }, { label: 'Requests', key: 'value' }]),
-    'satisfaction.csv': csvText(data.ratings, [{ label: 'Rating', key: 'label' }, { label: 'Count', key: 'value' }]),
+    'monthly.csv': csvText((data.by_month || []), [{ label: 'Month', key: 'month' }, { label: 'Received', key: 'received' }, { label: 'Resolved', key: 'resolved' }]),
+    'by-type.csv': csvText((data.by_type || []), [{ label: 'Type', key: 'label' }, { label: 'Requests', key: 'value' }]),
+    'by-category.csv': csvText((data.by_category || []), [{ label: 'Category', key: 'label' }, { label: 'Requests', key: 'value' }, { label: 'Resolved', key: 'resolved' }]),
+    'by-channel.csv': csvText((data.by_channel || []), [{ label: 'Channel', key: 'label' }, { label: 'Requests', key: 'value' }]),
+    'satisfaction.csv': csvText((data.ratings || []), [{ label: 'Rating', key: 'label' }, { label: 'Count', key: 'value' }]),
     'summary.json': JSON.stringify({ ...data.totals, participation: data.participation, generated_at: data.generated_at, months }, null, 2),
     'README.txt': 'NWSC Jinja e-Participation — public performance data.\nCounts of customer requests; no personal information.\nOpen the .csv files in Excel, Google Sheets or LibreOffice.\n',
   });
@@ -169,30 +169,30 @@ export default function PerformanceScreen() {
             <Card style={{ gap: SPACE.md }}>
               <Text style={TYPE.h3}>Requests received and resolved each month</Text>
               {asTable
-                ? <Table head={['Month', 'Received', 'Resolved']} rows={data.by_month.map((d) => [d.month, d.received, d.resolved])} />
-                : <MonthChart data={data.by_month} />}
+                ? <Table head={['Month', 'Received', 'Resolved']} rows={(data.by_month || []).map((d) => [d.month, d.received, d.resolved])} />
+                : <MonthChart data={(data.by_month || [])} />}
             </Card>
 
             <View style={[styles.cols, !isDesktop && { flexDirection: 'column' }]}>
               <Card style={styles.col}>
                 <Text style={[TYPE.h3, { marginBottom: SPACE.md }]}>By category</Text>
                 {asTable
-                  ? <Table head={['Category', 'Requests', 'Resolved']} rows={data.by_category.map((r) => [r.label, r.value, r.resolved])} />
-                  : <Bars rows={data.by_category} note={(r) => ` · ${r.value ? Math.round((100 * r.resolved) / r.value) : 0}% resolved`} />}
+                  ? <Table head={['Category', 'Requests', 'Resolved']} rows={(data.by_category || []).map((r) => [r.label, r.value, r.resolved])} />
+                  : <Bars rows={(data.by_category || [])} note={(r) => ` · ${r.value ? Math.round((100 * r.resolved) / r.value) : 0}% resolved`} />}
               </Card>
               <Card style={styles.col}>
                 <Text style={[TYPE.h3, { marginBottom: SPACE.md }]}>Enquiries, complaints, suggestions</Text>
-                {asTable ? <Table head={['Type', 'Requests']} rows={data.by_type.map((r) => [r.label, r.value])} /> : <Bars rows={data.by_type} />}
+                {asTable ? <Table head={['Type', 'Requests']} rows={(data.by_type || []).map((r) => [r.label, r.value])} /> : <Bars rows={(data.by_type || [])} />}
               </Card>
             </View>
             <View style={[styles.cols, !isDesktop && { flexDirection: 'column' }]}>
               <Card style={styles.col}>
                 <Text style={[TYPE.h3, { marginBottom: SPACE.md }]}>How requests reached us</Text>
-                {asTable ? <Table head={['Channel', 'Requests']} rows={data.by_channel.map((r) => [r.label, r.value])} /> : <Bars rows={data.by_channel} />}
+                {asTable ? <Table head={['Channel', 'Requests']} rows={(data.by_channel || []).map((r) => [r.label, r.value])} /> : <Bars rows={(data.by_channel || [])} />}
               </Card>
               <Card style={styles.col}>
                 <Text style={[TYPE.h3, { marginBottom: SPACE.md }]}>Customer satisfaction ratings</Text>
-                {asTable ? <Table head={['Rating', 'Count']} rows={data.ratings.map((r) => [r.label, r.value])} /> : <Bars rows={data.ratings} />}
+                {asTable ? <Table head={['Rating', 'Count']} rows={(data.ratings || []).map((r) => [r.label, r.value])} /> : <Bars rows={(data.ratings || [])} />}
               </Card>
             </View>
 
@@ -202,7 +202,7 @@ export default function PerformanceScreen() {
               <Tile icon="notifications-outline" label="Alert subscribers" value={data.participation?.subscribers ?? 0} />
               <Tile icon="megaphone-outline" label="Service notices published" value={data.participation?.announcements ?? 0} />
             </Grid>
-            <Text style={TYPE.small}>Updated {new Date(data.generated_at).toLocaleString()}. Figures count requests made in the period shown.</Text>
+            <Text style={TYPE.small}>Updated {new Date(data.generated_at || Date.now()).toLocaleString()}. Figures count requests made in the period shown.</Text>
           </>
         )}
       </Container>

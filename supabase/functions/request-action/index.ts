@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
     // Read the request as the caller — RLS returns nothing if they have no access.
     const reqRes = await fetch(
-      `${url}/rest/v1/feedback?id=eq.${encodeURIComponent(request_id)}&select=id,reference_no,title,status,request_type,contact_name,contact_phone,contact_email,first_response_at,department_id,assigned_to`,
+      `${url}/rest/v1/feedback?id=eq.${encodeURIComponent(request_id)}&select=id,reference_no,title,status,request_type,contact_name,contact_phone,contact_email,first_response_at,department_id,assigned_to,language`,
       { headers: asCaller },
     );
     const [current] = reqRes.ok ? await reqRes.json() : [];
@@ -126,10 +126,24 @@ Deno.serve(async (req) => {
     let notified = false;
     if (reply || statusWorthTelling) {
       const ref = current.reference_no;
-      const text = reply || `Your request is now ${newStatus.toLowerCase()}.`;
+      // The wording around the officer's reply follows the language the
+      // customer used when they reported (Luganda/Lusoga to be reviewed by
+      // native speakers). The officer's own reply is sent as written.
+      const lang: 'en' | 'lg' | 'xog' = current.language === 'lg' || current.language === 'xog' ? current.language : 'en';
+      const STATUS_WORD: Record<string, Record<string, string>> = {
+        en: { 'In Progress': 'in progress', Resolved: 'resolved', Closed: 'closed' },
+        lg: { 'In Progress': 'kukolebwako', Resolved: 'kugonjoddwa', Closed: 'kuggaddwa' },
+        xog: { 'In Progress': 'kukolebwaku', Resolved: 'kugonjoddwa', Closed: 'kuggaddwa' },
+      };
+      const W = {
+        en: { now: 'Your request is now', resolved: 'Resolved', rate: 'Rate us' },
+        lg: { now: 'Okusaba kwo kati', resolved: 'Kugonjoddwa', rate: 'Tuwe obubonero' },
+        xog: { now: 'Okusaba kwo kaakati', resolved: 'Kugonjoddwa', rate: 'Tuwe obubonero' },
+      }[lang];
+      const text = reply || `${W.now} ${STATUS_WORD[lang][newStatus] || newStatus.toLowerCase()}.`;
       const site = (Deno.env.get('SITE_URL') || '').replace(/\/$/, '');
       const rateLink = site && (newStatus === 'Resolved' || newStatus === 'Closed') ? `${site}/track?ref=${ref}` : '';
-      const sms = `NWSC ${ref}: ${text.slice(0, 240)}${newStatus === 'Resolved' ? ' (Resolved)' : ''}${rateLink ? ` Rate us: ${rateLink}` : ''}`;
+      const sms = `NWSC ${ref}: ${text.slice(0, 240)}${newStatus === 'Resolved' ? ` (${W.resolved})` : ''}${rateLink ? ` ${W.rate}: ${rateLink}` : ''}`;
       const results = await Promise.allSettled([
         current.contact_phone ? sendSms(current.contact_phone, sms, 'status_update', current.id) : Promise.resolve(false),
         current.contact_email

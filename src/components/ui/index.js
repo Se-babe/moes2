@@ -16,6 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, TYPE, SPACE, RADIUS, SHADOW, LAYOUT, FONT, gradient } from '../../theme';
 import { usePreferences } from '../../context/PreferencesContext';
+import { phrase } from '../../i18n/phrases';
 
 // ------------------------------------------------------------------
 // Shared UI kit. Screens compose these instead of styling from scratch.
@@ -42,7 +43,8 @@ export function Container({ children, style, narrow }) {
 export function PageHeader({ title, subtitle, icon, overline, children, back = true }) {
   const navigation = useNavigation();
   const { isMobile } = useBreakpoint();
-  const { t } = usePreferences();
+  const { t, language } = usePreferences();
+  const p = (s) => phrase(language, s);
   return (
     <View style={[styles.pageHeader, gradient(COLORS.primaryDark, COLORS.primary), isMobile && styles.pageHeaderMobile]}>
       <Container>
@@ -64,11 +66,11 @@ export function PageHeader({ title, subtitle, icon, overline, children, back = t
             </View>
           )}
           <View style={{ flex: 1 }}>
-            {overline ? <Text style={[TYPE.overline, { color: '#7DD3FC' }]}>{overline}</Text> : null}
+            {overline ? <Text style={[TYPE.overline, { color: '#7DD3FC' }]}>{p(overline)}</Text> : null}
             <Text style={[TYPE.h1, styles.pageTitle, isMobile && { fontSize: 26, lineHeight: 32 }]} accessibilityRole="header">
-              {title}
+              {p(title)}
             </Text>
-            {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
+            {subtitle ? <Text style={styles.pageSubtitle}>{p(subtitle)}</Text> : null}
           </View>
         </View>
         {children}
