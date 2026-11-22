@@ -10,7 +10,8 @@ import {
   StatusBar,
   Text,
 } from 'react-native';
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef, getStateFromPath, getPathFromState } from '@react-navigation/native';
+import { BASE_PATH, stripBase } from '../config/base';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -67,6 +68,20 @@ const { width, height } = Dimensions.get('window');
 // AdminDashboardScreen (role check), not by whether the route exists.
 const linking = {
   prefixes: [Linking.createURL('/')],
+  // On GitHub Pages the site lives under /moes2: drop it before matching a
+  // route, and add it back to every address the app writes.
+  getStateFromPath: (path, options) => {
+    const state = getStateFromPath(stripBase(path), options);
+    // React Navigation writes the matched route's path back to the address
+    // bar, so keep the sub-folder on it.
+    for (let s = BASE_PATH ? state : null; s?.routes;) {
+      const route = s.routes[s.index ?? s.routes.length - 1];
+      if (route.path && !route.path.startsWith(BASE_PATH)) route.path = BASE_PATH + route.path;
+      s = route.state;
+    }
+    return state;
+  },
+  getPathFromState: (state, options) => `${BASE_PATH}${getPathFromState(state, options)}`,
   config: {
     screens: {
       Home: '',

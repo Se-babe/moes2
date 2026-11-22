@@ -1,4 +1,5 @@
 import React from 'react';
+import { siteUrl } from '../config/base';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Card, Badge } from './ui';
@@ -7,7 +8,7 @@ import { COLORS, FONT, SPACE, TYPE } from '../theme';
 import { categoryMeta, fmtDate } from '../services/announcements';
 
 export const announcementUrl = (id) =>
-  Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}/updates/${id}` : `https://www.nwsc.co.ug/updates/${id}`;
+  Platform.OS === 'web' && typeof window !== 'undefined' ? siteUrl(`/updates/${id}`) : `https://www.nwsc.co.ug/updates/${id}`;
 
 /** One official service update, as shown to the public. */
 export default function AnnouncementCard({ item, full = false, onOpen }) {

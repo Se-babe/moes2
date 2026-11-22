@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { siteUrl } from '../config/base';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -27,4 +28,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 /** Where email links should send people to choose a password. */
-export const passwordSetupUrl = () => (isWeb ? `${window.location.origin}/set-password` : undefined);
+export const passwordSetupUrl = () => (isWeb ? siteUrl('/set-password') : undefined);
