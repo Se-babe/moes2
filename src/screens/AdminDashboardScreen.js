@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AppearancePicker from '../components/AppearancePicker';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -141,6 +142,7 @@ function Console() {
           </View>
         </View>
         <View style={styles.topbarRight}>
+          <AppearancePicker tone="light" />
           <NotificationBell tone="dark" onOpenRequest={openRequest} />
           <Pressable onPress={() => navigation.navigate('StaffSettings')} accessibilityRole="link" accessibilityLabel="My profile and settings">
             <Avatar name={user.full_name || user.email} url={user.avatar_url} size={36} />

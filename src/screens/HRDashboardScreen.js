@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import AppearancePicker from '../components/AppearancePicker';
 import { hasAdminPowers } from '../services/staff';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -95,7 +96,7 @@ function Overview({ go }) {
       </Grid>
 
       {(gaps.length > 0 || noSupervisor.length > 0) && (
-        <Card style={styles.attention}>
+        <Card style={styles.attention} status>
           <Text style={[TYPE.h3, { color: '#991B1B' }]}><Ionicons name="warning-outline" size={18} /> Staffing gaps</Text>
           {gaps.map((d) => (
             <Text key={d.department_id} style={TYPE.body}>
@@ -339,6 +340,7 @@ function Workspace() {
           </View>
         </View>
         <View style={styles.topbarRight}>
+          <AppearancePicker tone="light" />
           <Pressable onPress={() => navigation.navigate('StaffSettings')} accessibilityRole="link" accessibilityLabel="My profile and settings">
             <Avatar name={user.full_name || user.email} url={user.avatar_url} size={36} />
           </Pressable>

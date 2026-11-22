@@ -77,9 +77,13 @@ export function PageHeader({ title, subtitle, icon, overline, children, back = t
   );
 }
 
-export function Card({ children, style, padded = true, elevated = false }) {
+// Status colours (red, amber, green) carry meaning, so colour themes leave them alone.
+export const KEEP_HUE = { keepHue: 'true' };
+const STATUS_TONES = ['danger', 'warning', 'success'];
+
+export function Card({ children, style, padded = true, elevated = false, status = false }) {
   return (
-    <View style={[styles.card, padded && { padding: SPACE.xl }, elevated ? SHADOW.md : SHADOW.sm, style]}>
+    <View style={[styles.card, padded && { padding: SPACE.xl }, elevated ? SHADOW.md : SHADOW.sm, style]} dataSet={status ? KEEP_HUE : undefined}>
       {children}
     </View>
   );
@@ -142,7 +146,7 @@ const BADGE_TONES = {
 export function Badge({ label, tone = 'neutral', icon, style }) {
   const [bg, fg] = BADGE_TONES[tone] || BADGE_TONES.neutral;
   return (
-    <View style={[styles.badge, { backgroundColor: bg }, style]}>
+    <View style={[styles.badge, { backgroundColor: bg }, style]} dataSet={STATUS_TONES.includes(tone) ? KEEP_HUE : undefined}>
       {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
       <Text style={[styles.badgeText, { color: fg }]}>{label}</Text>
     </View>
@@ -202,7 +206,7 @@ export function TextField({ label, hint, error, required, multiline, style, inpu
         ]}
         {...props}
       />
-      {error ? <Text style={[TYPE.small, { color: COLORS.danger, marginTop: 4 }]}>{error}</Text> : null}
+      {error ? <Text style={[TYPE.small, { color: COLORS.danger, marginTop: 4 }]} dataSet={KEEP_HUE}>{error}</Text> : null}
       {!error && hint ? <Text style={[TYPE.small, { marginTop: 4 }]}>{hint}</Text> : null}
     </View>
   );

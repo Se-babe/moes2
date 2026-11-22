@@ -108,7 +108,7 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
     <View>
       <Text style={[TYPE.h3, { marginBottom: SPACE.lg }]}>{initial?.id ? 'Edit announcement' : 'New announcement'}</Text>
       {initial?.status === 'rejected' && initial.review_note ? (
-        <View style={styles.reject}>
+        <View style={styles.reject} dataSet={{ keepHue: 'true' }}>
           <Ionicons name="chatbox-ellipses-outline" size={16} color={COLORS.danger} />
           <Text style={[TYPE.small, { color: '#991B1B', flex: 1 }]}>Reviewer: {initial.review_note}</Text>
         </View>

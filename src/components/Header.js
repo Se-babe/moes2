@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AppearancePicker from './AppearancePicker';
 import { homeForRole, homeLabelForRole } from '../services/staff';
 import {
   View,
@@ -144,7 +145,7 @@ export default function Header() {
   return (
     <View style={styles.wrap}>
       {/* Utility bar */}
-      <View style={styles.utility}>
+      <View style={styles.utility} dataSet={{ stayDark: 'true' }}>
         <View style={styles.inner}>
           <Pressable style={styles.utilItem} onPress={() => Linking.openURL(`tel:${tollFree.value.replace(/\D/g, '')}`)}>
             <Ionicons name="call" size={13} color={COLORS.accent} />
@@ -153,6 +154,7 @@ export default function Header() {
             </Text>
           </Pressable>
           <View style={styles.utilRight}>
+            <AppearancePicker size={16} />
             <DisplaySettings />
           </View>
           {!compact && (

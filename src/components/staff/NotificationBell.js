@@ -57,7 +57,7 @@ export default function NotificationBell({ onOpenRequest, tone = 'light' }) {
                   onPress={() => { setOpen(false); if (n.target_id && n.target_screen === 'StaffRequest') onOpenRequest(n.target_id); }}
                   style={({ hovered }) => [styles.item, hovered && { backgroundColor: COLORS.gray50 }]}
                 >
-                  <View style={[styles.icon, n.type === 'escalation' && { backgroundColor: COLORS.dangerSoft }]}>
+                  <View dataSet={n.type === 'escalation' ? { keepHue: 'true' } : undefined} style={[styles.icon, n.type === 'escalation' && { backgroundColor: COLORS.dangerSoft }]}>
                     <Ionicons name={TYPE_ICON[n.type] || 'notifications-outline'} size={18} color={n.type === 'escalation' ? COLORS.danger : COLORS.primary} />
                   </View>
                   <View style={{ flex: 1 }}>

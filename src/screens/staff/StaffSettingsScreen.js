@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AppearanceOptions } from '../../components/AppearancePicker';
 import { hasAdminPowers } from '../../services/staff';
 import { View, Text, ScrollView, StyleSheet, Pressable, Switch } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -250,6 +251,11 @@ function PreferencesTab() {
         <Segment label="Start page" value={prefs.start_section || 'queue'} onChange={(v) => save({ start_section: v })} options={startOptions} />
         <Text style={styles.label}>Work queue shows first</Text>
         <Segment label="Default queue" value={prefs.default_queue || queueOptions[0].value} onChange={(v) => save({ default_queue: v })} options={queueOptions} />
+      </Card>
+
+      <Card>
+        <Text style={TYPE.h3}>Appearance</Text>
+        <AppearanceOptions />
       </Card>
 
       <Card>

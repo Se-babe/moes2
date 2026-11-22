@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AppearancePicker from '../AppearancePicker';
 import { hasAdminPowers } from '../../services/staff';
 import { View, Text, Pressable, Modal, ScrollView, StyleSheet, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -103,7 +104,7 @@ export default function StaffNavbar({ active, children }) {
 
   return (
     <View style={styles.shell}>
-    <View style={styles.bar}>
+    <View style={styles.bar} dataSet={{ stayDark: 'true' }}>
       <View style={styles.row}>
         <Pressable onPress={() => go('queue')} style={styles.brand} accessibilityRole="link" accessibilityLabel="Staff portal home">
           <View style={styles.logo}><Ionicons name="water" size={18} color="#fff" /></View>
@@ -114,6 +115,7 @@ export default function StaffNavbar({ active, children }) {
         </Pressable>
 
         <View style={styles.right}>
+          <AppearancePicker tone="dark" />
           <NotificationBell onOpenRequest={(id) => navigation.navigate('StaffRequest', { id })} />
           <Pressable
             onPress={() => setMenuOpen(true)}

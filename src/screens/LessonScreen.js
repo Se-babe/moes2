@@ -110,6 +110,7 @@ export default function LessonScreen() {
                         disabled={!!result}
                         onPress={() => setAnswers((a) => ({ ...a, [q.id]: k }))}
                         style={[styles.option, chosen && styles.optionOn, isAnswer && styles.optionRight, wrong && styles.optionWrong]}
+                        dataSet={isAnswer || wrong ? { keepHue: 'true' } : undefined}
                         accessibilityRole="radio"
                         accessibilityState={{ checked: chosen }}
                       >

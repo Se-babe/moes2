@@ -68,6 +68,13 @@ const en = {
   'form.emergencyText': 'For a burst pipe or major leak, call toll-free {phone} as well.',
   // accessibility panel
   'a11y.title': 'Display & language',
+  'look.title': 'Appearance',
+  'look.mode': 'Light or dark',
+  'look.light': 'Light',
+  'look.dark': 'Dark',
+  'look.system': 'Match my device',
+  'look.colour': 'Colour theme',
+  'look.note': 'Saved on this device. Photos and maps keep their real colours.',
   'a11y.language': 'Language',
   'a11y.textSize': 'Text size',
   'a11y.normal': 'Normal',

@@ -314,7 +314,7 @@ export default function HomeScreen() {
 
       {/* ================= EMERGENCY CTA ================= */}
       <Container style={styles.section}>
-        <View style={[styles.cta, isMobile && { flexDirection: 'column', alignItems: 'flex-start' }]}>
+        <View style={[styles.cta, isMobile && { flexDirection: 'column', alignItems: 'flex-start' }]} dataSet={{ keepHue: 'true' }}>
           <View style={styles.ctaIcon}>
             <Ionicons name="alert-circle" size={28} color={COLORS.danger} />
           </View>

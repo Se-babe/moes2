@@ -254,7 +254,7 @@ export default function FeedbackScreen() {
           </View>
         ))}
       </Card>
-      <View style={styles.emergency}>
+      <View style={styles.emergency} dataSet={{ keepHue: 'true' }}>
         <Ionicons name="alert-circle" size={22} color={COLORS.danger} />
         <View style={{ flex: 1 }}>
           <Text style={[TYPE.label, { color: '#991B1B' }]}>{tr('form.emergency')}</Text>
@@ -407,7 +407,7 @@ export default function FeedbackScreen() {
               />
             </View>
             {errors.contact ? (
-              <View style={styles.inlineError}>
+              <View style={styles.inlineError} dataSet={{ keepHue: 'true' }}>
                 <Ionicons name="information-circle" size={16} color={COLORS.danger} />
                 <Text style={[TYPE.small, { color: COLORS.danger, flex: 1 }]}>{errors.contact}</Text>
               </View>

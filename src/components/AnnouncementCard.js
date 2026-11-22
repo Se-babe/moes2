@@ -18,7 +18,7 @@ export default function AnnouncementCard({ item: raw, full = false, onOpen }) {
   const meta = categoryMeta(item.category);
   const edited = item.updated_at && item.published_at && new Date(item.updated_at) - new Date(item.published_at) > 60_000;
   const content = (
-    <Card style={[styles.card, item.category === 'Emergency' && styles.emergency]}>
+    <Card style={[styles.card, item.category === 'Emergency' && styles.emergency]} status={item.category === 'Emergency'}>
       <View style={styles.top}>
         <Badge label={item.category} tone={meta.tone} icon={meta.icon} />
         <View style={styles.verified} accessibilityLabel="Official NWSC information">

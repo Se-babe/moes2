@@ -71,7 +71,7 @@ export default function Footer() {
   const goTo = (screen, params) => navigation.navigate(screen, params);
 
   return (
-    <View style={styles.footer} accessibilityRole="contentinfo">
+    <View style={styles.footer} accessibilityRole="contentinfo" dataSet={{ stayDark: 'true' }}>
       <View style={[styles.inner, styles.top, !isDesktop && { flexDirection: 'column' }]}>
         <View style={[styles.brandCol, !isDesktop && { maxWidth: '100%' }]}>
           <BrandMark tone="light" />
