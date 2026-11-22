@@ -22,9 +22,22 @@ import { channelStatus, sendWhatsApp, postTelegram, postFacebook, postX } from '
 
 type Row = {
   id: string; announcement_id: string | null; request_id: string | null; channel: string; recipient: string | null;
-  purpose: Purpose; subject: string | null; body: string | null; html: string | null; token: string | null;
+  purpose: Purpose; subject: string | null; body: string | null; html: string | null; token: string | null; language?: string;
 };
-type Announcement = { id: string; title: string; body: string; category: string; areas: string[]; starts_at: string | null; status: string };
+type Announcement = {
+  id: string; title: string; body: string; category: string; areas: string[]; starts_at: string | null; status: string;
+  title_lg?: string | null; body_lg?: string | null; title_xog?: string | null; body_xog?: string | null;
+};
+
+// The subscriber's language version of an announcement, when staff wrote one.
+function localized(a: Announcement, lang: string | null | undefined): Announcement {
+  if (lang !== 'lg' && lang !== 'xog') return a;
+  const t = a[`title_${lang}` as 'title_lg'];
+  const b = a[`body_${lang}` as 'body_lg'];
+  return { ...a, title: t?.trim() || a.title, body: b?.trim() || a.body };
+}
+// Prepared messages (participation invitations) carry {SITE} for the link.
+const withSite = (s: string | null) => (s ? s.replaceAll('{SITE}', SITE) : s);
 type Result = { id: string; status: Outcome['status']; error?: string; final?: boolean };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -136,12 +149,15 @@ async function sendOne(row: Row, a: Announcement | undefined): Promise<Outcome> 
   const meta = { purpose: row.purpose, announcementId: row.announcement_id, requestId: row.request_id };
   // Prepared messages: reviewer alerts and retries of direct messages.
   if (row.body || row.html) {
+    row = { ...row, body: withSite(row.body), html: withSite(row.html), subject: withSite(row.subject) };
     if (row.channel === 'sms' && row.recipient && row.body) return smsOutcome(row.recipient, row.body, row.purpose, row.request_id, row.announcement_id);
     if (row.channel === 'email' && row.recipient) {
       return emailOutcome(row.recipient, row.subject || 'NWSC Jinja', row.html || `<p>${escapeHtml(row.body || '')}</p>`, row.purpose, row.request_id, row.announcement_id);
     }
   }
   if (!a) return { status: 'skipped', detail: 'announcement removed', final: true };
+  // Subscribers get their own language; public social posts stay in English.
+  if (['sms', 'email', 'whatsapp'].includes(row.channel)) a = localized(a, row.language);
   switch (row.channel) {
     case 'sms': return smsOutcome(row.recipient!, smsText(a, row.purpose), row.purpose, null, a.id);
     case 'email': {
@@ -163,7 +179,7 @@ async function sendBatch(rows: Row[]): Promise<Result[]> {
   const ids = [...new Set(rows.map((r) => r.announcement_id).filter(Boolean))];
   const anns = new Map<string, Announcement>();
   if (ids.length) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/announcements?id=in.(${ids.join(',')})&select=id,title,body,category,areas,starts_at,status`, { headers: svc });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/announcements?id=in.(${ids.join(',')})&select=id,title,body,category,areas,starts_at,status,title_lg,body_lg,title_xog,body_xog`, { headers: svc });
     for (const a of (r.ok ? await r.json() : []) as Announcement[]) anns.set(a.id, a);
   }
   const results: Result[] = [];
@@ -187,14 +203,14 @@ async function sendBatch(rows: Row[]): Promise<Result[]> {
     if (row.channel === 'sms' && row.announcement_id && !row.body && row.recipient) {
       const to = normalizeUgPhone(row.recipient);
       if (!to) { done(row, { status: 'failed', detail: 'invalid phone number', final: true }); continue; }
-      const k = `${row.announcement_id}|${row.purpose}`;
+      const k = `${row.announcement_id}|${row.purpose}|${row.language || 'en'}`;
       bulk.set(k, [...(bulk.get(k) || []), { ...row, recipient: to }]);
     } else {
       single.push(row);
     }
   }
   for (const group of bulk.values()) {
-    const a = anns.get(group[0].announcement_id!)!;
+    const a = localized(anns.get(group[0].announcement_id!)!, group[0].language);
     for (let i = 0; i < group.length; i += 100) {
       const chunk = group.slice(i, i + 100);
       const o = await deliverSms(chunk.map((r) => r.recipient!), smsText(a, chunk[0].purpose), chunk[0].purpose, null, a.id);

@@ -17,6 +17,7 @@ export function staffSections(role) {
     { key: 'queue', label: 'Work queue', icon: 'file-tray-full-outline' },
     { key: 'announcements', label: 'Announcements', icon: 'megaphone-outline' },
     ...(supervisor ? [{ key: 'reports', label: 'Reports', icon: 'bar-chart-outline' }] : []),
+    { key: 'training', label: 'Training', icon: 'school-outline' },
     { key: 'settings', label: 'Settings', icon: 'settings-outline' },
   ];
 }

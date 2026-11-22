@@ -41,6 +41,12 @@ const LoginScreen = lazyScreen(() => import('../screens/LoginScreen'));
 const ForgotPasswordScreen = lazyScreen(() => import('../screens/ForgotPasswordScreen'));
 const AdminDashboardScreen = lazyScreen(() => import('../screens/AdminDashboardScreen'));
 const HRDashboardScreen = lazyScreen(() => import('../screens/HRDashboardScreen'));
+const MeScreen = lazyScreen(() => import('../screens/MeScreen'));
+const LearnScreen = lazyScreen(() => import('../screens/LearnScreen'));
+const LessonScreen = lazyScreen(() => import('../screens/LessonScreen'));
+const PracticeScreen = lazyScreen(() => import('../screens/PracticeScreen'));
+const DocumentsScreen = lazyScreen(() => import('../screens/DocumentsScreen'));
+const PerformanceScreen = lazyScreen(() => import('../screens/PerformanceScreen'));
 const AboutScreen = lazyScreen(() => import('../screens/AboutScreen'));
 const NewsScreen = lazyScreen(() => import('../screens/NewsScreen'));
 const ForumScreen = lazyScreen(() => import('../screens/ForumScreen'));
@@ -102,6 +108,12 @@ const linking = {
       Updates: 'updates',
       UpdateDetail: 'updates/:id',
       Alerts: 'alerts',
+      Me: 'me',
+      Learn: 'learn',
+      Practice: 'learn/practice/:kind',
+      Lesson: 'learn/:slug',
+      Documents: 'documents',
+      Performance: 'dashboard',
       SurveyDetail: 'surveys/:id',
       SearchResults: 'search',
       TownHalls: 'town-halls',
@@ -137,7 +149,13 @@ const TITLES = {
   MediaGallery: 'Media gallery',
   Updates: 'Service updates',
   UpdateDetail: 'Service update',
-  Alerts: 'Service alerts',
+  Alerts: 'Alerts & my profile',
+  Me: 'My NWSC',
+  Learn: 'Help & learning',
+  Lesson: 'Lesson',
+  Practice: 'Practice',
+  Documents: 'Documents & policies',
+  Performance: "How we're doing",
   SurveyDetail: 'Survey',
   SearchResults: 'Search',
   TownHalls: 'Community meetings',
@@ -202,6 +220,12 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="ForumThread" component={ForumThreadScreen} options={{ title: TITLES.ForumThread }} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: TITLES.AdminDashboard }} />
         <Stack.Screen name="HRDashboard" component={HRDashboardScreen} options={{ title: TITLES.HRDashboard }} />
+        <Stack.Screen name="Me" component={MeScreen} options={{ title: TITLES.Me }} />
+        <Stack.Screen name="Learn" component={LearnScreen} options={{ title: TITLES.Learn }} />
+        <Stack.Screen name="Lesson" component={LessonScreen} options={{ title: TITLES.Lesson }} />
+        <Stack.Screen name="Practice" component={PracticeScreen} options={{ title: TITLES.Practice }} />
+        <Stack.Screen name="Documents" component={DocumentsScreen} options={{ title: TITLES.Documents }} />
+        <Stack.Screen name="Performance" component={PerformanceScreen} options={{ title: TITLES.Performance }} />
         <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: TITLES.Privacy }} />
         <Stack.Screen name="SetPassword" component={SetPasswordScreen} options={{ title: TITLES.SetPassword }} />
         <Stack.Screen name="StaffPortal" component={StaffPortalScreen} options={{ title: TITLES.StaffPortal }} />

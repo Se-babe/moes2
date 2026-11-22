@@ -7,7 +7,7 @@ import DateTimeField from '../DateTimeField';
 import { COLORS, FONT, RADIUS, SHADOW, SPACE, TYPE } from '../../theme';
 import { showAlert } from '../../utils/alert';
 import {
-  ANNOUNCEMENT_CATEGORIES, STATUS_META, categoryMeta, fetchAreas, fetchStaffAnnouncements,
+  ANNOUNCEMENT_CATEGORIES, STATUS_META, STAKEHOLDER_GROUPS, categoryMeta, fetchAreas, fetchStaffAnnouncements,
   saveAnnouncement, reviewAnnouncement, fmtDate, fetchDelivery, CHANNELS,
 } from '../../services/announcements';
 import { supabase } from '../../services/supabaseClient';
@@ -24,6 +24,7 @@ const fromLocalInput = (v) => (v ? new Date(v).toISOString() : null);
 const EMPTY = {
   title: '', body: '', category: 'Service notice', areas: [], publish_at: '', expires_at: '', starts_at: '',
   notify_sms: false, notify_whatsapp: false, notify_email: true, notify_social: true,
+  audiences: [], title_lg: '', body_lg: '', title_xog: '', body_xog: '',
 };
 
 function ChannelSwitch({ icon, label, hint, value, onChange, locked }) {
@@ -70,6 +71,8 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
   const [busy, setBusy] = useState(null);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const toggleArea = (a) => setForm((f) => ({ ...f, areas: f.areas.includes(a) ? f.areas.filter((x) => x !== a) : [...f.areas, a] }));
+  const toggleAudience = (g) => setForm((f) => ({ ...f, audiences: (f.audiences || []).includes(g) ? f.audiences.filter((x) => x !== g) : [...(f.audiences || []), g] }));
+  const [showTranslations, setShowTranslations] = useState(!!(initial?.title_lg || initial?.title_xog));
   const scheduled = form.publish_at && new Date(form.publish_at) > new Date();
   const emergency = form.category === 'Emergency';
   const planned = form.category === 'Planned interruption';
@@ -125,6 +128,32 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
           );
         })}
       </View>
+      <Text style={[TYPE.label, { marginBottom: 8 }]}>Who is it for? <Text style={TYPE.small}>(none selected = everyone; emergencies always go to everyone)</Text></Text>
+      <View style={styles.areas}>
+        {STAKEHOLDER_GROUPS.map((g) => {
+          const on = (form.audiences || []).includes(g.value);
+          return (
+            <Pressable key={g.value} onPress={() => toggleAudience(g.value)} style={[styles.area, on && styles.areaOn]} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+              <Text style={[styles.areaText, on && { color: COLORS.primary }]}>{g.value}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Pressable onPress={() => setShowTranslations((v) => !v)} style={styles.transToggle} accessibilityRole="button">
+        <Ionicons name={showTranslations ? 'chevron-down' : 'chevron-forward'} size={16} color={COLORS.primary} />
+        <Text style={[TYPE.label, { color: COLORS.primary }]}>Luganda and Lusoga versions</Text>
+        <Text style={TYPE.small}>(optional — readers and subscribers who chose that language see it)</Text>
+      </Pressable>
+      {showTranslations && (
+        <View style={styles.trans}>
+          <TextField label="Title in Luganda" value={form.title_lg || ''} onChangeText={set('title_lg')} maxLength={160} />
+          <TextField label="Details in Luganda" multiline value={form.body_lg || ''} onChangeText={set('body_lg')} maxLength={5000} />
+          <TextField label="Title in Lusoga" value={form.title_xog || ''} onChangeText={set('title_xog')} maxLength={160} />
+          <TextField label="Details in Lusoga" multiline value={form.body_xog || ''} onChangeText={set('body_xog')} maxLength={5000} />
+        </View>
+      )}
+
       <View style={styles.dates}>
         <View style={{ flex: 1, minWidth: 220 }}>
           <Text style={[TYPE.label, { marginBottom: 6 }]}>Publish at <Text style={TYPE.small}>(empty = when approved)</Text></Text>
@@ -270,6 +299,8 @@ export default function AnnouncementsManager({ user }) {
                 {a.notify_whatsapp && <Badge label="WhatsApp" icon={CHANNELS.whatsapp.icon} />}
                 {a.notify_email && <Badge label="Email" icon={CHANNELS.email.icon} />}
                 {a.notify_social && <Badge label="Social" icon="share-social-outline" />}
+                {a.audiences?.length ? <Badge label={`For: ${a.audiences.join(', ')}`} icon="people-outline" tone="brand" /> : null}
+                {a.title_lg || a.title_xog ? <Badge label="Translated" icon="language-outline" /> : null}
               </View>
               <Text style={TYPE.small}>by {a.author_name || 'NWSC staff'}</Text>
             </View>
@@ -330,6 +361,8 @@ const styles = StyleSheet.create({
   areaOn: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
   areaText: { fontFamily: FONT, fontSize: 13, fontWeight: '600', color: COLORS.gray700 },
   dates: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.lg },
+  transToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: SPACE.md },
+  trans: { padding: SPACE.md, borderRadius: RADIUS.md, backgroundColor: COLORS.gray50, marginBottom: SPACE.lg },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: SPACE.sm },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 10, marginTop: SPACE.lg },
   overlay: { flex: 1, backgroundColor: 'rgba(4,31,58,0.45)' },

@@ -31,6 +31,7 @@ export const NAV = [
       { label: 'Track my request', k: 'nav.track', desc: 'Check progress with your reference', icon: 'search-outline', screen: 'TrackRequest' },
       { label: 'Service updates', k: 'nav.updates', desc: 'Interruptions and restorations', icon: 'megaphone-outline', screen: 'Updates' },
       { label: 'Get SMS & email alerts', k: 'nav.alerts', desc: 'Notices for your area', icon: 'notifications-outline', screen: 'Alerts' },
+      { label: 'My NWSC', k: 'nav.me', desc: 'Notices and activities picked for you', icon: 'person-circle-outline', screen: 'Me' },
     ],
   },
   {
@@ -49,6 +50,9 @@ export const NAV = [
       { label: 'About NWSC Jinja', k: 'nav.aboutUs', desc: 'Who we are and our teams', icon: 'business-outline', screen: 'About' },
       { label: 'News & announcements', k: 'nav.news', desc: 'Latest from NWSC', icon: 'newspaper-outline', screen: 'News' },
       { label: 'Media gallery', k: 'nav.gallery', desc: 'Projects and community events', icon: 'images-outline', screen: 'MediaGallery' },
+      { label: 'Documents & policies', k: 'nav.documents', desc: 'Laws, policies, decisions and reports', icon: 'library-outline', screen: 'Documents' },
+      { label: "How we're doing", k: 'nav.performance', desc: 'Live performance dashboard', icon: 'stats-chart-outline', screen: 'Performance' },
+      { label: 'Help & learning', k: 'nav.learn', desc: 'Guides, tutorials and practice', icon: 'school-outline', screen: 'Learn' },
       { label: 'FAQs', k: 'nav.faqs', desc: 'Answers to common questions', icon: 'help-buoy-outline', screen: 'FAQs' },
       { label: 'Contact us', k: 'nav.contact', desc: 'Offices, phone and email', icon: 'call-outline', screen: 'Contact' },
     ],

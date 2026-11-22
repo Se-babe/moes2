@@ -10,6 +10,7 @@ import RequestQueue from '../../components/staff/RequestQueue';
 import StaffNavbar, { staffSections } from '../../components/staff/StaffNavbar';
 import AnnouncementsManager from '../../components/staff/AnnouncementsManager';
 import ReportsDashboard from '../../components/staff/ReportsDashboard';
+import StaffTraining from '../../components/staff/StaffTraining';
 import { Container, Card, Grid, Avatar, useBreakpoint } from '../../components/ui';
 import { COLORS, FONT, RADIUS, SPACE, TYPE, gradient } from '../../theme';
 import { fetchDepartments, fetchStaff, fetchWorkload, OPEN_STATUSES } from '../../services/staff';
@@ -122,6 +123,8 @@ function Portal() {
           <View style={{ marginTop: SPACE.xl }}><AnnouncementsManager user={user} /></View>
         ) : section === 'reports' ? (
           <View style={{ marginTop: SPACE.xl }}><ReportsDashboard user={user} /></View>
+        ) : section === 'training' ? (
+          <View style={{ marginTop: SPACE.xl }}><StaffTraining user={user} /></View>
         ) : (
         <View style={[styles.cols, !isDesktop && { flexDirection: 'column' }]}>
           <View style={{ flex: 3 }}>

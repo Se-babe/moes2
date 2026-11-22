@@ -12,6 +12,7 @@ import { showAlert } from '../utils/alert';
 import { downloadCsv } from '../utils/exportFile';
 import AdminUsers from './admin/AdminUsers';
 import AdminDepartments from './admin/AdminDepartments';
+import TrainingAdmin from '../components/staff/TrainingAdmin';
 
 // Human Resources workspace: the workforce (accounts, departments, team
 // performance and a record of changes). HR also has every administrator
@@ -21,6 +22,7 @@ const SECTIONS = [
   { key: 'staff', label: 'Staff accounts', icon: 'people-outline' },
   { key: 'departments', label: 'Departments & routing', icon: 'git-network-outline' },
   { key: 'performance', label: 'Team performance', icon: 'speedometer-outline' },
+  { key: 'training', label: 'Training', icon: 'school-outline' },
   { key: 'changes', label: 'Change log', icon: 'time-outline' },
 ];
 const ROLE_LABEL = { officer: 'Officer', supervisor: 'Supervisor', hr: 'Human Resources', admin: 'Administrator' };
@@ -272,6 +274,7 @@ function Workspace() {
       case 'staff': return <AdminUsers currentUserId={user.id} mode={user.role === 'admin' ? 'admin' : 'hr'} />;
       case 'departments': return <AdminDepartments />;
       case 'performance': return <Performance />;
+      case 'training': return <TrainingAdmin />;
       case 'changes': return <Changes />;
       default: return null;
     }

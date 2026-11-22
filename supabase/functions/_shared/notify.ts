@@ -9,7 +9,7 @@
 // A message that fails at the provider is put on the delivery queue
 // (public.notification_outbox) and retried by announcement-dispatch.
 
-export type Purpose = 'acknowledgement' | 'status_update' | 'announcement' | 'reminder' | 'escalation' | 'review' | 'test';
+export type Purpose = 'acknowledgement' | 'status_update' | 'announcement' | 'reminder' | 'escalation' | 'review' | 'test' | 'participation';
 export type Channel = 'sms' | 'email' | 'whatsapp' | 'telegram' | 'facebook' | 'x';
 export type Outcome = { status: 'sent' | 'failed' | 'skipped'; detail: string; final?: boolean };
 

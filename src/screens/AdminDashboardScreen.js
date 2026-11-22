@@ -19,6 +19,9 @@ import AnnouncementsManager from '../components/staff/AnnouncementsManager';
 import ReportsDashboard from '../components/staff/ReportsDashboard';
 import AdminSurveys from './admin/AdminSurveys';
 import AdminAlerts from './admin/AdminAlerts';
+import AdminDocuments from './admin/AdminDocuments';
+import AdminData from './admin/AdminData';
+import TrainingAdmin from '../components/staff/TrainingAdmin';
 
 const SECTIONS = [
   { group: 'Operations', items: [
@@ -31,6 +34,8 @@ const SECTIONS = [
   { group: 'Organisation', items: [
     { key: 'users', label: 'Staff & users', icon: 'people-outline' },
     { key: 'departments', label: 'Departments & routing', icon: 'git-network-outline' },
+    { key: 'training', label: 'Training', icon: 'school-outline' },
+    { key: 'data', label: 'Data & integration', icon: 'server-outline' },
   ] },
   { group: 'Engagement', items: [
     { key: 'consultations', label: 'Consultations', icon: 'document-text-outline' },
@@ -38,6 +43,7 @@ const SECTIONS = [
     { key: 'forum', label: 'Forum moderation', icon: 'chatbubbles-outline' },
   ] },
   { group: 'Website', items: [
+    { key: 'documents', label: 'Documents & policies', icon: 'library-outline' },
     { key: 'content', label: 'Content & settings', icon: 'albums-outline' },
     { key: 'notifications', label: 'Inbox', icon: 'mail-outline' },
   ] },
@@ -67,6 +73,9 @@ function Console() {
       case 'requests': return <AdminRequests onOpenRequest={openRequest} />;
       case 'announcements': return <AnnouncementsManager user={user} />;
       case 'alerts': return <AdminAlerts />;
+      case 'documents': return <AdminDocuments />;
+      case 'data': return <AdminData />;
+      case 'training': return <TrainingAdmin />;
       case 'reports': return <ReportsDashboard user={user} />;
       case 'surveys': return <AdminSurveys />;
       case 'users': return <AdminUsers currentUserId={user.id} mode={user.role === 'hr' ? 'hr' : 'admin'} />;

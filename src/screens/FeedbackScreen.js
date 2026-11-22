@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { rememberRequest } from '../services/announcements';
 import {
   View,
   Text,
@@ -213,6 +214,7 @@ export default function FeedbackScreen() {
       }
       if (data?.error) throw new Error(data.error);
       setReferenceNo(data?.reference_no || '');
+      if (!isStaff) rememberRequest(data?.reference_no);
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
       setDraftRestored(false);
     } catch (err) {

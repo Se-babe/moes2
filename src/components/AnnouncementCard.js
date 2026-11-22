@@ -5,13 +5,16 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Card, Badge } from './ui';
 import ShareBar from './ShareBar';
 import { COLORS, FONT, SPACE, TYPE } from '../theme';
-import { categoryMeta, fmtDate } from '../services/announcements';
+import { categoryMeta, fmtDate, localizeAnnouncement } from '../services/announcements';
+import { usePreferences } from '../context/PreferencesContext';
 
 export const announcementUrl = (id) =>
   Platform.OS === 'web' && typeof window !== 'undefined' ? siteUrl(`/updates/${id}`) : `https://www.nwsc.co.ug/updates/${id}`;
 
 /** One official service update, as shown to the public. */
-export default function AnnouncementCard({ item, full = false, onOpen }) {
+export default function AnnouncementCard({ item: raw, full = false, onOpen }) {
+  const { language } = usePreferences();
+  const item = localizeAnnouncement(raw, language);
   const meta = categoryMeta(item.category);
   const edited = item.updated_at && item.published_at && new Date(item.updated_at) - new Date(item.published_at) > 60_000;
   const content = (
@@ -43,6 +46,9 @@ export default function AnnouncementCard({ item, full = false, onOpen }) {
       </Text>
       {item.expires_at ? (
         <Text style={[TYPE.small, { marginTop: SPACE.sm }]}>Valid until {fmtDate(item.expires_at)}</Text>
+      ) : null}
+      {item.audiences?.length ? (
+        <Text style={[TYPE.small, { marginTop: SPACE.sm }]}>For: {item.audiences.join(', ')}</Text>
       ) : null}
       <View style={styles.footer}>
         <ShareBar title={item.title} url={announcementUrl(item.id)} />

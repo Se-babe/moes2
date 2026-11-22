@@ -51,3 +51,29 @@ export function printReport(title, bodyHtml) {
 }
 
 export const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/**
+ * Several files in one compressed .zip (smaller to download on mobile data).
+ * files: { 'name.csv': string | Uint8Array }. The zip library loads on demand.
+ */
+export async function downloadZip(filename, files) {
+  const { zipSync, strToU8 } = await import('fflate');
+  const entries = Object.fromEntries(Object.entries(files).map(([name, data]) => [name, typeof data === 'string' ? strToU8(data) : data]));
+  const zipped = zipSync(entries, { level: 9 });
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    const url = URL.createObjectURL(new Blob([zipped], { type: 'application/zip' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } else {
+    const [first] = Object.entries(files);
+    await Share.share({ title: filename, message: typeof first?.[1] === 'string' ? first[1] : filename });
+  }
+}
+
+/** CSV text with a UTF-8 BOM so spreadsheet programs read it correctly. */
+export const csvText = (rows, columns) => '﻿' + toCsv(rows, columns);

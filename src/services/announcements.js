@@ -1,4 +1,23 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabaseClient';
+
+// Who a notice is for (citizen profiles pick one; staff can target several).
+export const STAKEHOLDER_GROUPS = [
+  { value: 'Household', icon: 'home-outline' },
+  { value: 'Business', icon: 'storefront-outline' },
+  { value: 'Institution', icon: 'school-outline', hint: 'School, hospital, church, office' },
+  { value: 'Landlord', icon: 'key-outline' },
+  { value: 'Community leader', icon: 'people-circle-outline' },
+  { value: 'Other', icon: 'person-outline' },
+];
+// Topics for consultations, surveys and policy updates people want to hear about.
+export const INTERESTS = ['Water Supply', 'Tariffs & Billing', 'Sewerage', 'Infrastructure Projects', 'Customer Service', 'General'];
+
+/** An announcement in the reader's language, when staff wrote that version. */
+export function localizeAnnouncement(a, lang) {
+  if (!a || (lang !== 'lg' && lang !== 'xog')) return a;
+  return { ...a, title: a[`title_${lang}`]?.trim() || a.title, body: a[`body_${lang}`]?.trim() || a.body };
+}
 
 export const ANNOUNCEMENT_CATEGORIES = [
   { value: 'Planned interruption', icon: 'construct-outline', tone: 'warning' },
@@ -27,7 +46,7 @@ export async function fetchAreas() {
 /** Published announcements for the public, optionally filtered. */
 export async function fetchPublished({ area, category, limit = 100 } = {}) {
   let q = supabase.from('announcements')
-    .select('id, title, body, category, areas, published_at, updated_at, expires_at')
+    .select('id, title, body, category, areas, audiences, published_at, updated_at, expires_at, starts_at, title_lg, body_lg, title_xog, body_xog')
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(limit);
@@ -68,6 +87,11 @@ export async function saveAnnouncement(row, userId) {
     notify_whatsapp: !!row.notify_whatsapp,
     notify_social: !!row.notify_social,
     starts_at: row.category === 'Planned interruption' ? row.starts_at || null : null,
+    audiences: row.audiences || [],
+    title_lg: row.title_lg?.trim() || null,
+    body_lg: row.body_lg?.trim() || null,
+    title_xog: row.title_xog?.trim() || null,
+    body_xog: row.body_xog?.trim() || null,
     status: row.status,
   };
   const res = row.id
@@ -89,14 +113,54 @@ export function dispatchAlerts() {
   supabase.functions.invoke('announcement-dispatch', { body: {} }).catch(() => {});
 }
 
-export async function subscribeAlerts({ name, phone, email, areas, categories, language, whatsapp }) {
+export async function subscribeAlerts({ name, phone, email, areas, categories, language, whatsapp, stakeholder_group, interests, notify_participation }) {
   const { data, error } = await supabase.rpc('subscribe_alerts', {
     p_name: name || null, p_phone: phone || null, p_email: email || null,
     p_areas: areas || [], p_categories: categories || [], p_language: language || 'en',
     p_whatsapp: !!whatsapp && !!phone,
+    p_group: stakeholder_group || 'Household', p_interests: interests || [], p_participation: notify_participation !== false,
   });
   if (error) throw error;
+  if (data) await saveProfileToken(data);
   return data;
+}
+
+// ---------- Citizen profile ("My NWSC") ----------
+// No password: the private link we send (a token) opens the profile, and this
+// device remembers it.
+const TOKEN_KEY = 'nwsc_profile_token';
+const REFS_KEY = 'nwsc_my_requests';
+
+export const saveProfileToken = (token) => AsyncStorage.setItem(TOKEN_KEY, String(token)).catch(() => {});
+export const loadProfileToken = () => AsyncStorage.getItem(TOKEN_KEY).catch(() => null);
+export const forgetProfileToken = () => AsyncStorage.removeItem(TOKEN_KEY).catch(() => {});
+
+export async function getProfile(token) {
+  const { data, error } = await supabase.rpc('get_profile', { p_token: token });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProfile(token, p) {
+  const { data, error } = await supabase.rpc('update_profile', {
+    p_token: token, p_name: p.name || null, p_areas: p.areas || [], p_categories: p.categories || [],
+    p_language: p.language || 'en', p_whatsapp: !!p.whatsapp, p_group: p.stakeholder_group || 'Household',
+    p_interests: p.interests || [], p_participation: p.notify_participation !== false, p_active: p.is_active !== false,
+  });
+  if (error) throw error;
+  return !!data;
+}
+
+/** Reference numbers this device has submitted or tracked, newest first. */
+export async function rememberRequest(ref) {
+  if (!ref) return;
+  try {
+    const list = JSON.parse((await AsyncStorage.getItem(REFS_KEY)) || '[]').filter((r) => r !== ref);
+    await AsyncStorage.setItem(REFS_KEY, JSON.stringify([ref, ...list].slice(0, 20)));
+  } catch { /* storage unavailable */ }
+}
+export async function myRequests() {
+  try { return JSON.parse((await AsyncStorage.getItem(REFS_KEY)) || '[]'); } catch { return []; }
 }
 
 export async function unsubscribeAlerts(token) {

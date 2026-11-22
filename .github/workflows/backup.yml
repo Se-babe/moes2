@@ -1,0 +1,58 @@
+# Nightly encrypted database backup.
+#
+# The repository is public, so the dump is encrypted (AES-256, gpg) before it
+# is stored as a workflow artifact for 30 days. Needs two repository secrets:
+#   SUPABASE_DB_URL     Supabase dashboard → Project Settings → Database →
+#                       Connection string (URI, session pooler), with password
+#   BACKUP_PASSPHRASE   a long random passphrase; keep a copy somewhere safe
+# Without them the job skips. Restore steps: docs/BACKUP.md
+name: Nightly database backup
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 01:00 UTC = 04:00 Kampala
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Check secrets
+        id: check
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::notice::Backup skipped: add SUPABASE_DB_URL and BACKUP_PASSPHRASE repository secrets (see docs/BACKUP.md)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: supabase/setup-cli@v1
+        if: steps.check.outputs.ok == 'true'
+        with:
+          version: latest
+      - name: Dump schema, data and roles
+        if: steps.check.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          stamp=$(date -u +%Y-%m-%dT%H%MZ)
+          mkdir -p backup
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f backup/data.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f backup/roles.sql
+          tar -czf "nwsc-backup-$stamp.tar.gz" -C backup .
+          gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+              --passphrase "$BACKUP_PASSPHRASE" -o "nwsc-backup-$stamp.tar.gz.gpg" "nwsc-backup-$stamp.tar.gz"
+          rm -rf backup "nwsc-backup-$stamp.tar.gz"
+          ls -la nwsc-backup-*.gpg
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.ok == 'true'
+        with:
+          name: nwsc-db-backup
+          path: nwsc-backup-*.tar.gz.gpg
+          retention-days: 30

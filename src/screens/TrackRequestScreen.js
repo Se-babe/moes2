@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { rememberRequest } from '../services/announcements';
 import {
   View,
   Text,
@@ -121,7 +122,7 @@ export default function TrackRequestScreen() {
     try {
       const { data, error } = await supabase.rpc('track_request', { p_reference: q });
       if (error) throw error;
-      if (data) setResult(data);
+      if (data) { setResult(data); rememberRequest(data.reference_no || q); }
       else setNotFound(true);
     } catch (e) {
       console.error('track_request failed:', e);
