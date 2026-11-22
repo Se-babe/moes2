@@ -161,12 +161,22 @@ function Detail() {
   const isOpen = OPEN_STATUSES.includes(req.status);
   // Officers can hand a request to a teammate; only supervisors and admins
   // can leave it unassigned (the database enforces the same rule).
+  // Supervisors and admins can pick anyone: their own department's staff
+  // first, then other teams (picking one also moves the request there).
+  const deptNameOf = (id) => departments.find((d) => d.id === id)?.name || 'No department';
+  const activeStaff = staff.filter((s) => s.is_active !== false && s.role !== 'admin' && s.department_id);
+  const inTeam = activeStaff.filter((s) => s.department_id === assign.department_id);
+  const otherTeams = canMoveDepartment ? activeStaff.filter((s) => s.department_id !== assign.department_id) : [];
   const assigneeOptions = [
     ...(canMoveDepartment || !req?.assigned_to ? [{ value: null, label: 'Unassigned' }] : []),
-    ...staff
-      .filter((s) => s.is_active !== false && s.role !== 'admin' && (!assign.department_id || s.department_id === assign.department_id))
-      .map((s) => ({ value: s.id, label: s.full_name || s.email, hint: `${s.role}${s.job_title ? ` · ${s.job_title}` : ''}` })),
+    ...inTeam.map((s) => ({ value: s.id, label: s.full_name || s.email, hint: `${s.role}${s.job_title ? ` · ${s.job_title}` : ''}` })),
+    ...otherTeams.map((s) => ({ value: s.id, label: s.full_name || s.email, hint: `${s.role} · ${deptNameOf(s.department_id)} (moves the request)` })),
   ];
+  const pickAssignee = (v) => {
+    const person = activeStaff.find((s) => s.id === v);
+    setAssign((a) => ({ ...a, assigned_to: v, ...(person && person.department_id !== a.department_id ? { department_id: person.department_id } : {}) }));
+  };
+  const noTeam = inTeam.length === 0;
   const authorName = (u) => {
     if (!u.author_id) return 'System';
     if (u.author_id === user.id) return 'You';
@@ -327,7 +337,17 @@ function Detail() {
               options={departments.map((d) => ({ value: d.id, label: d.name, hint: `${d.sla_hours}h target` }))}
               onChange={(v) => setAssign((a) => ({ ...a, department_id: v, assigned_to: v === req.department_id ? req.assigned_to : null }))}
             />
-            <Select label="Assigned officer" value={assign.assigned_to} options={assigneeOptions} onChange={(v) => setAssign((a) => ({ ...a, assigned_to: v }))} />
+            <Select label="Assigned officer" value={assign.assigned_to} options={assigneeOptions} onChange={pickAssignee} />
+            {noTeam && (
+              <Text style={[TYPE.small, { marginTop: -8, marginBottom: SPACE.md, color: COLORS.warning }]}>
+                {canMoveDepartment
+                  ? `No active staff in ${deptNameOf(assign.department_id)} yet — pick someone from another team, or add staff under Admin → Staff & users.`
+                  : 'No other active staff in this department.'}
+              </Text>
+            )}
+            {assign.department_id !== req.department_id && (
+              <Text style={[TYPE.small, { marginTop: -8, marginBottom: SPACE.md }]}>Saving moves this request to {deptNameOf(assign.department_id)}.</Text>
+            )}
             <Select label="Priority" value={assign.priority} options={PRIORITIES.map((p) => ({ value: p, label: p }))} onChange={(v) => setAssign((a) => ({ ...a, priority: v }))} />
             {!canMoveDepartment && <Text style={[TYPE.small, { marginTop: -8, marginBottom: SPACE.md }]}>Ask a supervisor to move this to another department.</Text>}
             <Button

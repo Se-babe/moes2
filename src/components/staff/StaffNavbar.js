@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView, StyleSheet, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -169,9 +169,13 @@ export default function StaffNavbar({ active, children }) {
   );
 }
 
+// On the web the navigation card grows with its content, so a workspace that
+// should scroll inside itself is pinned to the visible screen instead.
+const FILL_SCREEN = Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } : null;
+
 const styles = StyleSheet.create({
   bar: { backgroundColor: COLORS.primaryDarker, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', zIndex: 20 },
-  shell: { flex: 1, backgroundColor: COLORS.bg },
+  shell: { flex: 1, backgroundColor: COLORS.bg, ...FILL_SCREEN },
   body: { flex: 1, flexDirection: 'row' },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, height: 64, width: '100%', paddingHorizontal: LAYOUT.gutter },
   sidebar: { width: 248, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200, paddingVertical: SPACE.lg, paddingHorizontal: 12 },
