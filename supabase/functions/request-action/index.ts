@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const profileRes = await fetch(`${url}/rest/v1/users?id=eq.${caller.id}&select=id,full_name,role,is_active`, { headers: asCaller });
     const [profile] = profileRes.ok ? await profileRes.json() : [];
-    if (!profile || !['officer', 'supervisor', 'admin'].includes(profile.role) || profile.is_active === false) {
+    if (!profile || !['officer', 'supervisor', 'admin', 'hr'].includes(profile.role) || profile.is_active === false) {
       return json({ error: 'Only active NWSC staff can update requests.' }, 403);
     }
 

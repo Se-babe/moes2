@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { hasAdminPowers } from '../../services/staff';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase } from '../../services/supabaseClient';
@@ -106,7 +107,7 @@ function TrendChart({ buckets }) {
 
 export default function ReportsDashboard({ user }) {
   const { isDesktop } = useBreakpoint();
-  const isAdmin = user.role === 'admin';
+  const isAdmin = hasAdminPowers(user.role);
   const [range, setRange] = useState(RANGES[1]);
   const [dept, setDept] = useState(isAdmin ? null : user.department_id);
   const [departments, setDepartments] = useState([]);

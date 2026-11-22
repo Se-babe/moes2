@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { hasAdminPowers } from '../../services/staff';
 import { View, Text, ScrollView, StyleSheet, Image, Linking, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -61,7 +62,7 @@ function Detail() {
   const [assign, setAssign] = useState({});
   const [savingAssign, setSavingAssign] = useState(false);
 
-  const canMoveDepartment = user.role === 'supervisor' || user.role === 'admin';
+  const canMoveDepartment = user.role === 'supervisor' || hasAdminPowers(user.role);
 
   const load = useCallback(async () => {
     try {
@@ -164,7 +165,7 @@ function Detail() {
   // Supervisors and admins can pick anyone: their own department's staff
   // first, then other teams (picking one also moves the request there).
   const deptNameOf = (id) => departments.find((d) => d.id === id)?.name || 'No department';
-  const activeStaff = staff.filter((s) => s.is_active !== false && s.role !== 'admin' && s.department_id);
+  const activeStaff = staff.filter((s) => s.is_active !== false && ['officer', 'supervisor'].includes(s.role) && s.department_id);
   const inTeam = activeStaff.filter((s) => s.department_id === assign.department_id);
   const otherTeams = canMoveDepartment ? activeStaff.filter((s) => s.department_id !== assign.department_id) : [];
   const assigneeOptions = [
@@ -379,7 +380,7 @@ function Detail() {
 
 export default function StaffRequestScreen() {
   return (
-    <StaffGate roles={['officer', 'supervisor', 'admin']}>
+    <StaffGate roles={['officer', 'supervisor', 'admin', 'hr']}>
       <StaffNavbar active="queue">
         <Detail />
       </StaffNavbar>

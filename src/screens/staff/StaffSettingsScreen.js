@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { hasAdminPowers } from '../../services/staff';
 import { View, Text, ScrollView, StyleSheet, Pressable, Switch } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -132,7 +133,7 @@ function ProfileTab() {
         </View>
         <ReadOnly icon="mail-outline" label="Email (sign-in)" value={user.email} />
         <ReadOnly icon="ribbon-outline" label="Role" value={ROLE_LABEL[user.role] || user.role} />
-        <ReadOnly icon="business-outline" label="Department" value={dept?.name || (user.role === 'admin' ? 'All departments' : 'Not assigned')} />
+        <ReadOnly icon="business-outline" label="Department" value={dept?.name || (hasAdminPowers(user.role) ? 'All departments' : 'Not assigned')} />
         <ReadOnly icon="briefcase-outline" label="Job title" value={user.job_title} />
         <Text style={[TYPE.small, { marginTop: SPACE.md }]}>To change any of these, ask an administrator.</Text>
       </Card>
@@ -225,7 +226,7 @@ function PreferencesTab() {
   const { user, updateProfile } = useAuth();
   const p = usePreferences();
   const prefs = user.preferences || {};
-  const supervisor = user.role === 'supervisor' || user.role === 'admin';
+  const supervisor = user.role === 'supervisor' || hasAdminPowers(user.role);
 
   const save = async (patch) => {
     try {
@@ -242,7 +243,6 @@ function PreferencesTab() {
 
   return (
     <View style={{ gap: SPACE.xl }}>
-      {user.role !== 'hr' && (
       <Card>
         <Text style={TYPE.h3}>Workspace</Text>
         <Text style={[TYPE.small, { marginTop: 4 }]}>Saved to your account, so they follow you to any device.</Text>
@@ -251,7 +251,6 @@ function PreferencesTab() {
         <Text style={styles.label}>Work queue shows first</Text>
         <Segment label="Default queue" value={prefs.default_queue || queueOptions[0].value} onChange={(v) => save({ default_queue: v })} options={queueOptions} />
       </Card>
-      )}
 
       <Card>
         <Text style={TYPE.h3}>Display</Text>

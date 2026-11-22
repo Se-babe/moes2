@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { hasAdminPowers } from '../../services/staff';
 import { View, Text, StyleSheet, Pressable, Modal, ScrollView, Switch } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Card, Button, Badge, TextField, Select, EmptyState, Loading, useBreakpoint } from '../ui';
@@ -58,7 +59,7 @@ function deliveryLine(rows) {
 }
 
 function Editor({ initial, areas, user, onClose, onSaved }) {
-  const isReviewer = user.role === 'supervisor' || user.role === 'admin';
+  const isReviewer = user.role === 'supervisor' || hasAdminPowers(user.role);
   const [form, setForm] = useState({
     ...EMPTY,
     ...initial,
@@ -162,7 +163,7 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
       <View style={styles.actions}>
         <Button title="Cancel" variant="ghost" onPress={onClose} />
         <Button title="Save draft" variant="secondary" loading={busy === 'draft'} onPress={() => persist('draft')} />
-        {user.role === 'admin' ? (
+        {hasAdminPowers(user.role) ? (
           <Button
             title={scheduled ? 'Schedule' : 'Publish now'}
             icon={scheduled ? 'time-outline' : 'send'}
@@ -173,7 +174,7 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
           <Button title="Submit for approval" icon="send" loading={busy === 'pending'} onPress={() => persist('pending')} />
         )}
       </View>
-      {isReviewer && user.role !== 'admin' && (
+      {isReviewer && !hasAdminPowers(user.role) && (
         <Text style={[TYPE.small, { textAlign: 'right', marginTop: 6 }]}>Your own announcements are approved by another supervisor or an administrator.</Text>
       )}
     </View>
@@ -182,7 +183,7 @@ function Editor({ initial, areas, user, onClose, onSaved }) {
 
 export default function AnnouncementsManager({ user }) {
   const { isDesktop } = useBreakpoint();
-  const isReviewer = user.role === 'supervisor' || user.role === 'admin';
+  const isReviewer = user.role === 'supervisor' || hasAdminPowers(user.role);
   const filters = [
     ...(isReviewer ? [['review', 'Awaiting approval']] : []),
     ['mine', 'My announcements'], ['scheduled', 'Scheduled'], ['published', 'Published'], ['all', 'All'],
@@ -207,7 +208,7 @@ export default function AnnouncementsManager({ user }) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     fetchAreas().then(setAreas);
-    if (user.role === 'admin') {
+    if (hasAdminPowers(user.role)) {
       supabase.from('alert_subscriptions').select('id', { count: 'exact', head: true }).eq('is_active', true)
         .then(({ count }) => setSubscribers(count ?? 0));
     }
@@ -258,7 +259,7 @@ export default function AnnouncementsManager({ user }) {
         const st = STATUS_META[a.status];
         const meta = categoryMeta(a.category);
         const canEdit = (a.author_id === user.id && ['draft', 'pending', 'rejected'].includes(a.status)) || isReviewer;
-        const canReview = isReviewer && a.status === 'pending' && (a.author_id !== user.id || user.role === 'admin');
+        const canReview = isReviewer && a.status === 'pending' && (a.author_id !== user.id || hasAdminPowers(user.role));
         return (
           <Card key={a.id} style={{ gap: 6 }}>
             <View style={styles.rowTop}>
@@ -293,7 +294,7 @@ export default function AnnouncementsManager({ user }) {
               {canReview && <Button title="Request changes" icon="arrow-undo-outline" size="sm" variant="secondary" onPress={() => review(a, 'reject')} />}
               {canEdit && <Button title="Edit" icon="create-outline" size="sm" variant="secondary" onPress={() => setEditing(a)} />}
               {isReviewer && ['published', 'scheduled'].includes(a.status) && <Button title="Archive" icon="archive-outline" size="sm" variant="ghost" onPress={() => review(a, 'archive')} />}
-              {(user.role === 'admin' || (a.author_id === user.id && ['draft', 'rejected'].includes(a.status))) && (
+              {(hasAdminPowers(user.role) || (a.author_id === user.id && ['draft', 'rejected'].includes(a.status))) && (
                 <Button title="Delete" icon="trash-outline" size="sm" variant="ghost" onPress={() => remove(a)} />
               )}
             </View>

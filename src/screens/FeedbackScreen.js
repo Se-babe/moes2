@@ -82,7 +82,7 @@ export default function FeedbackScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
-  const isStaff = ['officer', 'supervisor', 'admin'].includes(user?.role);
+  const isStaff = ['officer', 'supervisor', 'admin', 'hr'].includes(user?.role);
   const { isDesktop } = useBreakpoint();
 
   const [requestType, setRequestType] = useState('Complaint');

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { hasAdminPowers } from '../../services/staff';
 import { View, Text, Pressable, Modal, ScrollView, StyleSheet, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -11,13 +12,7 @@ const ROLE_LABEL = { officer: 'Officer', supervisor: 'Supervisor', admin: 'Admin
 
 /** The sections of the staff workspace, filtered by role. */
 export function staffSections(role) {
-  if (role === 'hr') {
-    return [
-      { key: 'hr', label: 'HR dashboard', icon: 'people-circle-outline' },
-      { key: 'settings', label: 'Settings', icon: 'settings-outline' },
-    ];
-  }
-  const supervisor = role === 'supervisor' || role === 'admin';
+  const supervisor = role === 'supervisor' || hasAdminPowers(role);
   return [
     { key: 'queue', label: 'Work queue', icon: 'file-tray-full-outline' },
     { key: 'announcements', label: 'Announcements', icon: 'megaphone-outline' },
@@ -90,11 +85,14 @@ export default function StaffNavbar({ active, children }) {
     <View style={styles.sidebar} accessibilityRole="navigation">
       <Text style={styles.sideHeading}>Workspace</Text>
       {sections.map((s) => <SideLink key={s.key} icon={s.icon} label={s.label} on={active === s.key} onPress={() => go(s.key)} />)}
-      {user.role !== 'hr' && <SideLink icon="call-outline" label="Log a call or walk-in" onPress={() => navigation.navigate('Feedback')} />}
+      <SideLink icon="call-outline" label="Log a call or walk-in" onPress={() => navigation.navigate('Feedback')} />
       <View style={{ flex: 1 }} />
       <View style={styles.sideFoot}>
-        {user.role === 'admin' && (
+        {hasAdminPowers(user.role) && (
           <SideLink icon="shield-checkmark-outline" label="Admin console" onPress={() => navigation.navigate('AdminDashboard')} />
+        )}
+        {hasAdminPowers(user.role) && (
+          <SideLink icon="people-circle-outline" label="HR dashboard" onPress={() => navigation.navigate('HRDashboard')} />
         )}
         <SideLink icon="globe-outline" label="Public website" onPress={() => navigation.navigate('Home')} />
         <SideLink icon="log-out-outline" label="Sign out" danger onPress={() => { signOut(); navigation.navigate('Login'); }} />
@@ -159,12 +157,15 @@ export default function StaffNavbar({ active, children }) {
                 </Text>
               </View>
             </View>
-            {user.role !== 'hr' && <MenuItem icon="call-outline" label="Log a call or walk-in" onPress={() => { setMenuOpen(false); navigation.navigate('Feedback'); }} />}
+            <MenuItem icon="call-outline" label="Log a call or walk-in" onPress={() => { setMenuOpen(false); navigation.navigate('Feedback'); }} />
             <MenuItem icon="person-circle-outline" label="My profile" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'profile' }); }} />
             <MenuItem icon="lock-closed-outline" label="Password & security" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'security' }); }} />
             <MenuItem icon="options-outline" label="Preferences" onPress={() => { setMenuOpen(false); navigation.navigate('StaffSettings', { tab: 'preferences' }); }} />
-            {user.role === 'admin' && (
+            {hasAdminPowers(user.role) && (
               <MenuItem icon="shield-checkmark-outline" label="Admin console" onPress={() => { setMenuOpen(false); navigation.navigate('AdminDashboard'); }} />
+            )}
+            {hasAdminPowers(user.role) && (
+              <MenuItem icon="people-circle-outline" label="HR dashboard" onPress={() => { setMenuOpen(false); navigation.navigate('HRDashboard'); }} />
             )}
             <MenuItem icon="globe-outline" label="View public website" onPress={() => { setMenuOpen(false); navigation.navigate('Home'); }} />
             <View style={styles.menuDivider} />

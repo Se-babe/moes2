@@ -44,7 +44,7 @@ export default function AdminOverview({ onNavigateTab, onOpenRequest }) {
       supabase.from('consultations').select('id', { count: 'exact', head: true }).eq('is_active', false),
       supabase.from('notification_log').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('created_at', since7),
       supabase.from('users').select('id', { count: 'exact', head: true }),
-      supabase.from('users').select('id', { count: 'exact', head: true }).in('role', ['officer', 'supervisor', 'admin']).eq('is_active', true),
+      supabase.from('users').select('id', { count: 'exact', head: true }).in('role', ['officer', 'supervisor', 'admin', 'hr']).eq('is_active', true),
     ]);
     const rows = reqRes.data || [];
     const now = Date.now();

@@ -18,12 +18,10 @@ const ROLE_OPTIONS = [
   { value: 'admin', label: 'Administrator', hint: 'Full control of the system' },
 ];
 const ROLE_TONE = { admin: 'danger', supervisor: 'warning', officer: 'brand', hr: 'info' };
-// HR manages the workforce below administrators; administrators manage everyone.
-const HR_ROLES = ['officer', 'supervisor', 'hr'];
-const roleOptionsFor = (mode) => ROLE_OPTIONS.filter((r) => (mode === 'hr' ? HR_ROLES.includes(r.value) : true));
-const filtersFor = (mode) => (mode === 'hr'
-  ? [['staff', 'Active staff'], ['inactive', 'Deactivated'], ['all', 'All staff']]
-  : [['staff', 'Staff'], ['citizens', 'Public users'], ['inactive', 'Deactivated'], ['all', 'Everyone']]);
+// HR can do everything an administrator can except manage administrator
+// accounts: it can't edit an administrator or give anyone that role.
+const roleOptionsFor = (mode) => ROLE_OPTIONS.filter((r) => mode !== 'hr' || r.value !== 'admin');
+const FILTERS = [['staff', 'Staff'], ['citizens', 'Public users'], ['inactive', 'Deactivated'], ['all', 'Everyone']];
 const deptOptional = (role) => role === 'admin' || role === 'hr';
 
 function UserEditor({ target, departments, currentUserId, mode, onClose, onSaved }) {
@@ -227,16 +225,14 @@ export default function AdminUsers({ currentUserId, mode = 'admin' }) {
 
   const deptName = useMemo(() => Object.fromEntries(departments.map((d) => [d.id, d.name])), [departments]);
 
-  const FILTERS = filtersFor(mode);
   const open = (u) => {
-    if (mode === 'hr' && !HR_ROLES.includes(u.role)) {
+    if (mode === 'hr' && u.role === 'admin') {
       showAlert('Managed by administrators', 'Administrator accounts can only be changed by another administrator.');
       return;
     }
     setEditing(u);
   };
   const shown = users.filter((u) => {
-    if (mode === 'hr' && !STAFF_ROLES.includes(u.role)) return false;
     const staff = STAFF_ROLES.includes(u.role);
     if (filter === 'staff' && (!staff || u.is_active === false)) return false;
     if (filter === 'citizens' && staff) return false;
@@ -291,7 +287,7 @@ export default function AdminUsers({ currentUserId, mode = 'admin' }) {
               <Badge label={(ROLE_OPTIONS.find((r) => r.value === u.role) || { label: u.role || 'citizen' }).label} tone={ROLE_TONE[u.role] || 'neutral'} />
               {u.is_active === false && <Badge label="Deactivated" tone="neutral" />}
             </View>
-            <Ionicons name={mode === 'hr' && !HR_ROLES.includes(u.role) ? 'lock-closed-outline' : 'create-outline'} size={18} color={COLORS.gray400} />
+            <Ionicons name={mode === 'hr' && u.role === 'admin' ? 'lock-closed-outline' : 'create-outline'} size={18} color={COLORS.gray400} />
           </Pressable>
         ))}
       </Card>

@@ -432,7 +432,7 @@ export default function ConsultationsScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      {['officer', 'supervisor', 'admin'].includes(user?.role) && (
+      {['officer', 'supervisor', 'admin', 'hr'].includes(user?.role) && (
       <View style={styles.statsSection}>
         <TouchableOpacity style={styles.statsBtn} onPress={handlePrint}>
           <Ionicons name="print-outline" size={18} color="#fff" />

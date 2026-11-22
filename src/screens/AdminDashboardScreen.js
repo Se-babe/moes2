@@ -69,7 +69,7 @@ function Console() {
       case 'alerts': return <AdminAlerts />;
       case 'reports': return <ReportsDashboard user={user} />;
       case 'surveys': return <AdminSurveys />;
-      case 'users': return <AdminUsers currentUserId={user.id} />;
+      case 'users': return <AdminUsers currentUserId={user.id} mode={user.role === 'hr' ? 'hr' : 'admin'} />;
       case 'departments': return <AdminDepartments />;
       case 'consultations': return <AdminConsultations />;
       case 'forum': return <AdminForum />;
@@ -153,7 +153,7 @@ function Console() {
 
 export default function AdminDashboardScreen() {
   return (
-    <StaffGate roles={['admin']}>
+    <StaffGate roles={['admin', 'hr']}>
       <Console />
     </StaffGate>
   );

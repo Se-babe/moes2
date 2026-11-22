@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
           headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
         }).then((r) => (r.ok ? r.json() : []))
         : [];
-      if (!p[0] || !['officer', 'supervisor', 'admin'].includes(p[0].role) || p[0].is_active === false) {
+      if (!p[0] || !['officer', 'supervisor', 'admin', 'hr'].includes(p[0].role) || p[0].is_active === false) {
         return json({ error: 'Only NWSC staff can log requests received by phone or in person.' }, 403);
       }
       loggedBy = userId;

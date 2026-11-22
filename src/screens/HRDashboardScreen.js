@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { hasAdminPowers } from '../services/staff';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -13,8 +14,8 @@ import AdminUsers from './admin/AdminUsers';
 import AdminDepartments from './admin/AdminDepartments';
 
 // Human Resources workspace: the workforce (accounts, departments, team
-// performance and a record of changes). No citizen requests or contact
-// details are shown here; the database enforces the same limits.
+// performance and a record of changes). HR also has every administrator
+// power through the admin console, except control of administrator accounts.
 const SECTIONS = [
   { key: 'overview', label: 'Overview', icon: 'grid-outline' },
   { key: 'staff', label: 'Staff accounts', icon: 'people-outline' },
@@ -292,7 +293,7 @@ function Workspace() {
         </Pressable>
       ))}
       <View style={{ flex: 1 }} />
-      {user.role === 'admin' && (
+      {hasAdminPowers(user.role) && (
         <Pressable style={styles.navItem} onPress={() => navigation.navigate('AdminDashboard')}>
           <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.gray500} />
           <Text style={styles.navText}>Admin console</Text>

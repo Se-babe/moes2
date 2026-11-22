@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { hasAdminPowers } from '../../services/staff';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
@@ -37,7 +38,7 @@ function Portal() {
   const [workload, setWorkload] = useState([]);
   const [kpis, setKpis] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
-  const isSupervisor = user.role === 'supervisor' || user.role === 'admin';
+  const isSupervisor = user.role === 'supervisor' || hasAdminPowers(user.role);
   const prefs = user.preferences || {};
   const allowed = staffSections(user.role).map((s) => s.key).filter((k) => k !== 'settings');
   const wanted = route.params?.tab || prefs.start_section;
@@ -95,14 +96,14 @@ function Portal() {
             </Text>
             <Text style={styles.bandSub}>
               {user.job_title ? `${user.job_title} · ` : ''}{user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              {myDept ? ` · ${myDept.name}` : user.role !== 'admin' ? ' · No department assigned' : ''}
+              {myDept ? ` · ${myDept.name}` : !hasAdminPowers(user.role) ? ' · No department assigned' : ''}
             </Text>
           </View>
         </Container>
       </View>
 
       <Container style={{ marginTop: -36 }}>
-        {!user.department_id && user.role !== 'admin' && (
+        {!user.department_id && !hasAdminPowers(user.role) && (
           <Card style={styles.warn}>
             <Ionicons name="information-circle" size={20} color={COLORS.warning} />
             <Text style={[TYPE.body, { flex: 1 }]}>
@@ -166,7 +167,7 @@ function Portal() {
 
 export default function StaffPortalScreen() {
   return (
-    <StaffGate roles={['officer', 'supervisor', 'admin']}>
+    <StaffGate roles={['officer', 'supervisor', 'admin', 'hr']}>
       <Portal />
     </StaffGate>
   );

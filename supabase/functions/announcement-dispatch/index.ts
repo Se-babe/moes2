@@ -241,7 +241,7 @@ async function adminAction(req: Request, body: { action: string; channel?: strin
   const caller = await u.json();
   const p = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${caller.id}&select=role,is_active,phone,email,full_name`, { headers: svc });
   const [profile] = p.ok ? await p.json() : [];
-  if (!profile || profile.role !== 'admin' || profile.is_active === false) return json({ error: 'Administrators only.' }, 403);
+  if (!profile || !['admin', 'hr'].includes(profile.role) || profile.is_active === false) return json({ error: 'Administrators and HR only.' }, 403);
 
   if (body.action === 'status') return json({ channels: channelStatus(), site_url: !!SITE });
 

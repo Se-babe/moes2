@@ -4,10 +4,12 @@ import { supabase } from './supabaseClient';
 // the database decides what each staff member can see; these helpers just
 // shape the queries.
 
-export const STAFF_ROLES = ['officer', 'supervisor', 'admin'];
+export const STAFF_ROLES = ['officer', 'supervisor', 'admin', 'hr'];
 export const isStaffRole = (role) => STAFF_ROLES.includes(role);
-/** Everyone who signs in: request-handling staff plus HR. */
-export const WORKFORCE_ROLES = [...STAFF_ROLES, 'hr'];
+/** Everyone who signs in to a workspace. */
+export const WORKFORCE_ROLES = STAFF_ROLES;
+/** Administrators and HR share every power except control of administrator accounts. */
+export const hasAdminPowers = (role) => role === 'admin' || role === 'hr';
 /** Each role's own workspace (null for public users). */
 export const homeForRole = (role) =>
   role === 'admin' ? 'AdminDashboard' : role === 'hr' ? 'HRDashboard' : role === 'officer' || role === 'supervisor' ? 'StaffPortal' : null;
