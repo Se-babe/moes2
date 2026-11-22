@@ -84,7 +84,7 @@ export default function StaffNavbar({ active, children }) {
     </Pressable>
   );
   const sidebar = (
-    <View style={styles.sidebar} accessibilityRole="navigation">
+    <ScrollView style={styles.sidebar} contentContainerStyle={styles.sidebarInner} accessibilityRole="navigation">
       <Text style={styles.sideHeading}>Workspace</Text>
       {sections.map((s) => <SideLink key={s.key} icon={s.icon} label={s.label} on={active === s.key} onPress={() => go(s.key)} />)}
       <SideLink icon="call-outline" label="Log a call or walk-in" onPress={() => navigation.navigate('Feedback')} />
@@ -99,7 +99,7 @@ export default function StaffNavbar({ active, children }) {
         <SideLink icon="globe-outline" label="Public website" onPress={() => navigation.navigate('Home')} />
         <SideLink icon="log-out-outline" label="Sign out" danger onPress={() => { signOut(); navigation.navigate('Login'); }} />
       </View>
-    </View>
+    </ScrollView>
   );
 
   return (
@@ -189,7 +189,8 @@ const styles = StyleSheet.create({
   shell: { flex: 1, backgroundColor: COLORS.bg, ...FILL_SCREEN },
   body: { flex: 1, flexDirection: 'row' },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, height: 64, width: '100%', paddingHorizontal: LAYOUT.gutter },
-  sidebar: { width: 248, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200, paddingVertical: SPACE.lg, paddingHorizontal: 12 },
+  sidebar: { width: 248, flexGrow: 0, flexShrink: 0, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200 },
+  sidebarInner: { flexGrow: 1, paddingVertical: SPACE.lg, paddingHorizontal: 12 },
   sideHeading: { fontFamily: FONT, fontSize: 11.5, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: COLORS.gray400, paddingHorizontal: 12, marginBottom: 8 },
   side: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingRight: 12, borderRadius: RADIUS.md, marginBottom: 2 },
   sideOn: { backgroundColor: COLORS.primarySoft },

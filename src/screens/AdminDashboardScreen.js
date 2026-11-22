@@ -91,8 +91,10 @@ function Console() {
 
   const current = ALL.find((t) => t.key === active);
 
+  // The desktop sidebar scrolls on its own when the window is short.
+  const NavBox = isDesktop ? ScrollView : View;
   const nav = (
-    <View style={isDesktop ? styles.sideNav : styles.topNav}>
+    <NavBox style={isDesktop ? styles.sideNav : styles.topNav} {...(isDesktop ? { contentContainerStyle: styles.sideNavInner, showsVerticalScrollIndicator: true } : {})}>
       {isDesktop ? (
         SECTIONS.map((s) => (
           <View key={s.group} style={{ marginBottom: SPACE.lg }}>
@@ -128,7 +130,7 @@ function Console() {
           <Button title="Sign out" icon="log-out-outline" variant="ghost" size="sm" full onPress={signOut} />
         </View>
       )}
-    </View>
+    </NavBox>
   );
 
   return (
@@ -185,7 +187,8 @@ const styles = StyleSheet.create({
   badge: { width: 38, height: 38, borderRadius: 10, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: FONT, fontSize: 17, fontWeight: '800', color: COLORS.gray900 },
   body: { flex: 1, flexDirection: 'row' },
-  sideNav: { width: 250, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200, padding: SPACE.lg },
+  sideNav: { width: 250, flexGrow: 0, flexShrink: 0, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200 },
+  sideNavInner: { flexGrow: 1, padding: SPACE.lg },
   topNav: { paddingVertical: 10, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.gray200 },
   group: { fontFamily: FONT, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: COLORS.gray400, marginBottom: 6, marginLeft: 10 },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 9, borderRadius: RADIUS.sm },

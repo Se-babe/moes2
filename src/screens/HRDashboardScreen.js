@@ -282,7 +282,7 @@ function Workspace() {
   };
 
   const nav = isDesktop ? (
-    <View style={styles.sideNav}>
+    <ScrollView style={styles.sideNav} contentContainerStyle={styles.sideNavInner}>
       <Text style={styles.group}>Human Resources</Text>
       {SECTIONS.map((s) => (
         <Pressable
@@ -315,7 +315,7 @@ function Workspace() {
         <Ionicons name="log-out-outline" size={18} color={COLORS.danger} />
         <Text style={[styles.navText, { color: COLORS.danger }]}>Sign out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   ) : (
     <View style={styles.topNav}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: SPACE.lg }}>
@@ -380,7 +380,8 @@ const styles = StyleSheet.create({
   badge: { width: 38, height: 38, borderRadius: 10, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: FONT, fontSize: 17, fontWeight: '800', color: COLORS.gray900 },
   body: { flex: 1, flexDirection: 'row' },
-  sideNav: { width: 250, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200, padding: SPACE.lg },
+  sideNav: { width: 250, flexGrow: 0, flexShrink: 0, backgroundColor: COLORS.white, borderRightWidth: 1, borderRightColor: COLORS.gray200 },
+  sideNavInner: { flexGrow: 1, padding: SPACE.lg },
   topNav: { paddingVertical: 10, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.gray200 },
   group: { fontFamily: FONT, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: COLORS.gray400, marginBottom: 6, marginLeft: 10 },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 9, borderRadius: RADIUS.sm },
