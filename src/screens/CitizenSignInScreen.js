@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { PageHeader, Container, Card, Button, TextField } from '../components/ui';
 import Footer from '../components/Footer';
 import { COLORS, RADIUS, SPACE, TYPE } from '../theme';
 import { useAuth } from '../context/AuthContext';
-import { requestSignInCode, verifySignInCode } from '../services/citizen';
+import { requestSignInCode, verifySignInCode, signInRemembered, rememberedNumbers, normalizePhone } from '../services/citizen';
 
 const PHONE_RE = /^(\+?256|0)?7\d{8}$/;
 
@@ -20,9 +20,13 @@ export default function CitizenSignInScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [wait, setWait] = useState(0);
+  const [remember, setRemember] = useState(true);
+  const [known, setKnown] = useState([]);
   const timer = useRef(null);
 
   useEffect(() => () => clearInterval(timer.current), []);
+  // Numbers this device remembers: one tap (or just the number) signs in.
+  useEffect(() => { rememberedNumbers().then((list) => { setKnown(list); if (list[0]) setPhone(list[0].replace(/^\+256/, '0')); }); }, []);
   useEffect(() => { if (user?.role === 'citizen') navigation.navigate('Me'); }, [user, navigation]);
 
   const startWait = () => {
@@ -36,6 +40,8 @@ export default function CitizenSignInScreen() {
     if (!PHONE_RE.test(phone.replace(/\s/g, ''))) { setError('Enter a Ugandan mobile number, e.g. 0772 123456.'); return; }
     setBusy(true);
     try {
+      // Remembered on this device? Then the number is enough.
+      if (await signInRemembered(phone)) { navigation.navigate('Me'); return; }
       await requestSignInCode(phone);
       setStep('code');
       setCode('');
@@ -52,7 +58,7 @@ export default function CitizenSignInScreen() {
     if (!/^\d{6}$/.test(code.trim())) { setError('Enter the 6-digit code from the SMS.'); return; }
     setBusy(true);
     try {
-      await verifySignInCode(phone, code.trim());
+      await verifySignInCode(phone, code.trim(), remember);
       navigation.navigate('Me');
     } catch (e) {
       setError(e.message);
@@ -68,11 +74,15 @@ export default function CitizenSignInScreen() {
         <Card elevated style={{ gap: SPACE.md }}>
           {step === 'phone' ? (
             <>
-              <Text style={TYPE.h3}>Your mobile number</Text>
-              <Text style={TYPE.small}>We'll send a 6-digit code by SMS. Standard SMS is free to receive.</Text>
+              <Text style={TYPE.h3}>{known.length ? 'Welcome back' : 'Your mobile number'}</Text>
+              <Text style={TYPE.small}>
+                {known.includes(normalizePhone(phone))
+                  ? 'This phone remembers your number — no code needed.'
+                  : "We'll send a 6-digit code by SMS the first time on this phone. Standard SMS is free to receive."}
+              </Text>
               <TextField label="Phone" value={phone} onChangeText={(v) => { setPhone(v); setError(''); }} keyboardType="phone-pad" autoComplete="tel"
                 placeholder="0772 123456" error={error || undefined} onSubmitEditing={send} />
-              <Button title="Send me a code" icon="chatbubble-ellipses-outline" size="lg" loading={busy} onPress={send} />
+              <Button title={known.includes(normalizePhone(phone)) ? 'Sign in' : 'Continue'} icon="log-in-outline" size="lg" loading={busy} onPress={send} />
             </>
           ) : (
             <>
@@ -81,6 +91,13 @@ export default function CitizenSignInScreen() {
               <TextField label="6-digit code" value={code} onChangeText={(v) => { setCode(v.replace(/\D/g, '').slice(0, 6)); setError(''); }}
                 keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={6}
                 placeholder="123456" error={error || undefined} onSubmitEditing={verify} inputStyle={{ fontSize: 22, letterSpacing: 6 }} />
+              <Pressable onPress={() => setRemember((v) => !v)} style={styles.check} accessibilityRole="checkbox" accessibilityState={{ checked: remember }}>
+                <Ionicons name={remember ? 'checkbox' : 'square-outline'} size={20} color={remember ? COLORS.primary : COLORS.gray400} />
+                <View style={{ flex: 1 }}>
+                  <Text style={TYPE.label}>Remember this phone</Text>
+                  <Text style={TYPE.small}>Next time, just your number signs you in here. Untick on a shared phone.</Text>
+                </View>
+              </Pressable>
               <Button title="Sign in" icon="log-in-outline" size="lg" loading={busy} onPress={verify} />
               <View style={styles.row}>
                 <Button title="Change number" variant="ghost" size="sm" onPress={() => { setStep('phone'); setError(''); }} />
@@ -108,5 +125,6 @@ export default function CitizenSignInScreen() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
+  check: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', paddingVertical: 4 },
   note: { flexDirection: 'row', gap: 10, padding: SPACE.md, borderRadius: RADIUS.md, backgroundColor: COLORS.primarySoft },
 });

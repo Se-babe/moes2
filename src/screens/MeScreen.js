@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { isCitizen, myProfileToken, claimProfile, mySignedInRequests, deleteMyAccount } from '../services/citizen';
+import { isCitizen, myProfileToken, claimProfile, mySignedInRequests, deleteMyAccount, forgetThisDevice, signOutEverywhere } from '../services/citizen';
 import { useAuth } from '../context/AuthContext';
 import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -282,9 +282,16 @@ export default function MeScreen() {
         {signedIn ? (
           <Card style={{ gap: SPACE.sm }}>
             <Text style={TYPE.h3}>My account</Text>
-            <Text style={TYPE.small}>Signed in with {user.phone}. Your profile and requests follow you to any phone or computer where you sign in.</Text>
+            <Text style={TYPE.small}>Signed in with {user.phone}. Your profile and requests follow you to any phone or computer where you sign in. On a remembered phone, "Sign out" keeps it remembered, so next time your number alone signs you in.</Text>
             <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
               <Button title="Sign out" icon="log-out-outline" size="sm" variant="secondary" onPress={async () => { await signOut(); await forgetProfileToken(); setToken(null); }} />
+              <Button title="Sign out and forget this phone" icon="phone-portrait-outline" size="sm" variant="ghost"
+                onPress={async () => { await forgetThisDevice(user.phone); await signOut(); await forgetProfileToken(); setToken(null); }} />
+              <Button title="Sign out on all devices" icon="power-outline" size="sm" variant="ghost"
+                onPress={() => showAlert('Sign out everywhere?', 'Every phone and computer will need a new SMS code to sign in. Use this if you lost a phone.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign out everywhere', style: 'destructive', onPress: async () => { try { await signOutEverywhere(); await forgetProfileToken(); setToken(null); } catch (e) { showAlert('Could not sign out', e.message); } } },
+                ])} />
               <Button title="Delete my account" icon="trash-outline" size="sm" variant="ghost" onPress={confirmDelete} />
             </View>
           </Card>
