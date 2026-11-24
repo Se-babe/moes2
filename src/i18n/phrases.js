@@ -73,6 +73,9 @@ const lg = {
     "Amawulire g'ekitundu kyo, okwebuuza n'okunoonyereza ku nsonga zo, n'okusaba kwo bwe kutambula — byonna mu kifo kimu.",
   'See notices that affect you, ways to have your say, and the progress of your requests.':
     "Laba amawulire agakukwatako, engeri y'okwogera, n'okusaba kwo bwe kutambula.",
+  'Sign in with your phone': "Yingira n'essimu yo",
+  'Optional. Signing in keeps your profile and requests together on any phone or computer. No password needed.':
+    "Si kya buwaze. Okuyingira kukuuma ebikukwatako n'okusaba kwo wamu ku ssimu oba kompyuta yonna. Tewetaaga kigambo kya kyama.",
   // guidance
   'How to take part': 'Engeri y’okwetabamu',
   'Try a practice run →': 'Gezaako okwegezaamu →',

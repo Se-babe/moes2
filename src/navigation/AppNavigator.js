@@ -42,6 +42,7 @@ const ForgotPasswordScreen = lazyScreen(() => import('../screens/ForgotPasswordS
 const AdminDashboardScreen = lazyScreen(() => import('../screens/AdminDashboardScreen'));
 const HRDashboardScreen = lazyScreen(() => import('../screens/HRDashboardScreen'));
 const MeScreen = lazyScreen(() => import('../screens/MeScreen'));
+const CitizenSignInScreen = lazyScreen(() => import('../screens/CitizenSignInScreen'));
 const LearnScreen = lazyScreen(() => import('../screens/LearnScreen'));
 const LessonScreen = lazyScreen(() => import('../screens/LessonScreen'));
 const PracticeScreen = lazyScreen(() => import('../screens/PracticeScreen'));
@@ -109,6 +110,7 @@ const linking = {
       UpdateDetail: 'updates/:id',
       Alerts: 'alerts',
       Me: 'me',
+      SignIn: 'signin',
       Learn: 'learn',
       Practice: 'learn/practice/:kind',
       Lesson: 'learn/:slug',
@@ -151,6 +153,7 @@ const TITLES = {
   UpdateDetail: 'Service update',
   Alerts: 'Alerts & my profile',
   Me: 'My NWSC',
+  SignIn: 'Sign in',
   Learn: 'Help & learning',
   Lesson: 'Lesson',
   Practice: 'Practice',
@@ -221,6 +224,7 @@ const AppNavigatorContent = ({ currentRoute }) => {
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: TITLES.AdminDashboard }} />
         <Stack.Screen name="HRDashboard" component={HRDashboardScreen} options={{ title: TITLES.HRDashboard }} />
         <Stack.Screen name="Me" component={MeScreen} options={{ title: TITLES.Me }} />
+        <Stack.Screen name="SignIn" component={CitizenSignInScreen} options={{ title: TITLES.SignIn }} />
         <Stack.Screen name="Learn" component={LearnScreen} options={{ title: TITLES.Learn }} />
         <Stack.Screen name="Lesson" component={LessonScreen} options={{ title: TITLES.Lesson }} />
         <Stack.Screen name="Practice" component={PracticeScreen} options={{ title: TITLES.Practice }} />

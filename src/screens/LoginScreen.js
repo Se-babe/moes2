@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }) {
       if (homeForRole(role)) navigation.navigate(homeForRole(role));
       else {
         await signOut();
-        showAlert('Staff only', 'This sign-in is for NWSC staff and administrators.');
+        showAlert('Staff only', 'This sign-in is for NWSC staff. Customers can sign in with their phone number instead.');
       }
     } catch (error) {
       showAlert('Login Failed', error.message || 'Invalid email or password.');

@@ -92,7 +92,7 @@ export default function FeedbackScreen() {
   const [description, setDescription] = useState('');
   const [locationText, setLocationText] = useState('');
   const [contactName, setContactName] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
+  const [contactPhone, setContactPhone] = useState(user?.role === 'citizen' ? (user.phone || '').replace(/^\+256/, '0') : '');
   const [contactEmail, setContactEmail] = useState('');
   const [image, setImage] = useState(null);
   const [errors, setErrors] = useState({});

@@ -213,6 +213,15 @@ export default function Header() {
                 onPress={() => go(homeForRole(user.role))}
               />
             )}
+            {!compact && !isStaff && (
+              <Button
+                title={user ? 'My NWSC' : 'Sign in'}
+                variant="ghost"
+                size="sm"
+                icon={user ? 'person-circle-outline' : 'log-in-outline'}
+                onPress={() => go(user ? 'Me' : 'SignIn')}
+              />
+            )}
             {width >= 420 && (
               <Button title={t('nav.report')} icon="water" size="sm" onPress={() => go('Feedback', { type: 'Complaint' })} />
             )}
@@ -262,6 +271,21 @@ export default function Header() {
                   ))}
                 </View>
               ))}
+              {!isStaff && (
+                <View style={{ marginTop: 24 }}>
+                  <Text style={styles.drawerSection}>My NWSC</Text>
+                  <Pressable style={styles.drawerLink} onPress={() => go(user ? 'Me' : 'SignIn')}>
+                    <Ionicons name={user ? 'person-circle-outline' : 'log-in-outline'} size={18} color={COLORS.primary} />
+                    <Text style={styles.drawerLinkText}>{user ? 'My NWSC' : 'Sign in with your phone'}</Text>
+                  </Pressable>
+                  {user ? (
+                    <Pressable style={styles.drawerLink} onPress={() => { setMenuOpen(false); signOut(); }}>
+                      <Ionicons name="log-out-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.drawerLinkText}>Sign out</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              )}
               {isStaff && (
                 <View style={{ marginTop: 24 }}>
                   <Text style={styles.drawerSection}>Staff</Text>

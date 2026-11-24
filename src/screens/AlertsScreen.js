@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { isCitizen, claimProfile } from '../services/citizen';
+import { useAuth } from '../context/AuthContext';
 import { ScrollView, View, Text, StyleSheet, Pressable, Linking } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -17,7 +19,8 @@ export default function AlertsScreen() {
   const { isDesktop } = useBreakpoint();
   const { language } = usePreferences();
   const [areas, setAreas] = useState([]);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', ...EMPTY_PROFILE, language });
+  const { user } = useAuth();
+  const [form, setForm] = useState({ name: '', phone: isCitizen(user) ? (user.phone || '').replace(/^\+256/, '0') : '', email: '', ...EMPTY_PROFILE, language });
   const [social, setSocial] = useState([]);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -43,7 +46,8 @@ export default function AlertsScreen() {
     }
     setSaving(true);
     try {
-      await subscribeAlerts(form);
+      const token = await subscribeAlerts(form);
+      if (isCitizen(user) && token) await claimProfile(token);
       setDone(true);
     } catch (e) {
       showAlert('Could not subscribe', e.message);

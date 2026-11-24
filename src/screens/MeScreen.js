@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { isCitizen, myProfileToken, claimProfile, mySignedInRequests, deleteMyAccount } from '../services/citizen';
+import { useAuth } from '../context/AuthContext';
 import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -58,14 +60,20 @@ export default function MeScreen() {
   const [requests, setRequests] = useState([]);
   const [docs, setDocs] = useState([]);
 
-  // ?token=… (from the link in our emails) or this device's saved profile
+  const { user, signOut } = useAuth();
+  const signedIn = isCitizen(user);
+
+  // Signed-in citizen: their account's profile. Otherwise ?token=… (from the
+  // link in our emails) or this device's saved profile.
   useEffect(() => {
     (async () => {
-      const t = route.params?.token || (await loadProfileToken());
+      let t = signedIn ? await myProfileToken() : null;
+      if (!t) t = route.params?.token || (await loadProfileToken());
       if (route.params?.token) saveProfileToken(route.params.token);
+      if (t && signedIn) claimProfile(t);
       setToken(t || null);
     })();
-  }, [route.params?.token]);
+  }, [route.params?.token, signedIn]);
 
   const load = useCallback(async () => {
     fetchAreas().then(setAreas);
@@ -99,8 +107,11 @@ export default function MeScreen() {
       .sort((a, b) => Number(b.recommended) - Number(a.recommended));
     setActivities(open);
     const tracked = await Promise.all(refs.slice(0, 8).map((r) => supabase.rpc('track_request', { p_reference: r }).then(({ data }) => data).catch(() => null)));
-    setRequests(tracked.filter(Boolean));
-  }, [token, navigation]);
+    // Signed in: every request linked to the account, plus any tracked here.
+    const mine = signedIn ? await mySignedInRequests() : [];
+    const all = [...mine, ...tracked.filter(Boolean)];
+    setRequests(all.filter((r, i) => all.findIndex((x) => x.reference_no === r.reference_no) === i).slice(0, 12));
+  }, [token, navigation, signedIn]);
 
   useEffect(() => { if (token !== undefined) load(); }, [token, load]);
 
@@ -124,6 +135,15 @@ export default function MeScreen() {
     { text: 'Stop alerts', style: 'destructive', onPress: async () => { await updateProfile(token, { ...profile, is_active: false }); load(); } },
   ]);
 
+  const confirmDelete = () => showAlert('Delete your account?',
+    'Your account and alert profile are removed and you stop receiving messages. Requests you made stay on record for NWSC, without your name. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try { await deleteMyAccount(); await forgetProfileToken(); setToken(null); showAlert('Account deleted', 'You can still use everything as a guest.'); }
+        catch (e) { showAlert('Could not delete', e.message); }
+      } },
+    ]);
+
   if (token === undefined) return <Loading />;
 
   const name = profile?.name?.split(' ')[0];
@@ -145,8 +165,15 @@ export default function MeScreen() {
             <EmptyState
               icon="sparkles-outline"
               title="Make this page yours"
-              message="Create a free profile (no password) to get notices for your area, suggestions on your topics, and alerts in your language. Already signed up? Open the link in any email from us."
-              action={<Button title="Create my profile" icon="person-add-outline" onPress={() => navigation.navigate('Alerts')} />}
+              message={signedIn
+                ? 'You are signed in. Create your profile to choose your area, topics and language, and get alerts.'
+                : 'Create a free profile to get notices for your area, suggestions on your topics, and alerts in your language. Already have one? Sign in with your phone to see it on this device.'}
+              action={(
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <Button title="Create my profile" icon="person-add-outline" onPress={() => navigation.navigate('Alerts')} />
+                  {!signedIn && <Button title="Sign in with my phone" icon="phone-portrait-outline" variant="secondary" onPress={() => navigation.navigate('SignIn')} />}
+                </View>
+              )}
             />
           </Card>
         )}
@@ -247,10 +274,27 @@ export default function MeScreen() {
               {profile.is_active
                 ? <Button title="Stop all alerts" icon="notifications-off-outline" size="sm" variant="ghost" onPress={stopAll} />
                 : <Button title="Turn alerts back on" icon="notifications-outline" size="sm" onPress={async () => { await updateProfile(token, { ...profile, is_active: true }); load(); }} />}
-              <Button title="Forget me on this device" icon="log-out-outline" size="sm" variant="ghost" onPress={async () => { await forgetProfileToken(); setToken(null); }} />
+              {!signedIn && <Button title="Forget me on this device" icon="log-out-outline" size="sm" variant="ghost" onPress={async () => { await forgetProfileToken(); setToken(null); }} />}
             </View>
           </Card>
         )}
+
+        {signedIn ? (
+          <Card style={{ gap: SPACE.sm }}>
+            <Text style={TYPE.h3}>My account</Text>
+            <Text style={TYPE.small}>Signed in with {user.phone}. Your profile and requests follow you to any phone or computer where you sign in.</Text>
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+              <Button title="Sign out" icon="log-out-outline" size="sm" variant="secondary" onPress={async () => { await signOut(); await forgetProfileToken(); setToken(null); }} />
+              <Button title="Delete my account" icon="trash-outline" size="sm" variant="ghost" onPress={confirmDelete} />
+            </View>
+          </Card>
+        ) : profile ? (
+          <Card style={{ gap: 6 }}>
+            <Text style={TYPE.h3}>Use My NWSC on any device</Text>
+            <Text style={TYPE.small}>Optional: sign in with your phone number and a code by SMS. No password.</Text>
+            <Button title="Sign in with my phone" icon="phone-portrait-outline" size="sm" variant="secondary" style={{ alignSelf: 'flex-start' }} onPress={() => navigation.navigate('SignIn')} />
+          </Card>
+        ) : null}
       </Container>
       <View style={{ height: SPACE.xxl }} />
       <Footer />
